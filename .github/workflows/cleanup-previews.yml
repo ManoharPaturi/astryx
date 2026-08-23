@@ -58,6 +58,7 @@ jobs:
     permissions:
       actions: read
       contents: write
+      deployments: write
       pull-requests: read
     steps:
       - name: Checkout publisher

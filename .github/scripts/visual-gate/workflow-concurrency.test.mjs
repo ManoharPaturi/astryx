@@ -505,6 +505,19 @@ describe('visual acceptance workflow concurrency', () => {
     }
   });
 
+  it('records preview deployments through the shared publisher', () => {
+    const deployPreview = workflow('deploy-preview.yml');
+    const redeployPreview = workflow('redeploy-preview.yml');
+    const cleanup = workflow('cleanup-previews.yml');
+
+    for (const value of [deployPreview, redeployPreview]) {
+      expect(value.match(/deployments: write/g)).toHaveLength(1);
+      expect(value).toContain('--head "$HEAD_SHA"');
+      expect(value).not.toContain('/deployments');
+    }
+    expect(cleanup.match(/deployments: write/g)).toHaveLength(1);
+  });
+
   it('projects every known validation or publication failure from an always-running job', () => {
     const value = workflow('visual-acceptance-promote.yml');
     const status = value.slice(value.indexOf('  project-status:'));

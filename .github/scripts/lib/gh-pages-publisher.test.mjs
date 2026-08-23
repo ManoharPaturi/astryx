@@ -17,6 +17,9 @@ import {
   publishAcceptedVisualBaseline,
   publishImmutablePath,
   publishPrPreview,
+  publishPrPreviewWithDeployments,
+  recordPrPreviewDeployments,
+  retirePrPreviewDeployments,
   publishReleaseGateReport,
   publishVibeReport,
   publishVibeScreenshots,
@@ -1066,6 +1069,170 @@ describe('gh-pages publisher', () => {
     });
   });
 
+  it('records Storybook and Sandbox as independent transient deployments', () => {
+    const requests = [];
+    let nextId = 100;
+    const request = input => {
+      requests.push(input);
+      if (input.endpoint === 'deployments') return {id: nextId++};
+      return {};
+    };
+
+    const recorded = recordPrPreviewDeployments({
+      repository: REPO,
+      token: 'test-token',
+      runId: 940,
+      pr: 123,
+      head: HEAD,
+      targets: {storybook: true, sandbox: true},
+      state: 'success',
+      serverURL: 'https://github.example',
+      request,
+    });
+
+    expect(recorded).toEqual([
+      {
+        environment: 'Storybook',
+        id: 100,
+        state: 'success',
+        environmentURL: 'https://facebook.github.io/astryx/pr/123/',
+      },
+      {
+        environment: 'Sandbox',
+        id: 101,
+        state: 'success',
+        environmentURL: 'https://facebook.github.io/astryx/pr/123/sandbox/',
+      },
+    ]);
+    expect(
+      requests
+        .filter(({endpoint}) => endpoint === 'deployments')
+        .map(({body}) => body),
+    ).toEqual([
+      {
+        ref: HEAD,
+        environment: 'Storybook',
+        description: 'Preview for PR #123',
+        auto_merge: false,
+        required_contexts: [],
+        transient_environment: true,
+      },
+      {
+        ref: HEAD,
+        environment: 'Sandbox',
+        description: 'Preview for PR #123',
+        auto_merge: false,
+        required_contexts: [],
+        transient_environment: true,
+      },
+    ]);
+    expect(
+      requests
+        .filter(({endpoint}) => endpoint.endsWith('/statuses'))
+        .map(({body}) => body),
+    ).toEqual([
+      {
+        state: 'success',
+        environment_url: 'https://facebook.github.io/astryx/pr/123/',
+        log_url: 'https://github.example/facebook/astryx/actions/runs/940',
+        auto_inactive: false,
+      },
+      {
+        state: 'success',
+        environment_url: 'https://facebook.github.io/astryx/pr/123/sandbox/',
+        log_url: 'https://github.example/facebook/astryx/actions/runs/940',
+        auto_inactive: false,
+      },
+    ]);
+  });
+
+  it('records only preview targets confirmed by the publisher', async () => {
+    const records = [];
+    const result = {
+      targets: {
+        storybook: {available: true},
+        sandbox: {available: false},
+      },
+    };
+
+    await expect(
+      publishPrPreviewWithDeployments({
+        repository: REPO,
+        token: 'test-token',
+        runId: 940,
+        pr: 123,
+        head: HEAD,
+        targets: {storybook: true, sandbox: true},
+        publish: () => Promise.resolve(result),
+        record: input => records.push(input),
+      }),
+    ).resolves.toBe(result);
+    expect(records).toEqual([
+      expect.objectContaining({
+        state: 'success',
+        targets: {storybook: true, sandbox: false},
+      }),
+    ]);
+  });
+
+  it('records a failed deployment without hiding the publish error', async () => {
+    const states = [];
+    const error = new Error('push rejected');
+
+    await expect(
+      publishPrPreviewWithDeployments({
+        repository: REPO,
+        token: 'test-token',
+        runId: 940,
+        pr: 123,
+        head: HEAD,
+        targets: {storybook: true, sandbox: false},
+        publish: () => Promise.reject(error),
+        record: ({state, targets}) => states.push({state, targets}),
+      }),
+    ).rejects.toBe(error);
+    expect(states).toEqual([
+      {state: 'failure', targets: {storybook: true, sandbox: false}},
+    ]);
+  });
+
+  it('retires every historical deployment for deleted previews by description', () => {
+    const requests = [];
+    const request = input => {
+      requests.push(input);
+      if (!input.paginate) return {};
+      if (input.endpoint.includes('Storybook')) {
+        return [
+          {id: 10, description: 'Preview for PR #124'},
+          {id: 11, description: 'Preview for PR #123'},
+          {id: 12, description: 'Preview for PR #124'},
+        ];
+      }
+      return [
+        {id: 20, description: 'Preview for PR #124'},
+        {id: 21, description: 'another deployment'},
+      ];
+    };
+
+    expect(
+      retirePrPreviewDeployments({
+        repository: REPO,
+        token: 'test-token',
+        prs: [124],
+        request,
+      }),
+    ).toBe(3);
+    expect(
+      requests
+        .filter(({method}) => method === 'POST')
+        .map(({endpoint, body}) => ({endpoint, body})),
+    ).toEqual([
+      {endpoint: 'deployments/10/statuses', body: {state: 'inactive'}},
+      {endpoint: 'deployments/12/statuses', body: {state: 'inactive'}},
+      {endpoint: 'deployments/20/statuses', body: {state: 'inactive'}},
+    ]);
+  });
+
   it('publishes PR previews without losing reports or visual state', async () => {
     const fx = fixture();
     const storybook = path.join(fx.root, 'preview-storybook');
@@ -1282,12 +1449,14 @@ describe('gh-pages publisher', () => {
 
   it('cleans stale previews without deleting visual evidence or live previews', async () => {
     const fx = fixture();
-    await queuedPublish(fx, 941, 'cleanup/previews', () =>
+    const result = await queuedPublish(fx, 941, 'cleanup/previews', () =>
       cleanupPreviews({
         ...context(fx, 941, 'cleanup/previews'),
         openPRs: new Set(['123', '42']),
       }),
     );
+
+    expect(result.deletedPrs).toEqual([124]);
 
     const final = cloneRemote(fx.remote, fx.root);
     expect(fs.existsSync(path.join(final, 'abcdef1'))).toBe(false);
@@ -1319,6 +1488,25 @@ describe('gh-pages publisher', () => {
         path.join(final, 'visual-gate', 'baseline', 'manifest.json'),
       ),
     ).toBe(true);
+  });
+
+  it('keeps a stale preview when deployment retirement fails', async () => {
+    const fx = fixture();
+    const error = new Error('deployment API unavailable');
+
+    await expect(
+      cleanupPreviews({
+        ...context(fx, 941, 'cleanup/previews'),
+        openPRs: new Set(['123', '42']),
+        beforeDeletePreviews: prs => {
+          expect(prs).toEqual([124]);
+          throw error;
+        },
+      }),
+    ).rejects.toBe(error);
+
+    const final = cloneRemote(fx.remote, fx.root);
+    expect(fs.existsSync(path.join(final, 'pr', '124'))).toBe(true);
   });
 
   it('publishes vibe screenshots without disturbing previews or baselines', async () => {
