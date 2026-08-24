@@ -19,6 +19,7 @@
 export {CheckboxIndicator} from './CheckboxIndicator';
 export {CheckIndicator} from './CheckIndicator';
 export {RadioIndicator} from './RadioIndicator';
+export {SpinnerIndicator} from './SpinnerIndicator';
 
 // Registry (RSC-compatible, no 'use client')
 export {defaultIndicators, getIndicator} from './indicatorRegistry';
@@ -35,12 +36,15 @@ export type {
   IndicatorComponent,
   IndicatorFamily,
   IndicatorFamilyMap,
+  IndicatorFamilySizeMap,
   IndicatorMap,
   IndicatorName,
   IndicatorNameOfFamily,
   IndicatorPosition,
+  IndicatorCommonProps,
   IndicatorProps,
   IndicatorRegistry,
   IndicatorSize,
+  IndicatorSizeOf,
   IndicatorState,
 } from './types';

@@ -47,15 +47,36 @@ import type {BaseProps} from '../BaseProps';
  * two states are ever passed, and a radio cannot be asked to draw a partial
  * state it has no picture for.
  *
- * Adding a family is additive: declare it here, then declare indicators of
- * that family in {@link IndicatorMap}. Packages outside core can contribute
- * families through module augmentation.
+ * Adding a family is additive *when the family has states*: declare it here,
+ * then declare indicators of that family in {@link IndicatorMap}. Packages
+ * outside core can contribute families through module augmentation.
+ *
+ * A family with NO states is not additive, and `busy` is the case that found
+ * it. `state` was declared unconditionally required, so an empty state space
+ * (`never`) makes every call site unsatisfiable and a single-member filler
+ * state (`'busy'`) makes every call site write a word that carries nothing.
+ * Admitting one costs a change to {@link IndicatorProps}: `state` and `size`
+ * are now derived from the family rather than fixed, so a family declares the
+ * domain of each prop instead of only the state enum. Existing families
+ * resolve to exactly the props they had, which is why nothing downstream of
+ * them changed.
  */
 export interface IndicatorFamilyMap {
   /** Is this one thing chosen? Radios, and the mark on a selected option. */
   singleSelection: 'unchecked' | 'checked';
   /** Which of these are chosen? Checkboxes, including the partial state. */
   multiSelection: 'unchecked' | 'checked' | 'indeterminate';
+  /**
+   * Is work in flight? Spinners, and any branded loading visual standing in
+   * for one.
+   *
+   * The state space is EMPTY, and that is the point: a busy visual is either
+   * rendered or it is not, so there is no state for a host to pass and none
+   * for a replacement to draw. `never` says so in the type system — see
+   * {@link IndicatorProps}, where an empty state space removes the `state`
+   * prop instead of demanding an inhabitant of an uninhabitable type.
+   */
+  busy: never;
 }
 
 export type IndicatorFamily = keyof IndicatorFamilyMap & string;
@@ -66,6 +87,31 @@ export type IndicatorState<F extends IndicatorFamily = IndicatorFamily> =
 
 /** Indicator size scale — matches the control sizes of the owning inputs. */
 export type IndicatorSize = 'sm' | 'md';
+
+/**
+ * The size scale each family draws at.
+ *
+ * A family fixes the size space for the same reason it fixes the state space:
+ * the scale belongs to what the indicator IS, not to the mechanism. Selection
+ * marks sit inside a control and take the control's two sizes. A busy visual
+ * also stands alone — a page-level spinner is not sized by any control — so
+ * its family keeps the four sizes `Spinner` has always shipped.
+ *
+ * Every host that renders a busy indicator inside a control passes `sm` or
+ * `md`; `lg` and `xl` only ever appear on a standalone `<Spinner>`. So the two
+ * extra sizes cost the control hosts nothing, and a replacement that only
+ * draws `sm`/`md` is still a valid selection-mark replacement — the widening
+ * is confined to the family that asked for it.
+ */
+export interface IndicatorFamilySizeMap {
+  singleSelection: IndicatorSize;
+  multiSelection: IndicatorSize;
+  busy: IndicatorSize | 'lg' | 'xl';
+}
+
+/** The sizes an indicator of family `F` can be asked to draw at. */
+export type IndicatorSizeOf<F extends IndicatorFamily = IndicatorFamily> =
+  IndicatorFamilySizeMap[F];
 
 /**
  * Which edge of its row an indicator sits on.
@@ -79,12 +125,15 @@ export type IndicatorSize = 'sm' | 'md';
 export type IndicatorPosition = 'start' | 'end';
 
 /**
- * Props every indicator accepts.
+ * The props every indicator accepts, whatever its family. {@link IndicatorProps}
+ * adds the two the family parameterizes.
  *
  * Indicators are **decorative**: they render `aria-hidden` visuals and own no
  * role, focus, keyboard handling, or state. The component that renders one
- * (CheckboxInput, RadioListItem, a listbox option) keeps all of that. An
- * indicator's only job is to turn `state` into a picture.
+ * (CheckboxInput, RadioListItem, a listbox option, a loading Button) keeps all
+ * of that. An indicator's only job is to turn a piece of the host's state into
+ * a picture — for a busy indicator, the fact that it is rendered at all is
+ * that piece.
  *
  * The a11y props are omitted from this interface rather than left to
  * convention: un-hiding an indicator has it announced next to the control that
@@ -112,21 +161,12 @@ export type IndicatorPosition = 'start' | 'end';
  * boolean through React — and an owner that should not tint its indicator
  * simply does not apply the marker.
  */
-export interface IndicatorProps<
-  F extends IndicatorFamily = IndicatorFamily,
-> extends Omit<
+export interface IndicatorCommonProps extends Omit<
   BaseProps<HTMLSpanElement>,
   'aria-hidden' | 'role' | 'aria-label' | 'aria-labelledby' | 'tabIndex'
 > {
   /** Ref forwarded to the indicator's root element. */
   ref?: Ref<HTMLSpanElement>;
-  /** Which state to draw. The state space is fixed by the family. */
-  state: IndicatorState<F>;
-  /**
-   * Control size.
-   * @default 'md'
-   */
-  size?: IndicatorSize;
   /**
    * Whether the owning control is disabled. Purely visual — the owner still
    * owns the actual disabled semantics.
@@ -140,6 +180,39 @@ export interface IndicatorProps<
    */
   children?: ReactNode;
 }
+
+/**
+ * The `state` prop, present only for families that have states to draw.
+ *
+ * A family with an empty state space (`busy`) gets `state?: never`, which
+ * accepts a host that passes nothing and rejects a host that passes anything.
+ * Declaring `state: never` instead — the shape that falls out of the original
+ * definition — would make EVERY call site an error, because `never` has no
+ * inhabitant to pass.
+ *
+ * `[T] extends [never]` rather than `T extends never`: a bare conditional
+ * distributes over a naked type parameter, and distributing over `never`
+ * yields `never` for the whole conditional rather than taking the true branch.
+ */
+type IndicatorStateProp<F extends IndicatorFamily> = [
+  IndicatorState<F>,
+] extends [never]
+  ? {state?: never}
+  : {state: IndicatorState<F>};
+
+/**
+ * What an indicator of family `F` is rendered with: the common props, plus the
+ * two the family fixes the domain of — `state` and `size`.
+ */
+export type IndicatorProps<F extends IndicatorFamily = IndicatorFamily> =
+  IndicatorCommonProps &
+    IndicatorStateProp<F> & {
+      /**
+       * Control size. The scale is fixed by the family.
+       * @default 'md'
+       */
+      size?: IndicatorSizeOf<F>;
+    };
 
 /** An indicator is any component accepting {@link IndicatorProps} of its family. */
 export type IndicatorComponent<F extends IndicatorFamily = IndicatorFamily> =
@@ -174,6 +247,12 @@ export interface IndicatorMap {
   radio: 'singleSelection';
   /** The box of a checkbox control, including its partial state. */
   checkbox: 'multiSelection';
+  /**
+   * The visual for work in flight — a rotating ring by default, and the one
+   * name that reaches every loading affordance in the system at once: Button,
+   * the text and date inputs, Switch, Thumbnail, the selectors, the chat rows.
+   */
+  spinner: 'busy';
 }
 
 export type IndicatorName = keyof IndicatorMap & string;

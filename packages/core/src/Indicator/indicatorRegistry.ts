@@ -29,6 +29,7 @@ import {getRegisteredTheme} from '../theme/themeRegistry';
 import {CheckboxIndicator} from './CheckboxIndicator';
 import {CheckIndicator} from './CheckIndicator';
 import {RadioIndicator} from './RadioIndicator';
+import {SpinnerIndicator} from './SpinnerIndicator';
 import type {
   IndicatorComponent,
   IndicatorMap,
@@ -44,7 +45,7 @@ import type {
  * in {@link defaultIndicators} below. `indicatorRegistry.test.tsx` pins the two
  * together in both directions.
  */
-export type CoreIndicatorName = 'check' | 'checkbox' | 'radio';
+export type CoreIndicatorName = 'check' | 'checkbox' | 'radio' | 'spinner';
 
 /**
  * The indicators Astryx ships. A theme's `indicators` entries override these
@@ -60,6 +61,7 @@ export const defaultIndicators: {
   check: CheckIndicator,
   checkbox: CheckboxIndicator,
   radio: RadioIndicator,
+  spinner: SpinnerIndicator,
 };
 
 export type IndicatorRegistrySource = DefinedTheme | string | null | undefined;
