@@ -45,7 +45,7 @@ import {Divider} from '../Divider';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {useKeepLayerOpenProps, type LayerPlacement} from '../Layer/useLayer';
 import {InternalInputClearButton} from '../Field/InputClearButton';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {
@@ -1822,7 +1822,7 @@ export function Selector<T extends SelectorOptionType>(
             disabled={isDisabled}
           />
         )}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <BusyIndicator size="sm" />}
         {hasClear && value != null && !isDisabled && !isEffectivelyReadOnly && (
           <InternalInputClearButton
             {...keepOpenProps}

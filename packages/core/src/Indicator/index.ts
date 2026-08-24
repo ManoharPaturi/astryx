@@ -16,6 +16,7 @@
  * `check` and every single-selection mark in the app follows.
  */
 
+export {BusyIndicator} from './BusyIndicator';
 export {CheckboxIndicator} from './CheckboxIndicator';
 export {CheckIndicator} from './CheckIndicator';
 export {RadioIndicator} from './RadioIndicator';

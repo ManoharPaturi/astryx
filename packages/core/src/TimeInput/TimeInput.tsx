@@ -47,7 +47,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {
   type ISOTimeString,
@@ -745,7 +745,7 @@ export function TimeInput({
           </VisuallyHidden>
         </>
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <BusyIndicator size="sm" />}
       {hasClear && optimisticValue && !isDisabled && (
         <InputClearButton
           label={t('@astryx.timeInput.clearLabel', {label})}

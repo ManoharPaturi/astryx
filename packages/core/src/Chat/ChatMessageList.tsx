@@ -32,7 +32,7 @@ import {
   useChatLayoutContext,
 } from './ChatContext';
 import {mergeProps} from '../utils';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
@@ -308,7 +308,7 @@ export function ChatMessageList({
           {/* Loading spinner at top */}
           {isLoadingTop && (
             <div {...stylex.props(styles.loadingTop)}>
-              <Spinner size="md" />
+              <BusyIndicator size="md" />
             </div>
           )}
 

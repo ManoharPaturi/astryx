@@ -37,7 +37,7 @@ import {
 import {Button} from '../Button';
 import {Icon} from '../Icon';
 import {Skeleton} from '../Skeleton';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {Tooltip} from '../Tooltip/Tooltip';
 import {useDevWarning} from '../hooks/useDevWarning';
 import {useContainerReveal} from '../hooks/useContainerReveal';
@@ -236,6 +236,10 @@ const styles = stylex.create({
     pointerEvents: 'none' as const,
   },
   uploadOverlay: {
+    // was shade="onMedia"
+    '--_spinner-color': colorVars['--color-on-dark'],
+    '--_spinner-track-color': 'currentColor',
+    '--_spinner-track-opacity': '0.302',
     position: 'absolute',
     inset: 0,
     display: 'flex',
@@ -433,7 +437,7 @@ export function Thumbnail({
         {showImage && <div {...stylex.props(styles.insetBorder)} />}
         {showUploadOverlay && (
           <div {...stylex.props(styles.uploadOverlay)}>
-            <Spinner size="sm" shade="onMedia" />
+            <BusyIndicator size="sm" />
           </div>
         )}
         {removeButtonEl}

@@ -36,7 +36,7 @@ import {
   shadowVars,
   focusVars,
 } from '../theme/tokens.stylex';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {VisuallyHidden} from '../VisuallyHidden';
 
 import {EDGE_COMP_ATTR} from '../Layout/edgeCompensation.stylex';
@@ -388,6 +388,11 @@ const loadingStyles = stylex.create({
     },
   },
   spinnerOverlay: {
+    // shade="inherit" used to say this; the vars say it to any busy visual,
+    // ours or a replacement's.
+    '--_spinner-color': 'currentColor',
+    '--_spinner-track-color': 'currentColor',
+    '--_spinner-track-opacity': '0.3',
     position: 'absolute',
     top: 0,
     insetInlineStart: 0,
@@ -692,7 +697,7 @@ export function Button({
             delaySpinner && loadingStyles.spinnerDelayed,
           )}
           aria-hidden="true">
-          <Spinner size="sm" shade="inherit" />
+          <BusyIndicator size="sm" />
         </span>
       )}
       <span

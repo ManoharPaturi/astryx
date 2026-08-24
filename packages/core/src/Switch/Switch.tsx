@@ -39,7 +39,7 @@ import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import {switchScope} from './switch.markers.stylex';
@@ -623,7 +623,7 @@ export function Switch({
               isOn ? styles.thumbOn : styles.thumbOff,
             ),
           )}>
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <BusyIndicator size="sm" />}
         </div>
       </div>
       {isBusy && <VisuallyHidden role="status">Loading</VisuallyHidden>}

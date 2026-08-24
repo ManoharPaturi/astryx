@@ -15,7 +15,7 @@
 import {useCallback, useEffect, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {Icon} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {mergeProps} from '../utils';
 import {
   colorVars,
@@ -246,7 +246,7 @@ export function CommandPaletteInput({
         <span {...stylex.props(styles.end)}>
           {ctx?.isBusy && (
             <span {...stylex.props(styles.icon, styles.spinner)}>
-              <Spinner size="sm" />
+              <BusyIndicator size="sm" />
             </span>
           )}
           {endContent}

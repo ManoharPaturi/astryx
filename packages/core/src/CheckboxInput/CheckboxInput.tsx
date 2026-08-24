@@ -42,7 +42,7 @@ import {FieldLabel} from '../Field/FieldLabel';
 import {FieldStatus} from '../FieldStatus/FieldStatus';
 import type {IconType} from '../Icon';
 import type {InputStatus} from '../Field/types';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import {indicatorScope} from '../Indicator/indicator.markers.stylex';
@@ -472,7 +472,7 @@ export function CheckboxInput({
               }
               size={size}
               isDisabled={isDisabled}>
-              {isBusy ? <Spinner size="sm" shade="inherit" /> : null}
+              {isBusy ? <BusyIndicator size="sm" /> : null}
             </CheckboxControl>
           </span>
         </div>

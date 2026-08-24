@@ -46,7 +46,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {
   Calendar,
   type ISODateString,
@@ -704,7 +704,7 @@ export function DateRangeInput({
             iconClassName={stableClassName('date-range-input-clear-icon')}
           />
         )}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <BusyIndicator size="sm" />}
         {statusIcon}
       </div>
       {popover.render(

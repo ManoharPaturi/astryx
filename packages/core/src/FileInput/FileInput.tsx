@@ -43,7 +43,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {useAnnounce} from '../hooks/useAnnounce';
 import {useInputStatusIcon} from '../hooks/useInputStatusIcon';
@@ -687,7 +687,7 @@ export function FileInput({
 
   const renderDropzoneContent = () => {
     if (isLoading) {
-      return <Spinner size="md" />;
+      return <BusyIndicator size="md" />;
     }
     if (hasFiles) {
       return (
@@ -713,7 +713,7 @@ export function FileInput({
           <span {...stylex.props(styles.fileNameText)}>
             {fileNames ?? displayPlaceholder}
           </span>
-          <Spinner size="sm" />
+          <BusyIndicator size="sm" />
         </>
       );
     }

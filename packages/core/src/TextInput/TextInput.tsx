@@ -44,7 +44,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {renderIconSlot, type IconType} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {getInputARIA} from '../utils';
@@ -460,7 +460,7 @@ export function TextInput({
           onClick={handleClear}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <BusyIndicator size="sm" />}
       {statusIcon}
     </div>
   );

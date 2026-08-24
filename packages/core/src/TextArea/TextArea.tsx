@@ -44,7 +44,7 @@ import {
   type FieldStatusVariant,
 } from '../Field';
 import {Icon, renderIconSlot, type IconType} from '../Icon';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {useTooltip} from '../Tooltip';
 import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
@@ -635,7 +635,7 @@ export function TextArea({
         />
         {(isBusy || statusIcon) && (
           <span {...stylex.props(styles.endSlot)}>
-            {isBusy && <Spinner size="sm" />}
+            {isBusy && <BusyIndicator size="sm" />}
             {statusIcon}
           </span>
         )}

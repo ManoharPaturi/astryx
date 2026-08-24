@@ -80,7 +80,7 @@ import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {stableClassName} from '../naming';
 import {useSize} from '../SizeContext';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {
   colorVars,
   spacingVars,
@@ -1257,7 +1257,7 @@ export function TouchDateField({
           iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <BusyIndicator size="sm" />}
       {statusIcon}
       <BottomSheet
         isOpen={isSheetOpen}

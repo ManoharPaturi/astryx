@@ -18,15 +18,16 @@
  * accessible name. The host owns `aria-busy` and the announcement — see
  * Spinner.tsx for the standalone case, which is the one place the role stays.
  *
- * It paints with `currentColor` rather than taking a shade prop. That is what
- * lets a host say what colour "busy" is by setting `color` on the slot it
- * renders into — the mechanism `Spinner`'s `shade="inherit"` already used, and
- * the one CheckIndicator already uses for a Spinner in its children slot.
- * A replacement inherits it for free.
+ * It has no `shade` prop, and the omission is deliberate: the four shades were
+ * four ways of saying which colour the ring paints in, which is what `color`
+ * already says. A host sets `--_spinner-color` (and, if its track is not the
+ * default rail, the two track vars); the indicator turns that into its own
+ * `color`, so a REPLACEMENT written the obvious way — `stroke: currentColor` —
+ * honours the host's shade without knowing shades exist.
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {durationVars} from '../theme/tokens.stylex';
+import {colorVars, durationVars} from '../theme/tokens.stylex';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 import type {IndicatorProps, IndicatorSizeOf} from './types';
@@ -106,6 +107,12 @@ const styles = stylex.create({
     overflow: 'hidden',
     verticalAlign: 'middle',
     flexShrink: 0,
+    // The one knob a host turns to say what colour "busy" is here. It sets
+    // `color`, not a stroke, so a REPLACEMENT painting in `currentColor` — the
+    // obvious way to write one — follows the same instruction without knowing
+    // the var exists. Unset, it resolves to the accent the ring has always
+    // drawn in.
+    color: `var(--_spinner-color, ${colorVars['--color-accent']})`,
   },
   ring: {
     backfaceVisibility: 'hidden',
@@ -126,11 +133,9 @@ const styles = stylex.create({
     strokeLinecap: 'round',
   },
   arc: {stroke: 'currentColor'},
-  // The host (or the Spinner wrapper) sets these to paint a track that is not
-  // simply a faded foreground; unset, the ring draws its own colour at 30%.
   track: {
-    stroke: 'var(--_spinner-track-color, currentColor)',
-    strokeOpacity: 'var(--_spinner-track-opacity, 0.3)',
+    stroke: `var(--_spinner-track-color, ${colorVars['--color-track']})`,
+    strokeOpacity: 'var(--_spinner-track-opacity, 1)',
   },
   disabled: {opacity: 0.5},
 });

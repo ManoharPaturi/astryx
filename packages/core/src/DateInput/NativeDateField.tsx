@@ -48,7 +48,7 @@ import {useInputGroup} from '../InputGroup';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {stableClassName} from '../naming';
 import {useSize} from '../SizeContext';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {
   colorVars,
   radiusVars,
@@ -600,7 +600,7 @@ export function NativeDateField({
           iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
-      {isLoading && <Spinner size="sm" />}
+      {isLoading && <BusyIndicator size="sm" />}
       {statusIcon}
       {showsDisabledMessage &&
         disabledMessageTooltip.renderTooltip(disabledMessage)}

@@ -21,6 +21,15 @@ import {indicatorScope} from './indicator.markers.stylex';
 import type {IndicatorProps} from './types';
 
 const styles = stylex.create({
+  // A busy visual in the children slot paints in the box's own foreground, as
+  // the mark it stands in for would have — the same thing CheckIndicator's
+  // slot does by setting `color`. Set here rather than by the host so any
+  // checkbox that shows a pending state gets it.
+  busySlot: {
+    '--_spinner-color': 'currentColor',
+    '--_spinner-track-color': 'currentColor',
+    '--_spinner-track-opacity': '0.3',
+  },
   box: {
     boxSizing: 'border-box',
     display: 'flex',
@@ -212,6 +221,7 @@ export function CheckboxIndicator({
         ),
         stylex.props(
           styles.box,
+          styles.busySlot,
           boxSizeStyles[size],
           isCheckedOrIndeterminate ? styles.checked : styles.unchecked,
           isDisabled && styles.disabled,

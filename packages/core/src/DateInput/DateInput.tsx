@@ -48,7 +48,7 @@ import {VisuallyHidden} from '../VisuallyHidden';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
 import {groupStyles} from '../InputGroup/groupStyles';
 import {useSize} from '../SizeContext/SizeContext';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {
   Calendar,
   type ISODateString,
@@ -835,7 +835,7 @@ function PointerDateField({
           iconClassName={stableClassName('date-input-clear-icon')}
         />
       )}
-      {isBusy && <Spinner size="sm" />}
+      {isBusy && <BusyIndicator size="sm" />}
       {statusIcon}
       {popover.render(
         <Calendar

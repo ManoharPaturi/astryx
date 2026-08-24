@@ -20,6 +20,7 @@ import {defineTheme} from '../theme/defineTheme';
 import {CheckboxIndicator} from './CheckboxIndicator';
 import {CheckIndicator} from './CheckIndicator';
 import {RadioIndicator} from './RadioIndicator';
+import {SpinnerIndicator} from './SpinnerIndicator';
 import {defaultIndicators, getIndicator} from './indicatorRegistry';
 import type {CoreIndicatorName} from './indicatorRegistry';
 import type {IndicatorName, IndicatorProps} from './types';
@@ -43,6 +44,7 @@ describe('defaultIndicators', () => {
       check: true,
       checkbox: true,
       radio: true,
+      spinner: true,
     };
 
     expect(Object.keys(defaultIndicators).sort()).toEqual(
@@ -51,6 +53,7 @@ describe('defaultIndicators', () => {
     expect(defaultIndicators.check).toBe(CheckIndicator);
     expect(defaultIndicators.checkbox).toBe(CheckboxIndicator);
     expect(defaultIndicators.radio).toBe(RadioIndicator);
+    expect(defaultIndicators.spinner).toBe(SpinnerIndicator);
   });
 });
 

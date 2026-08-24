@@ -41,7 +41,7 @@ import {
 import {useKeepLayerOpenProps} from '../Layer/useLayer';
 import {InternalInputClearButton} from '../Field/InputClearButton';
 import {Divider} from '../Divider';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {PanelSearchInput} from '../Field/PanelSearchInput';
 import {CheckboxInput} from '../CheckboxInput';
 import type {IndicatorPosition} from '../Indicator';
@@ -1855,7 +1855,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
               disabled={isDisabled}
             />
           ))}
-        {isBusy && <Spinner size="sm" />}
+        {isBusy && <BusyIndicator size="sm" />}
         {hasClear &&
           value.length > 0 &&
           !isDisabled &&

@@ -53,31 +53,26 @@ const styles = stylex.create({
 });
 
 /**
- * A shade resolves to the foreground the indicator paints with, plus the two
- * private vars its track reads. Colour reaches a replacement the same way it
- * reaches ours — through `currentColor` — so a branded visual honours `shade`
- * without knowing the prop exists.
+ * A shade sets the vars the indicator reads, rather than painting anything
+ * itself: the indicator turns `--_spinner-color` into its own `color`, so a
+ * branded replacement drawing in `currentColor` honours `shade` without
+ * knowing the prop exists. `default` sets nothing — it IS the indicator's
+ * unset appearance.
  *
  * `onMedia` keeps the 77/255 its token's `4D` hex suffix used to encode.
  */
 const shadeStyles = stylex.create({
-  default: {
-    color: colorVars['--color-accent'],
-    '--_spinner-track-color': colorVars['--color-track'],
-    '--_spinner-track-opacity': '1',
-  },
+  default: {},
   subtle: {
-    color: colorVars['--color-text-secondary'],
-    '--_spinner-track-color': colorVars['--color-track'],
-    '--_spinner-track-opacity': '1',
+    '--_spinner-color': colorVars['--color-text-secondary'],
   },
   onMedia: {
-    color: colorVars['--color-on-dark'],
+    '--_spinner-color': colorVars['--color-on-dark'],
     '--_spinner-track-color': 'currentColor',
     '--_spinner-track-opacity': `${77 / 255}`,
   },
   inherit: {
-    color: 'currentColor',
+    '--_spinner-color': 'currentColor',
     '--_spinner-track-color': 'currentColor',
     '--_spinner-track-opacity': '0.3',
   },
