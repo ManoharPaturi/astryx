@@ -159,6 +159,22 @@ export const docs = {
         visualProps: ['size'],
         deprecatedFor: 'radio-indicator-dot',
       },
+      {className: 'astryx-spinner-indicator', visualProps: ['size']},
+    ],
+    vars: [
+      {
+        name: '--_spinner-color',
+        description:
+          'Colour the busy indicator paints in. Set by the host slot, not by a theme directly; the indicator turns it into `color`, so a replacement drawing in currentColor follows it too.',
+      },
+      {
+        name: '--_spinner-track-color',
+        description: 'Stroke of the track behind the moving arc.',
+      },
+      {
+        name: '--_spinner-track-opacity',
+        description: 'Opacity of that track.',
+      },
     ],
   },
   examples: [

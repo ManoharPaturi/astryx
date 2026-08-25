@@ -241,8 +241,8 @@ const DIR_TO_REGISTRY_KEY: Record<string, string> = {
  */
 const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   Carousel: ['--_button-radius'],
-  Thumbnail: ['--_button-radius'],
-  Chat: ['--_button-radius'],
+  Thumbnail: ['--_button-radius', '--_spinner-color', '--_spinner-track-color', '--_spinner-track-opacity'],
+  Chat: ['--_button-radius', '--_spinner-color', '--_spinner-track-color', '--_spinner-track-opacity'],
   // AvatarGroupOverflow sets the overlap for the Avatars it lays out; Avatar
   // owns and documents it (and sets it itself when it is the group root).
   AvatarGroup: ['--_avatar-group-overlap'],
@@ -255,6 +255,10 @@ const CROSS_COMPONENT_VARS: Record<string, string[]> = {
   // The destructive item variant recolors the Item it renders; Item owns,
   // documents and reads both slots.
   DropdownMenu: ['--_item-label-color', '--_item-description-color'],
+  // A host says what colour "busy" is in its own slot; the spinner indicator
+  // owns, documents and reads all three.
+  Button: ['--_spinner-color', '--_spinner-track-color', '--_spinner-track-opacity'],
+  Spinner: ['--_spinner-color', '--_spinner-track-color', '--_spinner-track-opacity'],
 };
 
 /**
@@ -304,15 +308,17 @@ const VARS_WITHOUT_DERIVED_MAPPING = new Set([
   // It is one component of one shadow in the list, so no standard property
   // maps onto it either — a theme sets it beside the fill it has to contrast.
   '--selectable-card-ring-color',
-  // The spinner's ring is drawn as an SVG circle, so none of its four vars is
-  // a CSS property of the element carrying the theme target: `width` and
-  // `borderWidth` would name a box the ring is not, and a `color` mapping
-  // would take the label's text color with it. They are public vars a theme
-  // sets directly under a size- or shade-variant key.
+  // The spinner's ring is drawn as an SVG circle, so none of its public vars
+  // maps cleanly to a CSS property on the element carrying the theme target.
   '--spinner-diameter',
   '--spinner-stroke-width',
   '--spinner-color',
   '--spinner-track-color',
+  // Hosts pass color and track treatment to the replaceable busy indicator
+  // through private vars because the SVG shapes are implementation details.
+  '--_spinner-color',
+  '--_spinner-track-color',
+  '--_spinner-track-opacity',
 ]);
 
 // ---------------------------------------------------------------------------

@@ -46,7 +46,7 @@ const bounce = stylex.keyframes({
 });
 
 const dotStyles = stylex.create({
-  row: {display: 'inline-flex', alignItems: 'center', gap: '2px'},
+  row: {display: 'inline-flex', alignItems: 'center', gap: '2px', color: '#7c3aed'},
   dot: {
     backgroundColor: 'currentColor',
     borderRadius: '50%',
@@ -86,6 +86,7 @@ const pulse = stylex.keyframes({
 const squareStyles = stylex.create({
   box: {
     display: 'inline-block',
+    color: '#ea580c',
     backgroundColor: 'currentColor',
     borderRadius: '2px',
     animationName: pulse,
@@ -118,6 +119,7 @@ const counterSpin = stylex.keyframes({
 const arcStyles = stylex.create({
   svg: {
     display: 'block',
+    color: '#0d9488',
     animationName: counterSpin,
     animationDuration: '0.9s',
     animationIterationCount: 'infinite',
@@ -161,6 +163,7 @@ const markSpin = stylex.keyframes({
 const markStyles = stylex.create({
   svg: {
     display: 'block',
+    color: '#db2777',
     animationName: markSpin,
     animationDuration: '1.4s',
     animationIterationCount: 'infinite',
