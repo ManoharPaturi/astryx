@@ -166,14 +166,20 @@ export const docs = {
         name: '--_spinner-color',
         description:
           'Colour the busy indicator paints in. Set by the host slot, not by a theme directly; the indicator turns it into `color`, so a replacement drawing in currentColor follows it too.',
+        default: 'var(--color-accent)',
+        private: true,
       },
       {
         name: '--_spinner-track-color',
         description: 'Stroke of the track behind the moving arc.',
+        default: 'var(--color-track)',
+        private: true,
       },
       {
         name: '--_spinner-track-opacity',
         description: 'Opacity of that track.',
+        default: '1',
+        private: true,
       },
     ],
   },
