@@ -406,6 +406,10 @@ export function Thumbnail({
       data-testid={testId}
       role="group"
       aria-label={accessibleName}
+      // The upload visual is decorative, so without this the thumbnail says
+      // nothing at all while it uploads. It had been leaning on the Spinner's
+      // own role="status" for that.
+      aria-busy={showUploadOverlay || undefined}
       {...mergeProps(
         themeProps('thumbnail'),
         stylex.props(styles.root, isDisabled && styles.disabled, xstyle),

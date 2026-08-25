@@ -37,7 +37,9 @@ describe('Thumbnail', () => {
     );
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', '/local.jpg');
-    expect(screen.getByRole('status')).toBeInTheDocument();
+    // The overlay visual is decorative; the thumbnail itself carries the busy
+    // state, which is what a screen reader has to reach.
+    expect(screen.getByTestId('thumb')).toHaveAttribute('aria-busy', 'true');
   });
 
   it('exposes the label as an accessible name via a valid group role', () => {

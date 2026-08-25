@@ -346,9 +346,14 @@ describe('TextArea', () => {
           status={{type: 'error'}}
         />,
       );
-      // Matches the other inputs: spinner (role="status") and the status icon
-      // render side by side in the end slot, not mutually exclusively.
-      expect(screen.getByRole('status')).toBeInTheDocument();
+      // Matches the other inputs: the busy indicator and the status icon
+      // render side by side in the end slot, not mutually exclusively. The
+      // indicator is decorative; `aria-busy` on the textarea is the announced
+      // signal.
+      expect(
+        container.querySelector('.astryx-spinner-indicator'),
+      ).not.toBeNull();
+      expect(screen.getByRole('textbox')).toHaveAttribute('aria-busy', 'true');
       // Status icon svg is also present alongside the spinner.
       expect(container.querySelectorAll('svg').length).toBeGreaterThan(0);
     });

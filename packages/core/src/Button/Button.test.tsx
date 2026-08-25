@@ -121,9 +121,12 @@ describe('Button', () => {
       const {container, unmount} = render(
         <Button label="Submit" variant={variant} isLoading />,
       );
-      const spinner = container.querySelector('.astryx-spinner');
+      // The busy visual is the `spinner` indicator now, and it has no shade:
+      // it paints in `currentColor`, which the loading overlay sets to the
+      // button's own foreground. That is what shade="inherit" meant (#2717).
+      const spinner = container.querySelector('.astryx-spinner-indicator');
       expect(spinner).not.toBeNull();
-      expect(spinner).toHaveAttribute('data-shade', 'inherit');
+      expect(spinner?.closest('[aria-hidden="true"]')).not.toBeNull();
       unmount();
     }
   });

@@ -680,10 +680,12 @@ describe('CheckboxListItem ARIA props', () => {
         <CheckboxListItem label="Option A" value="a" isLoading />
       </CheckboxList>,
     );
-    // The spinner is decorative — it lives inside the checkbox's
-    // aria-hidden visual box, so query with hidden:true. The accessible
-    // loading signal is `aria-busy` on the item (asserted above).
-    expect(screen.getByRole('status', {hidden: true})).toBeInTheDocument();
+    // The busy visual is decorative — it lives inside the checkbox's
+    // aria-hidden box and carries no role at all. The accessible loading
+    // signal is `aria-busy` on the item (asserted above).
+    expect(
+      document.querySelector('.astryx-spinner-indicator'),
+    ).not.toBeNull();
   });
 
   it('does not toggle when item-level isLoading is set', () => {
@@ -718,16 +720,14 @@ describe('CheckboxListItem ARIA props', () => {
     // Toggle Option A.
     fireEvent.click(within(itemA).getByRole('checkbox'));
 
-    // The toggled item becomes busy and shows a spinner; the sibling stays idle.
-    // The spinner is decorative (inside the aria-hidden box), so query hidden.
-    expect(
-      await within(itemA).findByRole('status', {hidden: true}),
-    ).toBeInTheDocument();
+    // The toggled item becomes busy and shows the busy visual; the sibling
+    // stays idle. The visual is decorative and roleless, so match its class.
+    await waitFor(() =>
+      expect(itemA.querySelector('.astryx-spinner-indicator')).not.toBeNull(),
+    );
     expect(itemA).toHaveAttribute('aria-busy', 'true');
     expect(itemB).not.toHaveAttribute('aria-busy');
-    expect(
-      within(itemB).queryByRole('status', {hidden: true}),
-    ).not.toBeInTheDocument();
+    expect(itemB.querySelector('.astryx-spinner-indicator')).toBeNull();
     expect(changeAction).toHaveBeenCalledWith(['a']);
   });
 
