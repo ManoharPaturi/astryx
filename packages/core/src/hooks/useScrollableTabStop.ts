@@ -31,11 +31,12 @@ export interface UseScrollableTabStopOptions {
 /**
  * Make a scroll container reachable by keyboard, and only while it is one.
  *
- * Returns a ref callback for the scrolling element. While that element
- * actually overflows — either axis — it carries `tabindex="0"`, so Tab stops
- * on it and the arrow keys scroll it (WCAG 2.1.1; axe
- * `scrollable-region-focusable`). When the content fits, the attribute is not
- * there, because a tab stop on a box that cannot scroll is a dead stop.
+ * Returns a ref callback for the scrolling element. While that element can
+ * actually be scrolled — either axis, meaning the content overflows AND that
+ * axis is `auto` or `scroll` — it carries `tabindex="0"`, so Tab stops on it
+ * and the arrow keys scroll it (WCAG 2.1.1; axe
+ * `scrollable-region-focusable`). Otherwise the attribute is not there,
+ * because a tab stop the arrow keys do not answer is a dead stop.
  *
  * The attribute is written from a shared ResizeObserver callback, not from
  * state, so a container that starts overflowing does not cost a render.

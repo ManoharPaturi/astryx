@@ -13,9 +13,11 @@
  *
  * A scroll container that no keyboard can reach fails WCAG 2.1.1 (axe:
  * scrollable-region-focusable). The fix is `tabindex="0"`, but only while the
- * element really overflows: `overflow: auto` on a box whose content fits is
- * not a scroll container, and a tab stop there is a dead stop for every
- * keyboard user.
+ * element can really be scrolled: content that overflows a box which clips it
+ * moves nothing, and `overflow: auto` on a box whose content fits is not a
+ * scroll container at all. Either way a tab stop is a dead stop the arrow keys
+ * do not answer. Both halves are checked, per axis, the way axe's own
+ * `getScroll` does.
  *
  * Whether it overflows is only knowable after layout and changes afterwards,
  * so the attribute is written from the observer callback rather than from
@@ -33,6 +35,9 @@ import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
  * would not have demanded, never removes one it would.
  */
 const TOLERANCE = 1;
+
+/** Overflow values that let a user actually scroll the box. */
+const SCROLLABLE = new Set(['auto', 'scroll']);
 
 /**
  * Keep `tabindex="0"` on `element` exactly while it can actually be scrolled,
@@ -57,11 +62,23 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   let measuring = false;
 
   const apply = () => {
-    const overflowing =
-      element.scrollHeight > element.clientHeight + TOLERANCE ||
+    // Overflowing is not the same as scrollable: `overflow: clip` and `hidden`
+    // both grow scrollHeight past clientHeight while the user can move
+    // nothing, and a tab stop there is a stop the arrow keys do not answer.
+    // Per axis, and only when there is overflow to pay for the style read.
+    const overflowsBlock =
+      element.scrollHeight > element.clientHeight + TOLERANCE;
+    const overflowsInline =
       element.scrollWidth > element.clientWidth + TOLERANCE;
+    let scrollable = false;
+    if (overflowsBlock || overflowsInline) {
+      const style = getComputedStyle(element);
+      scrollable =
+        (overflowsBlock && SCROLLABLE.has(style.overflowY)) ||
+        (overflowsInline && SCROLLABLE.has(style.overflowX));
+    }
 
-    if (overflowing) {
+    if (scrollable) {
       // A tabindex we did not write belongs to the consumer; leave it.
       if (!managed && !element.hasAttribute('tabindex')) {
         element.setAttribute('tabindex', '0');

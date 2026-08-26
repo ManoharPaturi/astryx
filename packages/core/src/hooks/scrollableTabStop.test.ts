@@ -51,8 +51,16 @@ describe('attachScrollableTabStop', () => {
   const entry = (target: Element) =>
     ({target}) as unknown as ResizeObserverEntry;
 
-  const mount = (size: Parameters<typeof sizeOf>[1]) => {
+  // The longhands, not the `overflow` shorthand: jsdom does not expand the
+  // shorthand into computed longhands the way a browser does. The shorthand
+  // path is covered by the Chromium probe instead.
+  const mount = (
+    size: Parameters<typeof sizeOf>[1],
+    overflow: string = 'auto',
+  ) => {
     const element = document.createElement('div');
+    element.style.overflowX = overflow;
+    element.style.overflowY = overflow;
     document.body.appendChild(element);
     sizeOf(element, size);
     return element;
@@ -75,6 +83,42 @@ describe('attachScrollableTabStop', () => {
     const detach = attach(element);
 
     expect(element.getAttribute('tabindex')).toBe('0');
+    detach();
+  });
+
+  it('leaves a container that clips its overflow out of the tab order', async () => {
+    const attach = await load();
+    // scrollHeight grows past clientHeight under `clip` and `hidden` just as
+    // it does under `auto`, but the user can move nothing.
+    const element = mount({scrollHeight: 442, clientHeight: 118}, 'clip');
+
+    const detach = attach(element);
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+    detach();
+  });
+
+  it('leaves a container that hides its overflow out of the tab order', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118}, 'hidden');
+
+    const detach = attach(element);
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+    detach();
+  });
+
+  it('checks scrollability per axis, not for the element as a whole', async () => {
+    const attach = await load();
+    // Only the inline axis overflows, and that axis is clipped: the scrollable
+    // block axis must not vouch for it.
+    const element = mount({scrollWidth: 643, clientWidth: 300});
+    element.style.overflowX = 'hidden';
+    element.style.overflowY = 'auto';
+
+    const detach = attach(element);
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
     detach();
   });
 

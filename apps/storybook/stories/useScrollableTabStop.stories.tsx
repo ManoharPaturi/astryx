@@ -49,6 +49,10 @@ const styles = stylex.create({
   },
 });
 
+const dynamicStyles = stylex.create({
+  overflow: (value: string) => ({overflow: value}),
+});
+
 interface ScrollRegionProps {
   label: string;
   paragraphs: number;
@@ -64,6 +68,28 @@ function ScrollRegion({label, paragraphs}: ScrollRegionProps) {
           <Text key={index}>
             {label} — paragraph {index + 1}.
           </Text>
+        ))}
+      </VStack>
+    </div>
+  );
+}
+
+interface ClippingRegionProps {
+  label: string;
+  overflow: 'auto' | 'hidden' | 'clip';
+}
+
+function ClippingRegion({label, overflow}: ClippingRegionProps) {
+  const scrollRef = useScrollableTabStop();
+
+  return (
+    <div
+      ref={scrollRef}
+      aria-label={label}
+      {...stylex.props(styles.scroller, dynamicStyles.overflow(overflow))}>
+      <VStack gap={2}>
+        {Array.from({length: 12}, (_, index) => (
+          <Text key={index}>Paragraph {index + 1}.</Text>
         ))}
       </VStack>
     </div>
@@ -134,6 +160,22 @@ export const AppearsWhenContentGrows: Story = {
       </VStack>
     );
   },
+};
+
+/**
+ * Overflowing is not the same as scrollable. All three of these boxes have
+ * more content than height; only the first can be scrolled. The hook checks
+ * the computed overflow per axis, so the clipping two stay out of the tab
+ * order rather than becoming stops the arrow keys do not answer.
+ */
+export const OnlyWhatCanActuallyScroll: Story = {
+  render: () => (
+    <HStack gap={6}>
+      <ClippingRegion label="overflow: auto" overflow="auto" />
+      <ClippingRegion label="overflow: hidden" overflow="hidden" />
+      <ClippingRegion label="overflow: clip" overflow="clip" />
+    </HStack>
+  ),
 };
 
 /**

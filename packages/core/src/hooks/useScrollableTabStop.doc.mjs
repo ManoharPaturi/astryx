@@ -23,9 +23,9 @@ export const docs = {
   ],
   usage: {
     description:
-      'Keeps `tabindex="0"` on a scroll container exactly while it actually overflows, so keyboard users can reach and scroll it (WCAG 2.1.1; axe scrollable-region-focusable). Whether an `overflow: auto` box scrolls is only knowable after layout, so the element and its direct children are watched with the shared ResizeObserver and the attribute is written from the observer callback — no state, no extra render. Both axes count, so an inline overflow (RTL included) is treated the same as a block one. Reading layout is client-only work, so adopting this makes the consuming component client-only: free for one that already carries `use client`, a real cost for one that does not.',
+      'Keeps `tabindex="0"` on a scroll container exactly while it actually overflows, so keyboard users can reach and scroll it (WCAG 2.1.1; axe scrollable-region-focusable). Whether an `overflow: auto` box scrolls is only knowable after layout, so the element and its direct children are watched with the shared ResizeObserver and the attribute is written from the observer callback — no state, no extra render. Both axes count, per axis and independently, so an inline overflow (RTL included) is treated the same as a block one — and an axis that clips its overflow never earns a stop, the way axe's own `getScroll` reads it. Reading layout is client-only work, so adopting this makes the consuming component client-only: free for one that already carries `use client`, a real cost for one that does not.',
     bestPractices: [
-      { guidance: true, description: 'Pass `enabled` so the hook only runs for the case that scrolls — a fixed height, a max-height, an explicit overflow prop.' },
+      { guidance: true, description: 'Pass `enabled` so the hook only runs for the case that scrolls — a fixed height plus `overflow: auto` or `scroll`. A height alone is not enough: a box that clips its overflow can never be scrolled, and the hook will correctly refuse it a tab stop.' },
       { guidance: true, description: 'Check whether the component already carries `use client` before adopting. `LayoutContent` with `isScrollable` (its default) is the closest fit today; a server-safe component pays a client boundary for it.' },
       { guidance: true, description: 'Give the element an accessible name (`aria-label`, or `aria-labelledby` pointing at its heading) when the content does not already say what the region is.' },
       { guidance: false, description: 'Add `tabindex` to the same element yourself; a tabindex the hook did not write is left alone and the two will disagree.' },
@@ -49,7 +49,7 @@ export const docsDense = {
     description:
       'Keeps tabindex="0" on scroll container exactly while it overflows (WCAG 2.1.1; axe scrollable-region-focusable). Shared ResizeObserver on element + direct children; attribute written imperatively — no state, no extra render. Both axes, incl. RTL.',
     bestPractices: [
-      { guidance: true, description: 'Pass `enabled` so hook only runs for the case that scrolls (fixed height, max-height, overflow prop).' },
+      { guidance: true, description: 'Pass `enabled` so hook only runs for the case that scrolls — fixed height PLUS overflow auto/scroll. Height alone is not enough; a clipping box can never scroll and gets no tab stop.' },
       { guidance: true, description: 'Check the component already carries `use client` before adopting. LayoutContent w/ isScrollable (default) is closest fit today; a server-safe component pays a client boundary.' },
       { guidance: true, description: 'Give element an accessible name (aria-label / aria-labelledby → its heading) when content does not say what region is.' },
       { guidance: false, description: 'Set tabindex on same element yourself; a tabindex the hook did not write is left alone + the two disagree.' },
