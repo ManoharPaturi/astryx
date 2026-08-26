@@ -174,6 +174,22 @@ describe('attachScrollableTabStop', () => {
     detach();
   });
 
+  it('picks up a child appended straight into the container', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 100, clientHeight: 118});
+    const detach = attach(element);
+    expect(element.hasAttribute('tabindex')).toBe(false);
+
+    // Nothing already in the container resizes when a sibling is added, so
+    // this is the child-list observer's case, not the resize observer's.
+    sizeOf(element, {scrollHeight: 442, clientHeight: 118});
+    element.appendChild(document.createElement('div'));
+    await Promise.resolve();
+
+    expect(element.getAttribute('tabindex')).toBe('0');
+    detach();
+  });
+
   it('does not touch a tabindex the consumer set', async () => {
     const attach = await load();
     const element = mount({scrollHeight: 442, clientHeight: 118});

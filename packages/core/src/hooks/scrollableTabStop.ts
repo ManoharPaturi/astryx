@@ -25,7 +25,6 @@
  * - /packages/core/src/hooks/useScrollableTabStop.ts
  * - /packages/core/src/hooks/scrollableTabStop.test.ts
  */
-
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
 /**
@@ -44,11 +43,13 @@ const TOLERANCE = 1;
  *
  * The container itself is observed for resize, and so is each of its direct
  * children: a fixed-height container does NOT resize when its content grows,
- * but the child holding that content does — including when it is replaced,
- * because removal fires the observer for the outgoing child and the callback
- * re-syncs the set. What that leaves uncovered is content that changes size
- * without any element changing size: a bare text node child, or absolutely
- * positioned content.
+ * but the child holding that content does. A child list that changes — a
+ * skeleton swapped for data, a row appended straight into the container —
+ * moves no existing box at all, so the child list is watched too, with a
+ * `childList`-only MutationObserver that fires on structural change and
+ * nothing else. What that leaves uncovered is content that changes size with
+ * no element and no child list changing: the text of an existing text node,
+ * or absolutely positioned content.
  */
 export function attachScrollableTabStop(element: HTMLElement): () => void {
   const observedChildren = new Set<Element>();
@@ -109,7 +110,18 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
 
   observeResize(element, measure);
 
+  // Only `childList`, and not the subtree: a deep change grows the direct
+  // child, which the resize observer already sees. This is here for the
+  // change that moves no existing box — a child added or swapped out — and it
+  // fires on structural change alone, never on a text or attribute update.
+  const children =
+    typeof MutationObserver === 'undefined'
+      ? null
+      : new MutationObserver(measure);
+  children?.observe(element, {childList: true});
+
   return () => {
+    children?.disconnect();
     unobserveResize(element, measure);
     for (const child of observedChildren) {
       unobserveResize(child, measure);
