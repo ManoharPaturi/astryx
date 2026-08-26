@@ -46,7 +46,12 @@ const bounce = stylex.keyframes({
 });
 
 const dotStyles = stylex.create({
-  row: {display: 'inline-flex', alignItems: 'center', gap: '2px', color: '#7c3aed'},
+  row: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '2px',
+    color: '#7c3aed',
+  },
   dot: {
     backgroundColor: 'currentColor',
     borderRadius: '50%',
@@ -193,7 +198,7 @@ function LogoMark({size = 'md'}: IndicatorProps<'busy'>) {
 
 const brandThemes = [
   {
-    label: "indicators: {spinner: BouncingDots}   ← wide, not square",
+    label: 'indicators: {spinner: BouncingDots}   ← wide, not square',
     theme: defineTheme({
       name: 'brand-dots',
       indicators: {spinner: BouncingDots},
@@ -229,7 +234,6 @@ const layout = stylex.create({
     alignItems: 'center',
     gap: '16px',
   },
-  head: {opacity: 0.6},
   mono: {fontFamily: 'ui-monospace, monospace', fontSize: '11px'},
 });
 
@@ -240,7 +244,7 @@ const layout = stylex.create({
 export const BrandedSpinners: Story = {
   render: () => (
     <div {...stylex.props(layout.page)}>
-      <div {...stylex.props(layout.row, layout.head)}>
+      <div {...stylex.props(layout.row)}>
         <Text type="supporting">theme</Text>
         <Text type="supporting">Button (loading)</Text>
         <Text type="supporting">TextInput (busy)</Text>
