@@ -137,6 +137,22 @@ describe('attachScrollableTabStop', () => {
     detach();
   });
 
+  it('clears the stale tab stop once focus leaves', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const detach = attach(element);
+    element.focus();
+    sizeOf(element, {scrollHeight: 100, clientHeight: 118});
+    fire([entry(element)], {} as ResizeObserver);
+    expect(element.getAttribute('tabindex')).toBe('0');
+
+    element.blur();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+    detach();
+  });
+
   it('observes direct children, which is what sees content grow', async () => {
     const attach = await load();
     const element = mount({scrollHeight: 100, clientHeight: 118});

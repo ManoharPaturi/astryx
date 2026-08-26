@@ -110,6 +110,16 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
 
   observeResize(element, measure);
 
+  // `apply` refuses to drop the tab stop while the element has focus, so
+  // something has to clear it once focus leaves — otherwise a card that has
+  // stopped overflowing stays in the tab order as a stop that cannot scroll.
+  const onFocusOut = () => {
+    // During focusout the element is still `activeElement` in some engines;
+    // measuring on the next frame reads the settled state.
+    requestAnimationFrame(measure);
+  };
+  element.addEventListener('focusout', onFocusOut);
+
   // Only `childList`, and not the subtree: a deep change grows the direct
   // child, which the resize observer already sees. This is here for the
   // change that moves no existing box — a child added or swapped out — and it
@@ -122,6 +132,7 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
 
   return () => {
     children?.disconnect();
+    element.removeEventListener('focusout', onFocusOut);
     unobserveResize(element, measure);
     for (const child of observedChildren) {
       unobserveResize(child, measure);
