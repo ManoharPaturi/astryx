@@ -64,6 +64,9 @@ export type {UseOverflowOptions, UseOverflowReturn} from './useOverflow';
 export {useScrollOverflow} from './useScrollOverflow';
 export type {ScrollOverflowState} from './useScrollOverflow';
 
+export {useScrollableTabStop} from './useScrollableTabStop';
+export type {UseScrollableTabStopOptions} from './useScrollableTabStop';
+
 export {useScrollLock} from './useScrollLock';
 
 export {useEntryAnimation} from './useEntryAnimation';
