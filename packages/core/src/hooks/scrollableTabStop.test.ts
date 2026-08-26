@@ -269,6 +269,32 @@ describe('attachScrollableTabStop', () => {
     expect(element.hasAttribute('tabindex')).toBe(false);
   });
 
+  it('stops measuring after two focusouts in one frame', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const child = document.createElement('div');
+    element.appendChild(child);
+    const detach = attach(element);
+    element.focus();
+
+    // focusout bubbles, so focus moving twice inside the container in one task
+    // queues two frames. Only the last id is held, so a frame the detach
+    // cannot cancel would survive and re-register the children.
+    element.dispatchEvent(new FocusEvent('focusout', {bubbles: true}));
+    element.dispatchEvent(new FocusEvent('focusout', {bubbles: true}));
+    element.blur();
+    detach();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+
+    // The released hook must be deaf to the children it was observing.
+    sizeOf(element, {scrollHeight: 900, clientHeight: 118});
+    fire([entry(child)], {} as ResizeObserver);
+    expect(element.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('does not touch a tabindex the consumer set', async () => {
     const attach = await load();
     const element = mount({scrollHeight: 442, clientHeight: 118});

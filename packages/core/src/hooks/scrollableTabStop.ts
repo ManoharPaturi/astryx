@@ -135,6 +135,12 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   const onFocusOut = () => {
     // During focusout the element is still `activeElement` in some engines;
     // measuring on the next frame reads the settled state.
+    // Cancel before requeuing: focusout bubbles, so two focus moves in one
+    // task queue two frames, and an overwritten id is a frame the detach
+    // cannot cancel — it would re-register the children after release.
+    if (queuedFrame !== null) {
+      cancelAnimationFrame(queuedFrame);
+    }
     queuedFrame = requestAnimationFrame(() => {
       queuedFrame = null;
       measure();
