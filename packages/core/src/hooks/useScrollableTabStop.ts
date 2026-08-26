@@ -6,8 +6,8 @@
  * @file useScrollableTabStop.ts
  * @input Uses React useCallback; attachScrollableTabStop
  * @output Exports useScrollableTabStop and UseScrollableTabStopOptions
- * @position Core hook; used by Card and available to any component that turns
- *   itself into a scroll container
+ * @position Core hook; not yet consumed in-tree — available to any component
+ *   that turns itself into a scroll container
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/index.ts
@@ -43,6 +43,12 @@ export interface UseScrollableTabStopOptions {
  * Give the element an accessible name (`aria-label`, or `aria-labelledby`
  * pointing at its heading) when its content does not already say what the
  * region is: a focus stop that announces nothing is its own problem.
+ *
+ * Adopting this makes the consuming component client-only — it reads layout,
+ * which a server component cannot do. That is free for a component that
+ * already carries `'use client'` (`LayoutContent` with `isScrollable`, which
+ * is its default, is the closest fit today) and a real cost for one that does
+ * not.
  *
  * @example
  * ```
