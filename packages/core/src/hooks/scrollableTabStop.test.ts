@@ -206,6 +206,25 @@ describe('attachScrollableTabStop', () => {
     detach();
   });
 
+  it('stops measuring once detached, even with a frame already queued', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const detach = attach(element);
+    element.focus();
+
+    // Blur and detach in the same frame: the queued measure must not outlive
+    // the detach and write the tab stop back onto a released element.
+    element.blur();
+    detach();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+
+    sizeOf(element, {scrollHeight: 900, clientHeight: 118});
+    fire([entry(element)], {} as ResizeObserver);
+    expect(element.hasAttribute('tabindex')).toBe(false);
+  });
+
   it('does not touch a tabindex the consumer set', async () => {
     const attach = await load();
     const element = mount({scrollHeight: 442, clientHeight: 118});

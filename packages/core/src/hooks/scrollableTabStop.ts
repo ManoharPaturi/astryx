@@ -113,10 +113,14 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   // `apply` refuses to drop the tab stop while the element has focus, so
   // something has to clear it once focus leaves — otherwise a card that has
   // stopped overflowing stays in the tab order as a stop that cannot scroll.
+  let queuedFrame: number | null = null;
   const onFocusOut = () => {
     // During focusout the element is still `activeElement` in some engines;
     // measuring on the next frame reads the settled state.
-    requestAnimationFrame(measure);
+    queuedFrame = requestAnimationFrame(() => {
+      queuedFrame = null;
+      measure();
+    });
   };
   element.addEventListener('focusout', onFocusOut);
 
@@ -133,6 +137,10 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   return () => {
     children?.disconnect();
     element.removeEventListener('focusout', onFocusOut);
+    if (queuedFrame !== null) {
+      cancelAnimationFrame(queuedFrame);
+      queuedFrame = null;
+    }
     unobserveResize(element, measure);
     for (const child of observedChildren) {
       unobserveResize(child, measure);
