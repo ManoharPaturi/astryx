@@ -1741,6 +1741,7 @@ describe('BottomSheet', () => {
         </BottomSheet>,
       );
       const body = getBody();
+      const sheet = getSheet();
       const input = screen.getByRole('textbox', {name: 'Comment'});
       let layoutShift = 0;
       vi.spyOn(body, 'getBoundingClientRect').mockReturnValue(
@@ -1757,7 +1758,10 @@ describe('BottomSheet', () => {
       expect(body.scrollTop).toBe(248);
 
       layoutShift = 200;
-      const observer = observers.find(instance => instance.observed.has(input));
+      const observer = observers.find(
+        instance =>
+          instance.observed.has(input) && instance.observed.has(sheet),
+      );
       expect(observer).toBeDefined();
       act(() => {
         observer?.callback([], observer as unknown as ResizeObserver);

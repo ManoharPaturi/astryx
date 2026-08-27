@@ -485,9 +485,8 @@ export function TabList({
   // design, which is why the check above sits in the effect rather than in
   // `revealSelectedTab`.
   //
-  // The wrapper is observed rather than the strip because the shared observer
-  // keeps one callback per element and `useScrollOverflow` already holds the
-  // strip's.
+  // The wrapper is observed because it owns the available width; the scroll
+  // strip can keep its own independent observer through useScrollOverflow.
   useEffect(() => {
     const root = listRef.current;
     if (!hasScroll || !root) {

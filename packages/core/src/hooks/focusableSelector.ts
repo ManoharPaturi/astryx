@@ -3,17 +3,18 @@
 /**
  * @file focusableSelector.ts
  * @input Uses DOM focusability and visibility
- * @output Exports the canonical focusable selector and descendant helpers
+ * @output Exports the canonical focusable selector and a descendant query
  * @position Internal utility shared by focus-management hooks so their model of
  *   visible sequential focus stays aligned. Not exported from the public barrel.
  */
 
 /**
- * Canonical CSS selector for potentially focusable elements. Visibility and
- * sequential-focus checks are applied separately by the helpers below.
+ * Canonical CSS selector for commonly focusable elements. Includes the
+ * tabbable natives plus editable and media elements the browser also puts in
+ * the tab order.
  */
 export const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
+  'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
 
 function isVisiblySequentiallyFocusable(element: HTMLElement): boolean {
   if (
@@ -36,22 +37,12 @@ function isVisiblySequentiallyFocusable(element: HTMLElement): boolean {
     });
   }
   if (typeof window !== 'undefined' && window.getComputedStyle) {
-    for (let current: HTMLElement | null = element; current != null;) {
-      const style = window.getComputedStyle(current);
-      if (style.visibility === 'hidden' || style.display === 'none') {
-        return false;
-      }
-      current = current.parentElement;
+    const style = window.getComputedStyle(element);
+    if (style.visibility === 'hidden' || style.display === 'none') {
+      return false;
     }
   }
   return true;
-}
-
-/** Get the visible descendants that participate in sequential focus order. */
-export function getFocusableElements(container: HTMLElement): HTMLElement[] {
-  return Array.from(
-    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-  ).filter(isVisiblySequentiallyFocusable);
 }
 
 /** Whether a container has a visible sequential-focus descendant. */

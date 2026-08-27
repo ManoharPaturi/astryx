@@ -45,6 +45,7 @@ import {
   spacingVars,
 } from '../theme/tokens.stylex';
 import {mergeProps, themeProps} from '../utils';
+import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {overlayPaddingReset} from '../Layout/padding.stylex';
 import {
   isValidSnapPoint,
@@ -661,7 +662,7 @@ export function BottomSheetPanel({
       </div>
       <div
         {...mergeProps(
-          stylex.props(
+          focusOutlineProps.focusVisible(
             styles.body,
             height === 'tall' && styles.tallKeyboardBody,
           ),
