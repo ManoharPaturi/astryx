@@ -37,6 +37,9 @@ import type {IndicatorProps, IndicatorSizeOf} from './types';
  * swept 135deg, not the 270deg its constant's comment claimed.
  */
 const ARC_FRACTION = 0.375;
+const PI = 3.141592653589793;
+const ARC_DASH = PI * ARC_FRACTION;
+const ARC_GAP = PI * (1 - ARC_FRACTION);
 
 const SIZES: Record<
   IndicatorSizeOf<'busy'>,
@@ -47,6 +50,33 @@ const SIZES: Record<
   lg: {diameter: 18, border: 3},
   xl: {diameter: 28, border: 4},
 };
+
+const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
+const RESOLVED_STROKE = '--_spinner-ring-stroke';
+const BOX_SIZE = '--_spinner-box-size';
+
+function registerSpinnerVars(): void {
+  if (
+    typeof CSS === 'undefined' ||
+    typeof CSS.registerProperty !== 'function'
+  ) {
+    return;
+  }
+  for (const name of [RESOLVED_DIAMETER, RESOLVED_STROKE]) {
+    try {
+      CSS.registerProperty({
+        name,
+        syntax: '<length>',
+        inherits: true,
+        initialValue: '0px',
+      });
+    } catch {
+      // A second package copy or fast refresh can register the same property.
+    }
+  }
+}
+
+registerSpinnerVars();
 
 /**
  * Pin every ring's rotation to the document timeline's origin instead of its
@@ -107,17 +137,14 @@ const styles = stylex.create({
     overflow: 'hidden',
     verticalAlign: 'middle',
     flexShrink: 0,
-    // The one knob a host turns to say what colour "busy" is here. It sets
-    // `color`, not a stroke, so a REPLACEMENT painting in `currentColor` — the
-    // obvious way to write one — follows the same instruction without knowing
-    // the var exists. Unset, it resolves to the accent the ring has always
-    // drawn in.
-    color: `var(--_spinner-color, ${colorVars['--color-accent']})`,
+    color: `var(--_spinner-color, var(--spinner-color, ${colorVars['--color-accent']}))`,
+    [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
   },
   ring: {
     backfaceVisibility: 'hidden',
     display: 'block',
     willChange: 'transform',
+    overflow: 'visible',
     // Slow the rotation dramatically under reduced-motion rather than freezing
     // it (a frozen spinner reads as broken), matching ProgressBar's approach.
     animationDuration: {
@@ -131,13 +158,37 @@ const styles = stylex.create({
   circle: {
     fill: 'none',
     strokeLinecap: 'round',
+    r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
+    strokeWidth: `var(${RESOLVED_STROKE})`,
   },
-  arc: {stroke: 'currentColor'},
+  arc: {
+    stroke: 'currentColor',
+    strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
+  },
   track: {
-    stroke: `var(--_spinner-track-color, ${colorVars['--color-track']})`,
+    stroke: `var(--_spinner-track-color, var(--spinner-track-color, ${colorVars['--color-track']}))`,
     strokeOpacity: 'var(--_spinner-track-opacity, 1)',
   },
   disabled: {opacity: 0.5},
+});
+
+const resolvedSizeStyles = stylex.create({
+  sm: {
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 10px)',
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 2px)',
+  },
+  md: {
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 14px)',
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 3px)',
+  },
+  lg: {
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 18px)',
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 3px)',
+  },
+  xl: {
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 28px)',
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 4px)',
+  },
 });
 
 /**
@@ -185,9 +236,18 @@ export function SpinnerIndicator({
       aria-hidden="true"
       {...mergeProps(
         themeProps('spinner-indicator', {size}),
-        stylex.props(styles.root, isDisabled && styles.disabled, xstyle),
+        stylex.props(
+          styles.root,
+          resolvedSizeStyles[size],
+          isDisabled && styles.disabled,
+          xstyle,
+        ),
         className,
-        {...style, width: frameSize, height: frameSize},
+        {
+          ...style,
+          width: `var(${BOX_SIZE}, ${frameSize}px)`,
+          height: `var(${BOX_SIZE}, ${frameSize}px)`,
+        },
       )}>
       {children ?? (
         <svg

@@ -40,6 +40,17 @@ import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
 
+const SIZES = {
+  sm: {diameter: 10, border: 2},
+  md: {diameter: 14, border: 3},
+  lg: {diameter: 18, border: 3},
+  xl: {diameter: 28, border: 4},
+};
+
+const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
+const RESOLVED_STROKE = '--_spinner-ring-stroke';
+const BOX_SIZE = '--_spinner-box-size';
+
 const styles = stylex.create({
   wrapper: {
     display: 'inline-flex',
@@ -48,32 +59,66 @@ const styles = stylex.create({
     gap: spacingVars['--spacing-2'],
   },
   status: {
-    display: 'inline-flex',
+    display: 'inline-grid',
+    placeItems: 'center',
+    overflow: 'hidden',
+    verticalAlign: 'middle',
+    [RESOLVED_DIAMETER]: 'var(--spinner-diameter)',
+    [RESOLVED_STROKE]: 'var(--spinner-stroke-width)',
+    [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
   },
 });
 
-/**
- * A shade sets the vars the indicator reads, rather than painting anything
- * itself: the indicator turns `--_spinner-color` into its own `color`, so a
- * branded replacement drawing in `currentColor` honours `shade` without
- * knowing the prop exists. `default` sets nothing — it IS the indicator's
- * unset appearance.
- *
- * `onMedia` keeps the 77/255 its token's `4D` hex suffix used to encode.
- */
+const sizeStyles = stylex.create({
+  sm: {
+    '--spinner-diameter': `${SIZES.sm.diameter}px`,
+    '--spinner-stroke-width': `${SIZES.sm.border}px`,
+  },
+  md: {
+    '--spinner-diameter': `${SIZES.md.diameter}px`,
+    '--spinner-stroke-width': `${SIZES.md.border}px`,
+  },
+  lg: {
+    '--spinner-diameter': `${SIZES.lg.diameter}px`,
+    '--spinner-stroke-width': `${SIZES.lg.border}px`,
+  },
+  xl: {
+    '--spinner-diameter': `${SIZES.xl.diameter}px`,
+    '--spinner-stroke-width': `${SIZES.xl.border}px`,
+  },
+});
+
 const shadeStyles = stylex.create({
-  default: {},
+  default: {
+    color: 'var(--spinner-color)',
+    '--spinner-color': colorVars['--color-accent'],
+    '--spinner-track-color': colorVars['--color-track'],
+    '--_spinner-color': 'var(--spinner-color)',
+    '--_spinner-track-color': 'var(--spinner-track-color)',
+    '--_spinner-track-opacity': '1',
+  },
   subtle: {
-    '--_spinner-color': colorVars['--color-text-secondary'],
+    color: 'var(--spinner-color)',
+    '--spinner-color': colorVars['--color-text-secondary'],
+    '--spinner-track-color': colorVars['--color-track'],
+    '--_spinner-color': 'var(--spinner-color)',
+    '--_spinner-track-color': 'var(--spinner-track-color)',
+    '--_spinner-track-opacity': '1',
   },
   onMedia: {
-    '--_spinner-color': colorVars['--color-on-dark'],
-    '--_spinner-track-color': 'currentColor',
+    color: 'var(--spinner-color)',
+    '--spinner-color': colorVars['--color-on-dark'],
+    '--spinner-track-color': colorVars['--color-on-dark'],
+    '--_spinner-color': 'var(--spinner-color)',
+    '--_spinner-track-color': 'var(--spinner-track-color)',
     '--_spinner-track-opacity': `${77 / 255}`,
   },
   inherit: {
-    '--_spinner-color': 'currentColor',
-    '--_spinner-track-color': 'currentColor',
+    color: 'var(--spinner-color)',
+    '--spinner-color': 'currentColor',
+    '--spinner-track-color': 'currentColor',
+    '--_spinner-color': 'var(--spinner-color)',
+    '--_spinner-track-color': 'var(--spinner-track-color)',
     '--_spinner-track-opacity': '0.3',
   },
 });
@@ -157,6 +202,8 @@ export function Spinner({
   ...restProps
 }: SpinnerProps) {
   const BusyIndicator = useIndicator('spinner');
+  const {border, diameter} = SIZES[size];
+  const frameSize = diameter + border * 2;
   const hasLabel = label != null;
   const labelId = useId();
 
@@ -181,9 +228,18 @@ export function Spinner({
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
         hasLabel ? '' : themeProps('spinner', {size, shade}),
-        stylex.props(styles.status, shadeStyles[shade], !hasLabel && xstyle),
+        stylex.props(
+          styles.status,
+          !hasLabel && sizeStyles[size],
+          !hasLabel && shadeStyles[shade],
+          !hasLabel && xstyle,
+        ),
         hasLabel ? undefined : className,
-        hasLabel ? undefined : style,
+        {
+          ...(hasLabel ? {} : style),
+          width: `var(${BOX_SIZE}, ${frameSize}px)`,
+          height: `var(${BOX_SIZE}, ${frameSize}px)`,
+        },
       )}>
       <BusyIndicator size={size} />
     </span>
@@ -200,7 +256,12 @@ export function Spinner({
       {...restProps}
       {...mergeProps(
         themeProps('spinner', {size, shade}),
-        stylex.props(styles.wrapper, xstyle),
+        stylex.props(
+          styles.wrapper,
+          sizeStyles[size],
+          shadeStyles[shade],
+          xstyle,
+        ),
         className,
         style,
       )}>
