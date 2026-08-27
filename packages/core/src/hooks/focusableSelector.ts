@@ -2,24 +2,66 @@
 
 /**
  * @file focusableSelector.ts
- * @input None (a plain CSS selector string constant)
- * @output Exports FOCUSABLE_SELECTOR
- * @position Internal utility; the canonical CSS selector for focusable
- *   elements, shared by focus-management hooks (e.g. useFocusTrap) so the
- *   selector isn't duplicated across components/hooks. Not exported from the
- *   public barrel — internal implementation detail.
+ * @input Uses DOM focusability and visibility
+ * @output Exports the canonical focusable selector and descendant helpers
+ * @position Internal utility shared by focus-management hooks so their model of
+ *   visible sequential focus stays aligned. Not exported from the public barrel.
  */
 
 /**
- * Canonical CSS selector for commonly focusable elements. Includes the
- * tabbable natives (button/link/input/select/textarea/[tabindex]) plus
- * editable and media elements the browser also puts in the tab order —
- * contenteditable, media with controls, iframe, and an open <details>'s
- * <summary> — which a naive selector misses, letting Tab escape a trap whose
- * only interactive content is (e.g.) a contenteditable composer (infra-8).
- *
- * This is the canonical focusable selector; prefer importing it here over
- * re-declaring the string so behavior stays consistent across hooks.
+ * Canonical CSS selector for potentially focusable elements. Visibility and
+ * sequential-focus checks are applied separately by the helpers below.
  */
 export const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
+  'button:not([disabled]), a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([disabled]), [contenteditable]:not([contenteditable="false"]), audio[controls], video[controls], iframe, details > summary:first-child';
+
+function isVisiblySequentiallyFocusable(element: HTMLElement): boolean {
+  if (
+    (element.hasAttribute('tabindex') && element.tabIndex < 0) ||
+    element.matches(':disabled')
+  ) {
+    return false;
+  }
+  if (
+    element.closest('[inert]') != null ||
+    element.closest('[hidden]') != null ||
+    element.closest('[aria-hidden="true"]') != null
+  ) {
+    return false;
+  }
+  if (typeof element.checkVisibility === 'function') {
+    return element.checkVisibility({
+      checkOpacity: false,
+      checkVisibilityCSS: true,
+    });
+  }
+  if (typeof window !== 'undefined' && window.getComputedStyle) {
+    for (let current: HTMLElement | null = element; current != null;) {
+      const style = window.getComputedStyle(current);
+      if (style.visibility === 'hidden' || style.display === 'none') {
+        return false;
+      }
+      current = current.parentElement;
+    }
+  }
+  return true;
+}
+
+/** Get the visible descendants that participate in sequential focus order. */
+export function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+  ).filter(isVisiblySequentiallyFocusable);
+}
+
+/** Whether a container has a visible sequential-focus descendant. */
+export function hasFocusableDescendant(container: HTMLElement): boolean {
+  for (const candidate of container.querySelectorAll<HTMLElement>(
+    FOCUSABLE_SELECTOR,
+  )) {
+    if (isVisiblySequentiallyFocusable(candidate)) {
+      return true;
+    }
+  }
+  return false;
+}

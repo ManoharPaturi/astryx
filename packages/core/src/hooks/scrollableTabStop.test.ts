@@ -51,6 +51,10 @@ describe('attachScrollableTabStop', () => {
   const entry = (target: Element) =>
     ({target}) as unknown as ResizeObserverEntry;
 
+  const flushMeasure = async () => {
+    await new Promise(resolve => requestAnimationFrame(resolve));
+  };
+
   // The longhands, not the `overflow` shorthand: jsdom does not expand the
   // shorthand into computed longhands the way a browser does. The shorthand
   // path is covered by the Chromium probe instead.
@@ -132,6 +136,66 @@ describe('attachScrollableTabStop', () => {
     detach();
   });
 
+  it('does not add a second stop before a visible sequential-focus child', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const button = document.createElement('button');
+    element.appendChild(button);
+
+    const detach = attach(element);
+
+    expect(element.hasAttribute('tabindex')).toBe(false);
+    detach();
+  });
+
+  it('still owns the stop when descendants are hidden or negative-tabindex', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const hidden = document.createElement('button');
+    hidden.hidden = true;
+    const programmatic = document.createElement('button');
+    programmatic.tabIndex = -2;
+    element.append(hidden, programmatic);
+
+    const detach = attach(element);
+
+    expect(element.getAttribute('tabindex')).toBe('0');
+    detach();
+  });
+
+  it('tracks a visible sequential-focus descendant added and hidden later', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const detach = attach(element);
+    expect(element.getAttribute('tabindex')).toBe('0');
+
+    const button = document.createElement('button');
+    element.appendChild(button);
+    await flushMeasure();
+    expect(element.hasAttribute('tabindex')).toBe(false);
+
+    button.hidden = true;
+    await flushMeasure();
+    expect(element.getAttribute('tabindex')).toBe('0');
+    detach();
+  });
+
+  it('tracks overflow mode changes without waiting for a resize', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118}, 'hidden');
+    const detach = attach(element);
+    expect(element.hasAttribute('tabindex')).toBe(false);
+
+    element.style.overflowY = 'auto';
+    await flushMeasure();
+    expect(element.getAttribute('tabindex')).toBe('0');
+
+    element.style.overflowY = 'hidden';
+    await flushMeasure();
+    expect(element.hasAttribute('tabindex')).toBe(false);
+    detach();
+  });
+
   it('ignores a sub-pixel overflow', async () => {
     const attach = await load();
     const element = mount({scrollHeight: 118.5, clientHeight: 118});
@@ -150,6 +214,7 @@ describe('attachScrollableTabStop', () => {
 
     sizeOf(element, {scrollHeight: 442, clientHeight: 118});
     fire([entry(element)], {} as ResizeObserver);
+    await flushMeasure();
 
     expect(element.getAttribute('tabindex')).toBe('0');
     detach();
@@ -162,6 +227,7 @@ describe('attachScrollableTabStop', () => {
 
     sizeOf(element, {scrollHeight: 100, clientHeight: 118});
     fire([entry(element)], {} as ResizeObserver);
+    await flushMeasure();
 
     expect(element.hasAttribute('tabindex')).toBe(false);
     detach();
@@ -176,6 +242,7 @@ describe('attachScrollableTabStop', () => {
 
     sizeOf(element, {scrollHeight: 100, clientHeight: 118});
     fire([entry(element)], {} as ResizeObserver);
+    await flushMeasure();
 
     expect(element.getAttribute('tabindex')).toBe('0');
     detach();
@@ -208,6 +275,7 @@ describe('attachScrollableTabStop', () => {
     // A fixed-height container does not resize when its content grows; the
     // child that holds the content does.
     fire([entry(child)], {} as ResizeObserver);
+    await flushMeasure();
 
     expect(element.getAttribute('tabindex')).toBe('0');
     detach();
@@ -226,9 +294,11 @@ describe('attachScrollableTabStop', () => {
     // Removal fires the observer for the outgoing child; that callback
     // re-syncs the set, so the incoming one is observed from then on.
     fire([entry(first)], {} as ResizeObserver);
+    await flushMeasure();
 
     sizeOf(element, {scrollHeight: 442, clientHeight: 118});
     fire([entry(second)], {} as ResizeObserver);
+    await flushMeasure();
 
     expect(element.getAttribute('tabindex')).toBe('0');
     detach();
@@ -244,10 +314,30 @@ describe('attachScrollableTabStop', () => {
     // this is the child-list observer's case, not the resize observer's.
     sizeOf(element, {scrollHeight: 442, clientHeight: 118});
     element.appendChild(document.createElement('div'));
-    await Promise.resolve();
+    await flushMeasure();
 
     expect(element.getAttribute('tabindex')).toBe('0');
     detach();
+  });
+
+  it('coalesces one ResizeObserver delivery to one measurement', async () => {
+    const attach = await load();
+    const element = mount({scrollHeight: 442, clientHeight: 118});
+    const children = Array.from({length: 200}, () =>
+      document.createElement('div'),
+    );
+    element.append(...children);
+    const detach = attach(element);
+    const styleReads = vi.spyOn(window, 'getComputedStyle');
+    styleReads.mockClear();
+
+    fire(children.map(entry), {} as ResizeObserver);
+    expect(styleReads).not.toHaveBeenCalled();
+    await flushMeasure();
+
+    expect(styleReads).toHaveBeenCalledTimes(1);
+    detach();
+    styleReads.mockRestore();
   });
 
   it('stops measuring once detached, even with a frame already queued', async () => {

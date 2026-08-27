@@ -4,68 +4,53 @@
 
 /**
  * @file scrollableTabStop.ts
- * @input DOM element; sharedResizeObserver
+ * @input DOM element; focusableSelector; ResizeObserver; MutationObserver
  * @output Exports attachScrollableTabStop — the imperative half of
  *   useScrollableTabStop
- * @position Internal; the DOM work behind /packages/core/src/hooks/
- *   useScrollableTabStop.ts, split out so it can be tested without React and
- *   reused by a non-React caller. Not exported from the public barrel.
- *
- * A scroll container that no keyboard can reach fails WCAG 2.1.1 (axe:
- * scrollable-region-focusable). The fix is `tabindex="0"`, but only while the
- * element can really be scrolled: content that overflows a box which clips it
- * moves nothing, and `overflow: auto` on a box whose content fits is not a
- * scroll container at all. Either way a tab stop is a dead stop the arrow keys
- * do not answer. Both halves are checked, per axis, the way axe's own
- * `getScroll` does.
- *
- * Whether it overflows is only knowable after layout and changes afterwards,
- * so the attribute is written from the observer callback rather than from
- * render — no state, no second render pass.
+ * @position Internal behavior for keyboard access to scroll containers; used
+ *   by useScrollableTabStop and tested without React
  *
  * SYNC: When modified, update:
  * - /packages/core/src/hooks/useScrollableTabStop.ts
  * - /packages/core/src/hooks/scrollableTabStop.test.ts
  */
+import {hasFocusableDescendant} from './focusableSelector';
 import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
 
-/**
- * Sub-pixel slack, matching useScrollOverflow. axe uses 13px before it calls a
- * region scrollable; the stricter threshold only ever adds a tab stop axe
- * would not have demanded, never removes one it would.
- */
 const TOLERANCE = 1;
-
-/** Overflow values that let a user actually scroll the box. */
 const SCROLLABLE = new Set(['auto', 'scroll']);
+const OBSERVED_ATTRIBUTES = [
+  'aria-hidden',
+  'class',
+  'contenteditable',
+  'controls',
+  'disabled',
+  'hidden',
+  'href',
+  'inert',
+  'open',
+  'style',
+  'tabindex',
+  'type',
+] as const;
 
 /**
- * Keep `tabindex="0"` on `element` exactly while it can actually be scrolled,
- * and return the detach function.
- *
- * Both axes are measured, so an inline overflow (a long unbroken token, RTL
- * included) counts the same as a block one.
- *
- * The container itself is observed for resize, and so is each of its direct
- * children: a fixed-height container does NOT resize when its content grows,
- * but the child holding that content does. A child list that changes — a
- * skeleton swapped for data, a row appended straight into the container —
- * moves no existing box at all, so the child list is watched too, with a
- * `childList`-only MutationObserver that fires on structural change and
- * nothing else. What that leaves uncovered is content that changes size with
- * no element and no child list changing: the text of an existing text node,
- * or absolutely positioned content.
+ * Keep `tabindex="0"` on an element exactly while it is scrollable and has no
+ * visible sequential-focus descendant. Returns the detach function.
  */
 export function attachScrollableTabStop(element: HTMLElement): () => void {
   const observedChildren = new Set<Element>();
+  let active = true;
   let managed = false;
   let measuring = false;
+  let measureFrame: number | null = null;
+  let initializing = true;
 
   const apply = () => {
-    // Overflowing is not the same as scrollable: `overflow: clip` and `hidden`
-    // both grow scrollHeight past clientHeight while the user can move
-    // nothing, and a tab stop there is a stop the arrow keys do not answer.
-    // Per axis, and only when there is overflow to pay for the style read.
+    if (managed && element.getAttribute('tabindex') !== '0') {
+      managed = false;
+    }
+
     const overflowsBlock =
       element.scrollHeight > element.clientHeight + TOLERANCE;
     const overflowsInline =
@@ -78,27 +63,37 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
         (overflowsInline && SCROLLABLE.has(style.overflowX));
     }
 
-    if (scrollable) {
-      // A tabindex we did not write belongs to the consumer; leave it.
+    const needsTabStop = scrollable && !hasFocusableDescendant(element);
+    if (needsTabStop) {
       if (!managed && !element.hasAttribute('tabindex')) {
         element.setAttribute('tabindex', '0');
         managed = true;
       }
       return;
     }
-    // Dropping the attribute while the element has focus would throw the
-    // keyboard user back to the body mid-interaction. The stale tab stop
-    // costs less than the lost place, and the next measure clears it.
     if (managed && element !== element.ownerDocument.activeElement) {
       element.removeAttribute('tabindex');
       managed = false;
     }
   };
 
+  const syncChildren = () => {
+    for (const child of observedChildren) {
+      if (child.parentNode !== element) {
+        unobserveResize(child, scheduleMeasure);
+        observedChildren.delete(child);
+      }
+    }
+    for (const child of element.children) {
+      if (!observedChildren.has(child)) {
+        observedChildren.add(child);
+        observeResize(child, scheduleMeasure);
+      }
+    }
+  };
+
   const measure = () => {
-    // observeResize fires synchronously on registration, so syncing children
-    // re-enters here once per child; the outer call finishes the work.
-    if (measuring) {
+    if (!active || measuring) {
       return;
     }
     measuring = true;
@@ -110,64 +105,59 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
     }
   };
 
-  const syncChildren = () => {
-    for (const child of observedChildren) {
-      if (child.parentNode !== element) {
-        unobserveResize(child, measure);
-        observedChildren.delete(child);
-      }
+  function scheduleMeasure(): void {
+    if (!active || initializing || measuring || measureFrame !== null) {
+      return;
     }
-    for (const child of element.children) {
-      if (!observedChildren.has(child)) {
-        observedChildren.add(child);
-        observeResize(child, measure);
-      }
-    }
-  };
-
-  observeResize(element, measure);
-
-  // `apply` refuses to drop the tab stop while the element has focus, so
-  // something has to clear it once focus leaves — otherwise a container that
-  // has stopped overflowing stays in the tab order as a stop that cannot
-  // scroll.
-  let queuedFrame: number | null = null;
-  const onFocusOut = () => {
-    // During focusout the element is still `activeElement` in some engines;
-    // measuring on the next frame reads the settled state.
-    // Cancel before requeuing: focusout bubbles, so two focus moves in one
-    // task queue two frames, and an overwritten id is a frame the detach
-    // cannot cancel — it would re-register the children after release.
-    if (queuedFrame !== null) {
-      cancelAnimationFrame(queuedFrame);
-    }
-    queuedFrame = requestAnimationFrame(() => {
-      queuedFrame = null;
+    measureFrame = requestAnimationFrame(() => {
+      measureFrame = null;
       measure();
     });
-  };
-  element.addEventListener('focusout', onFocusOut);
+  }
 
-  // Only `childList`, and not the subtree: a deep change grows the direct
-  // child, which the resize observer already sees. This is here for the
-  // change that moves no existing box — a child added or swapped out — and it
-  // fires on structural change alone, never on a text or attribute update.
-  const children =
+  measure();
+  observeResize(element, scheduleMeasure);
+  initializing = false;
+
+  element.addEventListener('focusout', scheduleMeasure);
+
+  const mutations =
     typeof MutationObserver === 'undefined'
       ? null
-      : new MutationObserver(measure);
-  children?.observe(element, {childList: true});
+      : new MutationObserver(records => {
+          const onlyManagedTabIndex = records.every(
+            record =>
+              record.type === 'attributes' &&
+              record.target === element &&
+              record.attributeName === 'tabindex',
+          );
+          if (
+            onlyManagedTabIndex &&
+            ((managed && element.getAttribute('tabindex') === '0') ||
+              (!managed && !element.hasAttribute('tabindex')))
+          ) {
+            return;
+          }
+          scheduleMeasure();
+        });
+  mutations?.observe(element, {
+    attributes: true,
+    attributeFilter: [...OBSERVED_ATTRIBUTES],
+    childList: true,
+    subtree: true,
+  });
 
   return () => {
-    children?.disconnect();
-    element.removeEventListener('focusout', onFocusOut);
-    if (queuedFrame !== null) {
-      cancelAnimationFrame(queuedFrame);
-      queuedFrame = null;
+    active = false;
+    mutations?.disconnect();
+    element.removeEventListener('focusout', scheduleMeasure);
+    if (measureFrame !== null) {
+      cancelAnimationFrame(measureFrame);
+      measureFrame = null;
     }
-    unobserveResize(element, measure);
+    unobserveResize(element, scheduleMeasure);
     for (const child of observedChildren) {
-      unobserveResize(child, measure);
+      unobserveResize(child, scheduleMeasure);
     }
     observedChildren.clear();
     if (managed) {

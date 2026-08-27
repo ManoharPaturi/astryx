@@ -130,7 +130,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        "Sheet content, rendered below the grab handle in a scrollable area. If it includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
+        "Sheet content, rendered below the grab handle in a scrollable area. When overflowing read-only content has no visible control in the Tab order, the body itself becomes the keyboard scroll stop. If the content includes a text-entry control that can bring up the mobile keyboard, use height='tall' and keep the sheet fully expanded while editing.",
       required: true,
     },
     {
@@ -305,7 +305,7 @@ export const docs = {
 /** @type {import('@astryxdesign/cli/authoring').ComponentTranslationDoc} */
 export const docsDense = {
   description:
-    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release (a peek stop, a quarter of the sheet or less, keeps the full height and slides instead), Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
+    'mobile touch sheet rising from the bottom edge (native <dialog>): grab handle, opt-in transform-based drag-to-resize snap points (snapPoints: viewport fraction, percent or px length), scrolling area resizes to the snapped visible height on release and becomes a keyboard scroll stop only when it overflows without a visible sequential-focus control, Dialog-aligned dismissal purpose (info/form/required), purpose-gated swipe-to-dismiss, fully-expanded Tall visual-viewport mobile-keyboard handling, named height scale, modal (default) or non-modal (hasScrim={false}) presentation',
   usage: {
     anatomy,
     description:

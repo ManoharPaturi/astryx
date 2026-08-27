@@ -3,7 +3,7 @@
 /**
  * @file BottomSheetPanel.test.tsx
  * @input Uses vitest, Testing Library, BottomSheetPanel
- * @output Tests the shared sheet surface motion contract
+ * @output Tests sheet motion, layout, and keyboard-scroll behavior
  * @position Internal presentation tests shared by standalone and switcher modes
  */
 
@@ -38,6 +38,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -70,6 +71,16 @@ function getPanel(): HTMLElement {
     throw new Error('BottomSheetPanel surface not found');
   }
   return panel;
+}
+
+function getBody(panel: HTMLElement = getPanel()): HTMLElement {
+  const body = panel.querySelector<HTMLElement>(
+    ':scope > div[aria-hidden="true"] + div',
+  );
+  if (body == null) {
+    throw new Error('BottomSheetPanel scrolling body not found');
+  }
+  return body;
 }
 
 describe('BottomSheetPanel', () => {
@@ -236,6 +247,37 @@ describe('BottomSheetPanel', () => {
     unmount();
     expect(panelRef).toHaveBeenLastCalledWith(null);
     expect(panelRef).toHaveBeenCalledTimes(2);
+  });
+
+  it('adopts the scrollable tab stop on the body', () => {
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(442);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(118);
+
+    renderPanel({kind: 'open', entering: false});
+
+    expect(getBody()).toHaveAttribute('tabindex', '0');
+  });
+
+  it('does not add a body stop before a visible sequential-focus child', () => {
+    vi.spyOn(HTMLElement.prototype, 'scrollHeight', 'get').mockReturnValue(442);
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(118);
+    render(
+      <BottomSheetPanel
+        state={{kind: 'open', entering: false}}
+        height="hug"
+        onDismiss={() => {}}
+        onScrimOpacity={() => {}}>
+        <button type="button">Panel action</button>
+      </BottomSheetPanel>,
+    );
+    const panel = screen
+      .getByRole('button', {name: 'Panel action'})
+      .closest<HTMLElement>('.astryx-bottom-sheet');
+    if (panel == null) {
+      throw new Error('BottomSheetPanel surface not found');
+    }
+
+    expect(getBody(panel)).not.toHaveAttribute('tabindex');
   });
 
   it('floats the handle bar over content that starts at the sheet top edge', () => {

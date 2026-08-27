@@ -4,7 +4,8 @@
 
 /**
  * @file BottomSheetPanel.tsx
- * @input Uses React, StyleX, theme tokens, useSheetGestures
+ * @input Uses React, StyleX, theme tokens, useSheetGestures,
+ *   useScrollableTabStop
  * @output Internal BottomSheetPanel surface and motion-state types
  * @position Shared presentation layer for standalone and switcher BottomSheets
  *
@@ -32,7 +33,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
-import {useDevWarning} from '../hooks';
+import {useDevWarning, useMergedRefs, useScrollableTabStop} from '../hooks';
 import {
   borderVars,
   colorVars,
@@ -490,6 +491,9 @@ export function BottomSheetPanel({
     onScrimOpacity,
   });
 
+  const scrollableTabStopRef = useScrollableTabStop();
+  const scrollBodyRef = useMergedRefs(bodyProps.ref, scrollableTabStopRef);
+
   const setElement = useCallback(
     (element: HTMLDivElement | null) => {
       sheetRef(element);
@@ -665,7 +669,8 @@ export function BottomSheetPanel({
             ? {style: {paddingBlockEnd: `${scrollPreservationInset}px`}}
             : {},
         )}
-        {...bodyProps}>
+        {...bodyProps}
+        ref={scrollBodyRef}>
         {children}
       </div>
     </div>

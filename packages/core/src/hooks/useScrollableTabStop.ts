@@ -6,7 +6,7 @@
  * @file useScrollableTabStop.ts
  * @input Uses React useCallback; attachScrollableTabStop
  * @output Exports useScrollableTabStop and UseScrollableTabStopOptions
- * @position Core hook; not yet consumed in-tree — available to any component
+ * @position Core hook; consumed by BottomSheet and available to any component
  *   that turns itself into a scroll container
  *
  * SYNC: When modified, update:
@@ -33,13 +33,15 @@ export interface UseScrollableTabStopOptions {
  *
  * Returns a ref callback for the scrolling element. While that element can
  * actually be scrolled — either axis, meaning the content overflows AND that
- * axis is `auto` or `scroll` — it carries `tabindex="0"`, so Tab stops on it
- * and the arrow keys scroll it (WCAG 2.1.1; axe
- * `scrollable-region-focusable`). Otherwise the attribute is not there,
- * because a tab stop the arrow keys do not answer is a dead stop.
+ * axis is `auto` or `scroll` — and has no visible descendant in the sequential
+ * focus order, it carries `tabindex="0"`. A control-bearing region uses that
+ * descendant as its keyboard route instead of adding a generic stop first.
+ * Otherwise the attribute is absent because a stop the arrow keys do not
+ * answer is a dead stop.
  *
- * The attribute is written from a shared ResizeObserver callback, not from
- * state, so a container that starts overflowing does not cost a render.
+ * Resize and subtree observers keep that condition current when content,
+ * focusability, or overflow CSS changes. Resize deliveries are coalesced so
+ * many children resizing together trigger one measurement, not one each.
  *
  * Give the element an accessible name (`aria-label`, or `aria-labelledby`
  * pointing at its heading) when its content does not already say what the
