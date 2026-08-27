@@ -126,7 +126,10 @@ describe('ChatToolCalls', () => {
     const {container} = render(
       <ChatToolCalls calls={[{name: 'bash', status: 'running'}]} />,
     );
-    expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
+    expect(container.querySelector('[aria-busy="true"]')).toHaveAttribute(
+      'role',
+      'status',
+    );
   });
 
   it('defaults to collapsed', () => {

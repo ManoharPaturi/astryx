@@ -398,6 +398,7 @@ function getToolCallKey(call: ChatToolCallItem): string {
 function CallRow({call}: {call: ChatToolCallItem}) {
   const t = useTranslator();
   const status = call.status ?? 'complete';
+  const isBusy = status === 'running' || status === 'pending';
   const hasDetail = call.resultDetail != null;
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const detailId = useId();
@@ -413,11 +414,11 @@ function CallRow({call}: {call: ChatToolCallItem}) {
 
   const row = (
     <div
-      role={hasDetail ? 'button' : undefined}
+      role={hasDetail ? 'button' : isBusy ? 'status' : undefined}
       tabIndex={hasDetail ? 0 : undefined}
       aria-expanded={hasDetail ? isDetailOpen : undefined}
       aria-controls={hasDetail && isDetailOpen ? detailId : undefined}
-      aria-busy={status === 'running' || status === 'pending' || undefined}
+      aria-busy={isBusy || undefined}
       onClick={toggleDetail}
       onKeyDown={
         hasDetail

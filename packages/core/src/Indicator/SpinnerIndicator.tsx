@@ -137,7 +137,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     verticalAlign: 'middle',
     flexShrink: 0,
-    color: `var(--spinner-color, var(--_spinner-color, ${colorVars['--color-accent']}))`,
+    color: `var(--_spinner-color, var(--spinner-color, ${colorVars['--color-accent']}))`,
     [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
   },
   ring: {
@@ -162,7 +162,7 @@ const styles = stylex.create({
     strokeWidth: `var(${RESOLVED_STROKE})`,
   },
   arc: {
-    stroke: 'currentColor',
+    stroke: 'var(--spinner-color, currentColor)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
   },
   track: {
