@@ -131,6 +131,15 @@ describe('CommandPaletteInput dialog context', () => {
     };
   }
 
+  it('exposes the busy state on the combobox', () => {
+    render(
+      <CommandPaletteContext value={makeContext({isBusy: true})}>
+        <CommandPaletteInput />
+      </CommandPaletteContext>,
+    );
+    expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
+  });
+
   it('does not auto-focus inside an inline dialog', () => {
     const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus');
     render(

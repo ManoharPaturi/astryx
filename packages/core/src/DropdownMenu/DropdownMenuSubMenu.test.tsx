@@ -729,6 +729,7 @@ describe('DropdownMenuSubMenu accessibility (WCAG 2.2 / APG)', () => {
       name: /Move to/,
       hidden: true,
     });
+    expect(trigger).toHaveAttribute('aria-busy', 'true');
     await waitFor(() => {
       expect(
         screen.getByRole('menu', {name: 'Actions', hidden: true}),

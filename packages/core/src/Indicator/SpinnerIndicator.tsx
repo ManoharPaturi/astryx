@@ -137,7 +137,7 @@ const styles = stylex.create({
     overflow: 'hidden',
     verticalAlign: 'middle',
     flexShrink: 0,
-    color: `var(--_spinner-color, var(--spinner-color, ${colorVars['--color-accent']}))`,
+    color: `var(--spinner-color, var(--_spinner-color, ${colorVars['--color-accent']}))`,
     [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
   },
   ring: {
@@ -166,7 +166,7 @@ const styles = stylex.create({
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
   },
   track: {
-    stroke: `var(--_spinner-track-color, var(--spinner-track-color, ${colorVars['--color-track']}))`,
+    stroke: `var(--spinner-track-color, var(--_spinner-track-color, ${colorVars['--color-track']}))`,
     strokeOpacity: 'var(--_spinner-track-opacity, 1)',
   },
   disabled: {opacity: 0.5},
@@ -235,7 +235,7 @@ export function SpinnerIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        themeProps('spinner-indicator', {size}),
+        themeProps('spinner-indicator', {size}, {legacyNames: ['spinner']}),
         stylex.props(
           styles.root,
           resolvedSizeStyles[size],

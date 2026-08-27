@@ -554,6 +554,7 @@ export function DropdownMenuSubMenu(
         aria-expanded={isOpen}
         aria-controls={isOpen ? contentId : undefined}
         aria-disabled={isDisabled || undefined}
+        aria-busy={hasSpinner || undefined}
         data-testid={testId}
         onMouseEnter={triggerProps.onMouseEnter}
         onMouseLeave={triggerProps.onMouseLeave}

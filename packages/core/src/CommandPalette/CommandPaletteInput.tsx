@@ -222,6 +222,7 @@ export function CommandPaletteInput({
         role="combobox"
         aria-expanded={ctx?.isOpen ?? true}
         aria-autocomplete="list"
+        aria-busy={ctx?.isBusy || undefined}
         aria-controls={ctx?.listId}
         aria-activedescendant={
           ctx && ctx.highlightedIndex >= 0

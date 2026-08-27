@@ -57,6 +57,17 @@ describe('defaultIndicators', () => {
   });
 });
 
+describe('SpinnerIndicator', () => {
+  it('keeps the existing spinner target during the migration', () => {
+    const {container} = render(<SpinnerIndicator size="sm" />);
+    expect(container.firstChild).toHaveClass(
+      'astryx-spinner-indicator',
+      'astryx-spinner',
+      'sm',
+    );
+  });
+});
+
 describe('getIndicator', () => {
   it('resolves a core name to its built-in with no theme', () => {
     expect(getIndicator('check')).toBe(CheckIndicator);

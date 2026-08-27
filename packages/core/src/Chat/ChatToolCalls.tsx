@@ -417,6 +417,7 @@ function CallRow({call}: {call: ChatToolCallItem}) {
       tabIndex={hasDetail ? 0 : undefined}
       aria-expanded={hasDetail ? isDetailOpen : undefined}
       aria-controls={hasDetail && isDetailOpen ? detailId : undefined}
+      aria-busy={status === 'running' || status === 'pending' || undefined}
       onClick={toggleDetail}
       onKeyDown={
         hasDetail
@@ -604,6 +605,9 @@ export function ChatToolCalls(props: ChatToolCallsProps) {
         tabIndex={0}
         aria-expanded={isExpanded}
         aria-controls={contentId}
+        aria-busy={
+          latestStatus === 'running' || latestStatus === 'pending' || undefined
+        }
         onClick={toggle}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
