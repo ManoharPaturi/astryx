@@ -230,6 +230,8 @@ const styles = stylex.create({
     // in a 24px band, so it occupies only 10-14px from the edge -- inside the
     // space a content wrapper's own top padding already provides.
     paddingBlockEnd: 0,
+    // The sheet clips overflow, so keep the shared focus ring inside the body.
+    outlineOffset: {default: '0', ':focus-visible': -2},
   },
   tallKeyboardBody: {
     scrollPaddingBlockEnd: MOBILE_KEYBOARD_BOTTOM_CLEARANCE,
