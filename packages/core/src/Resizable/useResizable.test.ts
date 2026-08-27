@@ -1693,3 +1693,183 @@ describe('ResizableProps source compatibility (AST-010 API5)', () => {
     expect(prePr._onResizeCancel).toBeUndefined();
   });
 });
+
+describe('bounds changing under the held size', () => {
+  it('clamps the held size down when maxSizePx shrinks below it', () => {
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({defaultSize: 300, minSizePx: 100, maxSizePx: max}),
+      {initialProps: {max: 400}},
+    );
+
+    expect(result.current.size).toBe(300);
+
+    rerender({max: 200});
+
+    expect(result.current.size).toBe(200);
+  });
+
+  it('does not restore or expand when maxSizePx grows again', () => {
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({defaultSize: 300, minSizePx: 100, maxSizePx: max}),
+      {initialProps: {max: 400}},
+    );
+
+    rerender({max: 200});
+    rerender({max: 400});
+
+    // The ceiling moved, not the viewer's choice: 200 is the size now.
+    expect(result.current.size).toBe(200);
+  });
+
+  it('leaves a still-legal size untouched when maxSizePx shrinks', () => {
+    const onSizeChange = vi.fn();
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 150,
+          minSizePx: 100,
+          maxSizePx: max,
+          onSizeChange,
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    rerender({max: 200});
+
+    expect(result.current.size).toBe(150);
+    expect(onSizeChange).not.toHaveBeenCalled();
+  });
+
+  it('grows the held size when minSizePx rises above it', () => {
+    const {result, rerender} = renderHook(
+      ({min}) =>
+        useResizable({defaultSize: 150, minSizePx: min, maxSizePx: 400}),
+      {initialProps: {min: 100}},
+    );
+
+    rerender({min: 250});
+
+    expect(result.current.size).toBe(250);
+  });
+
+  it('reports the involuntary clamp through onSizeChange', () => {
+    const onSizeChange = vi.fn();
+    const {rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 300,
+          minSizePx: 100,
+          maxSizePx: max,
+          onSizeChange,
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    rerender({max: 200});
+
+    expect(onSizeChange).toHaveBeenCalledTimes(1);
+    expect(onSizeChange).toHaveBeenCalledWith(200);
+  });
+
+  it('lands on a legal snap point when snaps are configured', () => {
+    const snaps = [100, 300, 500];
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 500,
+          minSizePx: 100,
+          maxSizePx: max,
+          snaps,
+        }),
+      {initialProps: {max: 600}},
+    );
+
+    expect(result.current.size).toBe(500);
+
+    rerender({max: 400});
+
+    expect(result.current.size).toBe(300);
+  });
+
+  it('clamps when a controlled region expands after its bounds narrowed', () => {
+    const {result, rerender} = renderHook(
+      ({max, isCollapsed}) =>
+        useResizable({
+          defaultSize: 300,
+          minSizePx: 100,
+          maxSizePx: max,
+          collapsible: true,
+          isCollapsed,
+        }),
+      {initialProps: {max: 400, isCollapsed: true}},
+    );
+
+    rerender({max: 200, isCollapsed: true});
+    expect(result.current.size).toBe(0);
+
+    rerender({max: 200, isCollapsed: false});
+    expect(result.current.size).toBe(200);
+  });
+
+  it('holds a collapsed region at zero and clamps on expand instead', () => {
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 300,
+          minSizePx: 100,
+          maxSizePx: max,
+          collapsible: true,
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    act(() => result.current.collapse());
+    rerender({max: 200});
+
+    expect(result.current.size).toBe(0);
+    expect(result.current.isCollapsed).toBe(true);
+
+    act(() => result.current.expand());
+
+    expect(result.current.size).toBe(200);
+  });
+
+  it('persists the clamped size under autoSaveId', () => {
+    const {rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 300,
+          minSizePx: 100,
+          maxSizePx: max,
+          autoSaveId: 'panel',
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    rerender({max: 200});
+
+    expect(window.localStorage.getItem('astryx-resizable:panel')).toBe(
+      JSON.stringify({size: 200, isCollapsed: false}),
+    );
+  });
+
+  it('clamps each region of a multi-region config', () => {
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          regions: {
+            start: {defaultSize: 300, minSizePx: 100, maxSizePx: max},
+            end: {defaultSize: 150, minSizePx: 100, maxSizePx: max},
+          },
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    rerender({max: 200});
+
+    expect(result.current.start.size).toBe(200);
+    expect(result.current.end.size).toBe(150);
+  });
+});
