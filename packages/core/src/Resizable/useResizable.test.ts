@@ -1773,6 +1773,29 @@ describe('bounds changing under the held size', () => {
     expect(onSizeChange).toHaveBeenCalledWith(200);
   });
 
+  it('does not re-snap a legal held size when the band widens', () => {
+    const onSizeChange = vi.fn();
+    const snaps = [100, 300, 500];
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 500,
+          minSizePx: 100,
+          maxSizePx: max,
+          snaps,
+          onSizeChange,
+        }),
+      {initialProps: {max: 600}},
+    );
+
+    rerender({max: 250});
+    expect(result.current.size).toBe(250);
+
+    rerender({max: 600});
+    expect(result.current.size).toBe(250);
+    expect(onSizeChange).toHaveBeenCalledExactlyOnceWith(250);
+  });
+
   it('lands on a legal snap point when snaps are configured', () => {
     const snaps = [100, 300, 500];
     const {result, rerender} = renderHook(
