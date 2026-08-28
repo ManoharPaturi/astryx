@@ -1796,6 +1796,46 @@ describe('bounds changing under the held size', () => {
     expect(onSizeChange).toHaveBeenCalledExactlyOnceWith(250);
   });
 
+  it('does not re-snap a legal held size after collapse and expand', () => {
+    const snaps = [100, 300, 500];
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 500,
+          minSizePx: 100,
+          maxSizePx: max,
+          snaps,
+          collapsible: true,
+        }),
+      {initialProps: {max: 600}},
+    );
+
+    rerender({max: 250});
+    act(() => result.current.collapse());
+    rerender({max: 600});
+    act(() => result.current.expand());
+
+    expect(result.current.size).toBe(250);
+  });
+
+  it('restores a persisted legal off-snap size without moving it', () => {
+    localStorage.setItem(
+      'astryx-resizable:panel',
+      JSON.stringify({size: 250, isCollapsed: false}),
+    );
+    const {result} = renderHook(() =>
+      useResizable({
+        defaultSize: 500,
+        minSizePx: 100,
+        maxSizePx: 600,
+        snaps: [100, 300, 500],
+        autoSaveId: 'panel',
+      }),
+    );
+
+    expect(result.current.size).toBe(250);
+  });
+
   it('lands on a legal snap point when snaps are configured', () => {
     const snaps = [100, 300, 500];
     const {result, rerender} = renderHook(
