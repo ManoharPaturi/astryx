@@ -52,7 +52,7 @@ import {IconButton} from '../IconButton';
 import {useTranslator, InternationalizationContext} from '../i18n';
 import {SegmentedControl, SegmentedControlItem} from '../SegmentedControl';
 import {useSize} from '../SizeContext/SizeContext';
-import {Spinner} from '../Spinner';
+import {BusyIndicator} from '../Indicator';
 import {useTooltip} from '../Tooltip';
 import {
   colorVars,
@@ -1343,7 +1343,7 @@ export function TouchDateTimeField({
               onClick={handleClear}
             />
           )}
-          {isBusy && <Spinner size="sm" />}
+          {isBusy && <BusyIndicator size="sm" />}
           {isRenderable(statusIcon) && statusIcon}
         </div>
 
