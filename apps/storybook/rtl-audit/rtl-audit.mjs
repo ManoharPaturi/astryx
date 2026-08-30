@@ -150,6 +150,28 @@ async function doSetup(page, t) {
       await page.waitForTimeout(300);
     }
   }
+  if (t?.setup?.contextmenu) {
+    for (const sel of [].concat(t.setup.contextmenu)) {
+      await page
+        .locator(sel)
+        .first()
+        .evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          const isRtl = getComputedStyle(element).direction === 'rtl';
+          element.dispatchEvent(
+            new MouseEvent('contextmenu', {
+              bubbles: true,
+              cancelable: true,
+              button: 2,
+              clientX: isRtl ? rect.right - 8 : rect.left + 8,
+              clientY: rect.top + rect.height / 2,
+            }),
+          );
+        })
+        .catch(() => {});
+      await page.waitForTimeout(300);
+    }
+  }
 }
 
 // Reveal interaction-gated content (popovers, dialogs, menus, comboboxes) so

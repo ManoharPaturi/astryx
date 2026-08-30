@@ -214,6 +214,22 @@ describe('MultiSelector', () => {
     expect(screen.getByLabelText('Fruit')).toBeInTheDocument();
   });
 
+  it('sizes the option panel to the available viewport height', () => {
+    render(
+      <MultiSelector
+        label="Fruit"
+        options={defaultOptions}
+        value={[]}
+        onChange={() => {}}
+      />,
+    );
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    expect(popover.style.maxBlockSize).toContain('calc(100% - 2 *');
+    expect(popover.style.positionTryOrder).toBe('most-block-size');
+  });
+
   it('renders custom option content with renderOption', async () => {
     const user = userEvent.setup();
     render(

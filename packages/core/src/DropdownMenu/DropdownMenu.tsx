@@ -88,8 +88,6 @@ import {focusOutlineStyles} from '../utils/focusOutline.stylex';
 const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
 const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
-const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
 const MENU_POSITION_AREA_MAX_INLINE_SIZE = `calc(100% - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px)))`;
 const MENU_POSITION_AREA_MAX_INLINE_SIZE_FALLBACK = `calc(100% - ${MENU_VIEWPORT_GUTTER})`;
 const MENU_INLINE_EDGE_GUTTER = `max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px))`;
@@ -112,10 +110,8 @@ const styles = stylex.create({
       MENU_MAX_INLINE_SIZE,
       MENU_MAX_INLINE_SIZE_FALLBACK,
     ),
-    maxHeight: stylex.firstThatWorks(
-      MENU_MAX_BLOCK_SIZE,
-      MENU_MAX_BLOCK_SIZE_FALLBACK,
-    ),
+    maxBlockSize: '100%',
+    minBlockSize: 0,
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
@@ -132,10 +128,6 @@ const styles = stylex.create({
   },
   popoverViewport: {
     boxSizing: 'border-box',
-    maxBlockSize: stylex.firstThatWorks(
-      MENU_MAX_BLOCK_SIZE,
-      MENU_MAX_BLOCK_SIZE_FALLBACK,
-    ),
   },
   popoverViewportAligned: {
     maxInlineSize: stylex.firstThatWorks(
@@ -647,6 +639,7 @@ function DropdownMenuPopover({
   const popover = usePopoverInternal({
     onHide: handleLayerHide,
     onShow: handleLayerShow,
+    constrainToAvailableBlockSize: true,
     hasLightDismiss: true,
     hasCloseButton: false,
     hasAutoFocus: false,

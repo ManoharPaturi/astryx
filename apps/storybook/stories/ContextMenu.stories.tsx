@@ -82,7 +82,11 @@ export const Default: Story = {
         {label: 'Copy', onClick: () => console.log('Copy')},
         {label: 'Paste', onClick: () => console.log('Paste')},
       ]}>
-      <div {...stylex.props(triggerStyles.area)}>Right-click this area</div>
+      <div
+        data-testid="context-menu-target"
+        {...stylex.props(triggerStyles.area)}>
+        Right-click this area
+      </div>
     </ContextMenu>
   ),
 };

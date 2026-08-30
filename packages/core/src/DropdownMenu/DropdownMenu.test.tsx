@@ -450,6 +450,22 @@ describe('DropdownMenu', () => {
     );
   });
 
+  it('sizes the menu to the available viewport height', () => {
+    render(
+      <DropdownMenu button={{label: 'Actions'}} items={[{label: 'Item 1'}]} />,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    expect(popover.style.maxBlockSize).toContain('calc(100% - 2 *');
+    expect(popover.style.positionTryOrder).toBe('most-block-size');
+
+    const surface = popover.querySelector(
+      '.astryx-popover-surface',
+    ) as HTMLElement;
+    expect(getComputedStyle(surface).display).toBe('flex');
+  });
+
   it('supports explicit menu placement', () => {
     render(
       <DropdownMenu
@@ -601,9 +617,7 @@ describe('DropdownMenu', () => {
           'true',
         );
       });
-      expect(menu).toHaveStyle(
-        'max-height: min(300px,calc(100dvb - max(var(--spacing-4),env(safe-area-inset-top,0px)) - max(var(--spacing-4),env(safe-area-inset-bottom,0px))))',
-      );
+      expect(menu).toHaveStyle('max-height: 100%');
       expect(menu).not.toHaveStyle({overflowY: 'auto'});
       expect(menu).toHaveAttribute('tabindex', '-1');
 

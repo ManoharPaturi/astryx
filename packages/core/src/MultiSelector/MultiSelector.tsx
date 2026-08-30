@@ -251,9 +251,16 @@ const styles = stylex.create({
   },
 
   // Dropdown container
+  dropdownPanel: {
+    display: 'flex',
+    flexDirection: 'column',
+    maxBlockSize: '100%',
+    minBlockSize: 0,
+  },
   dropdown: {
     boxSizing: 'border-box',
-    maxHeight: '300px',
+    maxBlockSize: '100%',
+    minBlockSize: 0,
     overflowY: 'auto',
     padding: spacingVars['--spacing-1'],
   },
@@ -989,6 +996,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
       hasLightDismiss: true,
       hasCloseButton: false,
       hasAutoFocus: false,
+      constrainToAvailableBlockSize: true,
       // The popup's own role="listbox" is the exposed semantics; the trigger
       // keeps DOM focus, so wrapping it in a modal dialog would misrepresent it.
       role: 'none',
@@ -1668,7 +1676,7 @@ export function MultiSelector<T extends MultiSelectorOptionType>({
     status != null && effectiveStatusVariant === 'tooltip' && !!status.message;
 
   const panelContent = hasSearch ? (
-    <div>
+    <div {...stylex.props(styles.dropdownPanel)}>
       {renderSearch()}
       <Divider />
       <div {...stylex.props(styles.dropdown)}>

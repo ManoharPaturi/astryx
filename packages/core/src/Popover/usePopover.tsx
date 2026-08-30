@@ -78,6 +78,20 @@ const styles = stylex.create({
     // descendants retain their normal focus-visible treatment.
     outline: 'none',
   },
+  // The positioned layer and painted surface form one flex chain while the
+  // component opts into available-space sizing. Keeping `display` scoped to
+  // the open state avoids overriding the UA's closed-popover rule.
+  constrainBlockLayer: {
+    display: {default: null, ':popover-open': 'flex'},
+    flexDirection: {default: null, ':popover-open': 'column'},
+    minBlockSize: 0,
+  },
+  constrainBlockContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    maxBlockSize: '100%',
+    minBlockSize: 0,
+  },
   // Hidden close button wrapper - sr-only until focused, then positioned below
   // popover. Inline-axis centering (+ the translateY(100%) that drops it below
   // the surface) comes from rtlStyles.centerInline('100%') at the call site —
@@ -249,6 +263,15 @@ export interface UsePopoverOptions {
   surfaceTarget?: string;
 }
 
+export interface InternalUsePopoverOptions extends UsePopoverOptions {
+  /**
+   * Constrain this component-owned surface to the block space between its
+   * anchor and the viewport edge. Package-internal: Layer owns geometry;
+   * Popover and its composing components own viewport sizing and overflow.
+   */
+  constrainToAvailableBlockSize?: boolean;
+}
+
 /**
  * Return type for usePopover
  */
@@ -371,8 +394,31 @@ interface InternalUsePopoverReturn extends UsePopoverReturn {
  * }
  * ```
  */
+function toCssLength(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
+}
+
+function getAvailableBlockSizeStyle(
+  placement: ContextRenderProps['placement'],
+  offset: ContextRenderProps['offset'],
+): React.CSSProperties {
+  const isBlockPlacement =
+    placement == null || placement === 'above' || placement === 'below';
+  const hasOffset = offset != null && offset !== 0 && offset !== '0';
+
+  return {
+    maxBlockSize:
+      isBlockPlacement && hasOffset
+        ? `calc(100% - 2 * ${toCssLength(offset)})`
+        : '100%',
+    // A constrained surface always fits. Without ordering, the browser keeps
+    // the first block-side fallback even when the opposite side has more room.
+    positionTryOrder: isBlockPlacement ? 'most-block-size' : undefined,
+  };
+}
+
 function usePopoverImplementation(
-  options: UsePopoverOptions = {},
+  options: InternalUsePopoverOptions = {},
 ): InternalUsePopoverReturn {
   const {
     onShow,
@@ -390,6 +436,7 @@ function usePopoverImplementation(
     dialogLabel,
     role = 'dialog',
     isModal = true,
+    constrainToAvailableBlockSize = false,
   } = options;
 
   const t = useTranslator();
@@ -528,6 +575,19 @@ function usePopoverImplementation(
           ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
           : surfaceProps.className;
 
+      const shouldConstrainBlockSize =
+        constrainToAvailableBlockSize && props?.positioning !== 'custom';
+      const layerProps = shouldConstrainBlockSize
+        ? {
+            ...props,
+            xstyle: [styles.constrainBlockLayer, props?.xstyle],
+            style: {
+              ...getAvailableBlockSizeStyle(props?.placement, props?.offset),
+              ...props?.style,
+            },
+          }
+        : props;
+
       return layer.render(
         <LayerDepthProvider>
           <div
@@ -540,6 +600,7 @@ function usePopoverImplementation(
               {...surfaceProps, className: surfaceClassName},
               stylex.props(
                 styles.contentWrapper,
+                shouldConstrainBlockSize && styles.constrainBlockContent,
                 hasSurface && styles.surface,
                 xstyle,
               ),
@@ -563,7 +624,7 @@ function usePopoverImplementation(
             )}
           </div>
         </LayerDepthProvider>,
-        {...props, xstyle: props?.xstyle},
+        layerProps,
       );
     },
     [
@@ -579,6 +640,7 @@ function usePopoverImplementation(
       role,
       isModal,
       xstyle,
+      constrainToAvailableBlockSize,
     ],
   );
 
@@ -609,7 +671,7 @@ export function usePopover(options: UsePopoverOptions = {}): UsePopoverReturn {
 
 /** @internal Used by trigger components; not exported from package barrels. */
 export function usePopoverInternal(
-  options: UsePopoverOptions = {},
+  options: InternalUsePopoverOptions = {},
 ): InternalUsePopoverReturn {
   return usePopoverImplementation(options);
 }

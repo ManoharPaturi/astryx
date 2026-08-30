@@ -120,7 +120,7 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-0-5'],
-    maxHeight: '300px',
+    maxBlockSize: '100%',
     overflowY: 'auto',
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
@@ -135,6 +135,9 @@ const styles = stylex.create({
     userSelect: 'none',
   },
   popover: {
+    display: {default: null, ':popover-open': 'flex'},
+    flexDirection: {default: null, ':popover-open': 'column'},
+    minBlockSize: 0,
     minWidth: '160px',
   },
   popoverCustomWidth: (width: string | number) => ({
@@ -682,7 +685,11 @@ export function ContextMenu({
         layer.render(renderedMenu, {
           placement: 'below',
           alignment: 'start',
-          xstyle: [popoverXstyle, layerAnimations.below],
+          xstyle: [styles.popover, popoverXstyle, layerAnimations.below],
+          style: {
+            maxBlockSize: '100%',
+            positionTryOrder: 'most-block-size',
+          },
         })
       )}
     </>

@@ -34,7 +34,7 @@ import {Spinner} from '../Spinner';
 import {useTranslator} from '../i18n';
 import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import type {LayerAlignment, LayerPlacement} from '../Layer/useLayer';
-import {usePopover} from '../Popover/usePopover';
+import {usePopoverInternal} from '../Popover/usePopover';
 import {useResolvedRequired} from '../hooks/useResolvedRequired';
 import {
   colorVars,
@@ -164,7 +164,7 @@ const styles = stylex.create({
   },
   content: {
     boxSizing: 'border-box',
-    maxHeight: 'min(480px, calc(100vh - 32px))',
+    maxBlockSize: '100%',
     overflow: 'auto',
     padding: spacingVars['--spacing-3'],
   },
@@ -392,10 +392,11 @@ export function ComplexSelector<Value>({
     onOpenChange?.(false);
   }, [onOpenChange]);
 
-  const popover = usePopover({
+  const popover = usePopoverInternal({
     dialogLabel: label,
     hasCloseButton: false,
     hasAutoFocus: true,
+    constrainToAvailableBlockSize: true,
     surfaceTarget: 'complex-selector-popup',
     onShow: handlePopoverShow,
     onHide: handlePopoverHide,

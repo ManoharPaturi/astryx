@@ -1117,3 +1117,46 @@ export const StartIndicatorPosition: Story = {
     );
   },
 };
+
+export const AvailableSpace: Story = {
+  name: 'Readiness / available height',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Resize the viewport around this open searchable list. The panel chooses the roomier side of the trigger, stays inside the viewport, keeps the search field fixed, and scrolls only the options. A short option set would keep its natural height.',
+      },
+    },
+  },
+  globals: {viewport: {value: 'mobile1', isRotated: false}},
+  decorators: [
+    Story => (
+      <div
+        style={{
+          boxSizing: 'border-box',
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: '100vh',
+          padding: 16,
+          width: 250,
+        }}>
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => {
+    const [value, setValue] = useState<string | undefined>('Option 20');
+    return (
+      <Selector
+        label="Destination"
+        options={Array.from({length: 40}, (_, index) => `Option ${index + 1}`)}
+        value={value}
+        onChange={setValue}
+        hasSearch
+        placement="below"
+        isDefaultOpen
+      />
+    );
+  },
+};

@@ -273,6 +273,20 @@ describe('ComplexSelector', () => {
     );
   });
 
+  it('sizes the custom panel to the available viewport height', () => {
+    render(
+      <ComplexSelector label="View options" value={[]}>
+        {() => <div>Columns</div>}
+      </ComplexSelector>,
+    );
+
+    const popover = screen
+      .getByRole('dialog', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    expect(popover.style.maxBlockSize).toContain('calc(100% - 2 *');
+    expect(popover.style.positionTryOrder).toBe('most-block-size');
+  });
+
   it('exposes imperative open, close, toggle, and isOpen via handleRef', async () => {
     const handleRef = React.createRef<ComplexSelectorHandle>();
     render(

@@ -727,6 +727,51 @@ export const ViewportFit: Story = {
   },
 };
 
+export const RTLPlacement: Story = {
+  name: 'Readiness / logical edge placement',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'The trigger sits at logical inline-end and the compact popover aligns to that same edge. Switching Storybook to RTL moves both to the opposite physical side without changing component props.',
+      },
+    },
+  },
+  render: () => (
+    <div {...stylex.props(readinessStyles.viewportStoryCanvas)}>
+      <div {...stylex.props(readinessStyles.edgeAnchorRow)}>
+        <Popover
+          placement="below"
+          alignment="end"
+          label="Logical edge placement"
+          width={220}
+          content={
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: 180,
+              }}>
+              <span data-testid="popover-logical-start">Start</span>
+              <span data-testid="popover-logical-end">End</span>
+            </div>
+          }>
+          <Button label="Open logical-edge popover">
+            Open logical-edge popover
+          </Button>
+        </Popover>
+      </div>
+    </div>
+  ),
+  play: async ({canvasElement}) => {
+    const trigger = canvasElement.querySelector('button');
+    if (trigger instanceof HTMLElement) {
+      trigger.click();
+    }
+  },
+};
+
 export const MatchTriggerViewportFit: Story = {
   name: 'Match-trigger viewport fit',
   parameters: {

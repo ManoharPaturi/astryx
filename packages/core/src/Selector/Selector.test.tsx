@@ -494,6 +494,22 @@ describe('Selector', () => {
     );
   });
 
+  it('sizes the option panel to the available viewport height', () => {
+    render(
+      <Selector
+        label="Fruit"
+        options={OPTIONS}
+        value="Banana"
+        onChange={() => {}}
+      />,
+    );
+    const popover = screen
+      .getByRole('listbox', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    expect(popover.style.maxBlockSize).toBe('100%');
+    expect(popover.style.positionTryOrder).toBe('most-block-size');
+  });
+
   it('emits the direction-independent logical mapping under an RTL ancestor (#3389)', async () => {
     // The self-* position-area keywords resolve against the popover's own
     // inherited direction in the browser, so RTL emits the same string as

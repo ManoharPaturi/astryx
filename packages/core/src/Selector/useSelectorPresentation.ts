@@ -18,7 +18,7 @@ import {
 } from 'react';
 import {
   usePopoverInternal,
-  type UsePopoverOptions,
+  type InternalUsePopoverOptions,
   type UsePopoverReturn,
 } from '../Popover/usePopover';
 import {
@@ -31,7 +31,7 @@ import {useFocusReturnVisibility} from '../hooks/useFocusReturnVisibility';
 interface UseSelectorPresentationOptions {
   presentation: AdaptivePresentation;
   onHide: () => void;
-  popoverOptions: Omit<UsePopoverOptions, 'onHide'>;
+  popoverOptions: Omit<InternalUsePopoverOptions, 'onHide'>;
   triggerRef: RefObject<HTMLElement | null>;
 }
 

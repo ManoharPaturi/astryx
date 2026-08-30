@@ -91,6 +91,19 @@ describe('ContextMenu', () => {
     expect(screen.getByRole('menu', {hidden: true})).toBeInTheDocument();
   });
 
+  it('sizes the menu to the available viewport height', () => {
+    render(
+      <ContextMenu items={[{label: 'Item 1'}]}>
+        <div>Right-click me</div>
+      </ContextMenu>,
+    );
+    const popover = screen
+      .getByRole('menu', {hidden: true})
+      .closest('[popover]') as HTMLElement;
+    expect(popover.style.maxBlockSize).toBe('100%');
+    expect(popover.style.positionTryOrder).toBe('most-block-size');
+  });
+
   it('typeahead focuses the matching menu item (menus-11)', () => {
     render(
       <ContextMenu items={[{label: 'Cut'}, {label: 'Copy'}, {label: 'Paste'}]}>

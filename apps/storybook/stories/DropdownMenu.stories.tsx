@@ -1113,7 +1113,7 @@ export const TallContentOverflow: Story = {
     docs: {
       description: {
         story:
-          'Uses the actual Storybook viewport and a realistic project list. The anchored menu stays at or below 300px and scrolls internally, so its actions remain reachable without scrolling the page.',
+          'Uses the actual Storybook viewport and a realistic project list. The menu chooses the roomier side of its trigger, stays inside the viewport, and scrolls internally only when the actions exceed that available space.',
       },
     },
   },

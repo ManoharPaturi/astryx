@@ -89,8 +89,6 @@ const MENU_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 // to a 4px visible gap after the browser flips the flyout.
 const MENU_MAX_INLINE_SIZE = `calc(100vi - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
 const MENU_MAX_INLINE_SIZE_FALLBACK = `calc(100vw - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER})`;
-const MENU_MAX_BLOCK_SIZE = `min(300px, calc(100dvb - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-top, 0px)) - max(${MENU_VIEWPORT_GUTTER}, env(safe-area-inset-bottom, 0px))))`;
-const MENU_MAX_BLOCK_SIZE_FALLBACK = `min(300px, calc(100vh - ${MENU_VIEWPORT_GUTTER} - ${MENU_VIEWPORT_GUTTER}))`;
 
 const triggerStyles = stylex.create({
   root: {
@@ -150,10 +148,8 @@ const flyoutStyles = stylex.create({
       MENU_MAX_INLINE_SIZE,
       MENU_MAX_INLINE_SIZE_FALLBACK,
     ),
-    maxHeight: stylex.firstThatWorks(
-      MENU_MAX_BLOCK_SIZE,
-      MENU_MAX_BLOCK_SIZE_FALLBACK,
-    ),
+    maxBlockSize: '100%',
+    minBlockSize: 0,
     '--_dropdown-menu-radius': radiusVars['--radius-container'],
     '--_dropdown-menu-padding': spacingVars['--spacing-1'],
     padding: spacingVars['--spacing-1'],
@@ -172,13 +168,12 @@ const flyoutStyles = stylex.create({
   },
   popoverViewport: {
     boxSizing: 'border-box',
-    // Keep the inline viewport cap on the menu surface above. Applying it to
-    // the anchor-positioned popover itself prevents Chromium from selecting
-    // `flip-inline` and instead shifts the flyout back across its parent.
-    maxBlockSize: stylex.firstThatWorks(
-      MENU_MAX_BLOCK_SIZE,
-      MENU_MAX_BLOCK_SIZE_FALLBACK,
-    ),
+    // A side flyout has a full-height position-area cell. Keep this local to
+    // the submenu owner rather than widening Layer's public geometry API.
+    display: {default: null, ':popover-open': 'flex'},
+    flexDirection: {default: null, ':popover-open': 'column'},
+    maxBlockSize: '100%',
+    minBlockSize: 0,
   },
   popover: {
     minWidth: stylex.firstThatWorks(
@@ -615,6 +610,7 @@ export function DropdownMenuSubMenu(
             popoverXstyle,
             layerAnimations.end,
           ],
+          style: {maxBlockSize: '100%'},
         },
       )}
     </>
