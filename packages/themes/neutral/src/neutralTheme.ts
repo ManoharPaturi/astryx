@@ -601,7 +601,7 @@ const neutralSyntax = defineSyntaxTheme({
     // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
     punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
     background: [
-      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 95),
       getPaletteStop('neutral', 0, 'dark'),
     ],
   },
