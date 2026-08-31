@@ -246,7 +246,16 @@ export const docs = {
         'Compound-mode menu content: DropdownMenuItem, DropdownMenuDivider, DropdownMenuSubMenu, and the selectable items. Mutually exclusive with `items`.',
     },
   ],
-  components: [{name: 'DropdownMenuItem'}],
+  components: [
+    {name: 'DropdownMenuItem'},
+    {
+      name: 'DropdownMenuDivider',
+      projection: {
+        anatomy: ['Pointer divider'],
+        targets: ['astryx-dropdown-menu-divider'],
+      },
+    },
+  ],
   usage: {
     anatomy,
     description:

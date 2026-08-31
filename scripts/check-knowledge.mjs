@@ -7,6 +7,7 @@ import {execFileSync} from 'node:child_process';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {collectThemingTargets} from '../packages/cli/foundation/discovery/theming-targets.mjs';
+import {findParentOwnedMemberProjection} from '../packages/cli/authoring/doctypes/component/member-projection.mjs';
 
 const require = createRequire(import.meta.url);
 const {
@@ -786,6 +787,7 @@ export function validateDelegations(
 
 function loadComponentContract(root, specPath, componentName) {
   const directory = path.dirname(specPath);
+  const loadedDocs = [];
   for (const docPath of matchingFiles(directory, name =>
     name.endsWith('.doc.mjs'),
   )) {
@@ -798,30 +800,76 @@ function loadComponentContract(root, specPath, componentName) {
       };
     }
     const doc = mod.docs ?? mod.default;
-    if (!doc) continue;
-    const candidates = [doc, ...(doc.components ?? [])];
-    const candidate = candidates.find(
-      entry => entry?.name?.replace(/^XDS/, '') === componentName,
-    );
-    if (!candidate) continue;
-    const anatomy = candidate.usage?.anatomy ?? doc.usage?.anatomy;
-    if (!Array.isArray(anatomy)) {
-      return {
-        problem: `${path.relative(root, docPath)}: ${componentName} has no canonical English usage.anatomy.`,
-      };
-    }
-    const targets = (candidate.theming?.targets ?? doc.theming?.targets ?? [])
-      .filter(target => target.deprecatedFor == null)
-      .map(target => target.className.replace(/^astryx-/, ''));
-    return {
-      contract: {
-        anatomy: anatomy.map(part => part.name),
-        targets,
-      },
-    };
+    if (doc) loadedDocs.push({doc, docPath});
   }
+
+  const normalizeName = name => name?.replace(/^XDS/, '');
+  const exact = loadedDocs.find(
+    ({doc}) => normalizeName(doc.name) === componentName,
+  );
+  if (exact) {
+    if (exact.doc.subComponentOf) {
+      const parent = loadedDocs.find(
+        ({doc}) =>
+          normalizeName(doc.name) === normalizeName(exact.doc.subComponentOf),
+      );
+      if (parent) {
+        let projection;
+        try {
+          projection = findParentOwnedMemberProjection(
+            parent.doc,
+            exact.doc.name,
+          );
+        } catch (error) {
+          return {problem: `${path.relative(root, parent.docPath)}: ${error.message}`};
+        }
+        if (
+          projection &&
+          !Array.isArray(exact.doc?.usage?.anatomy)
+        ) {
+          return {
+            problem:
+              `${path.relative(root, specPath)}: selected anatomy and targets for ` +
+              `${componentName} are owned by ${parent.doc.name} and must be mapped in ` +
+              `${parent.doc.name}.spec.md.`,
+          };
+        }
+      }
+    }
+    return contractFromDoc(root, exact.docPath, componentName, exact.doc);
+  }
+
+  for (const {doc, docPath} of loadedDocs) {
+    const candidate = (doc.components ?? []).find(
+      entry =>
+        normalizeName(entry?.name) === componentName &&
+        isFullConsumerDocEntry(entry),
+    );
+    if (candidate) {
+      return contractFromDoc(root, docPath, componentName, candidate);
+    }
+  }
+
   return {
     problem: `${path.relative(root, specPath)}: no component doc for ${componentName}.`,
+  };
+}
+
+function contractFromDoc(root, docPath, componentName, doc) {
+  const anatomy = doc.usage?.anatomy;
+  if (!Array.isArray(anatomy)) {
+    return {
+      problem: `${path.relative(root, docPath)}: ${componentName} has no canonical English usage.anatomy.`,
+    };
+  }
+  const targets = (doc.theming?.targets ?? [])
+    .filter(target => target.deprecatedFor == null)
+    .map(target => target.className.replace(/^astryx-/, ''));
+  return {
+    contract: {
+      anatomy: anatomy.map(part => part.name),
+      targets,
+    },
   };
 }
 

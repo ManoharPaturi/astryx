@@ -22,6 +22,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
+import {
+  findParentOwnedMemberProjection,
+  projectParentOwnedMemberDoc,
+  stripMemberProjectionMetadata,
+} from '../../../packages/cli/authoring/doctypes/component/member-projection.mjs';
 import {resolveContentRoot} from './resolve-content-root.mjs';
 import {expandWorkspaceDirs} from '../../../scripts/lib/workspace-globs.mjs';
 import {
@@ -367,7 +372,7 @@ async function generateComponentRegistry() {
           const mod = await import(pathToFileURL(dfPath).href);
           const d = mod.docs;
           if (d && (d.components || d.props) && !d.params && !d.subComponentOf) {
-            dirPrimaryDoc = d.name || null;
+            dirPrimaryDoc = d;
             dirPrimaryMeta = {
               name: d.name || null,
               group: d.group || null,
@@ -396,6 +401,17 @@ async function generateComponentRegistry() {
         } catch (err) {
           console.warn(`  warn: failed to import ${docFileName}: ${err.message}`);
           continue;
+        }
+
+        let memberProjection = null;
+        if (doc.subComponentOf && dirPrimaryDoc) {
+          memberProjection = findParentOwnedMemberProjection(
+            dirPrimaryDoc,
+            doc.name,
+          );
+          doc = projectParentOwnedMemberDoc(dirPrimaryDoc, doc);
+        } else {
+          doc = stripMemberProjectionMetadata(doc);
         }
 
         const group = doc.group || null;
@@ -455,7 +471,9 @@ async function generateComponentRegistry() {
                 ? null
                 : doc.theming
                   ? sanitizeForJson(doc.theming)
-                  : parentMeta.theming ?? null,
+                  : memberProjection
+                    ? null
+                    : parentMeta.theming ?? null,
               params: isHookEntry
                 ? Array.isArray(doc.params)
                   ? sanitizeForJson(doc.params)
@@ -611,7 +629,7 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
-            parentDoc: dirPrimaryDoc,
+            parentDoc: dirPrimaryDoc?.name ?? null,
             props: [],
             usage,
             theming: null,

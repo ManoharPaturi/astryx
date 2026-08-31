@@ -170,7 +170,7 @@ export const doc = {
       name: 'components',
       type: '(ComponentEntry | ComponentRef)[]',
       description:
-        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a name-only ComponentRef pointing at a sibling {Name}.doc.mjs.',
+        'MultiComponentDoc variant (required there): one entry per public component/hook exported from the directory. Each entry is a full ComponentEntry (inline: name, displayName, description, props | params+returns) or a ComponentRef cross-link pointing at a sibling {Name}.doc.mjs. A ref may add `projection: {anatomy?: string[], targets?: string[]}` to expose exact parent-owned anatomy names and target class names on that member’s direct docs. Projection selectors must each match exactly once, preserve parent order, and may not be re-authored by the child.',
     },
     {
       name: 'subComponentOf',
@@ -239,7 +239,7 @@ export const docs = {
       style: 'unordered',
       items: [
         'SingleComponentDoc: one primary component; put props directly on the doc via `props`. Use for Switch, Badge, Spinner, TextInput.',
-        'MultiComponentDoc: a directory exporting several components/hooks; list them in `components` (inline ComponentEntry or name-only ComponentRef). Use for Table, Dialog, TabList.',
+        'MultiComponentDoc: a directory exporting several components/hooks; list them in `components` (inline ComponentEntry or ComponentRef cross-link). A ref’s optional projection selects exact parent-owned anatomy names and target class names for the member’s direct read-only docs; stale, duplicate, or child-redeclared selections fail.',
         'SubComponentDoc: a single sub-component in its own {Name}.doc.mjs inside the parent directory; set `subComponentOf` to the parent name. It inherits family fields and may omit `usage`.',
       ],
     },

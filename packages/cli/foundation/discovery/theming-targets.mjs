@@ -45,10 +45,10 @@ function targetKey(className) {
 
 /**
  * Every theming target declared under a core `src` directory, sorted by key
- * then component. When both a parent doc and one of its `subComponentOf`
- * children declare the same class, the parent is the canonical discovery owner;
- * the child keeps its direct docs but does not add a second listing row. Shared
- * targets declared by unrelated components remain separate rows.
+ * then component. Authored source docs are enumerated directly. If a child and
+ * its explicit `subComponentOf` parent both author the same class, discovery
+ * fails instead of silently choosing an owner. Shared targets declared by
+ * unrelated components remain separate rows.
  *
  * Unreadable docs are skipped rather than fatal — a single malformed doc must
  * not take out theme validation or the listing.
@@ -111,53 +111,35 @@ export async function collectThemingTargets(
 
   await scan(coreSrc);
 
-  const canonical = canonicalizeParentTargets(targets);
-  canonical.sort(
+  assertNoParentChildTargetDuplicates(targets);
+  const authoredTargets = targets.map(({parent: _parent, ...target}) => target);
+  authoredTargets.sort(
     (a, b) => a.key.localeCompare(b.key) || a.component.localeCompare(b.component),
   );
-  return canonical;
+  return authoredTargets;
 }
 
 /**
- * Collapse only an explicit parent/child duplicate. A child target is removed
- * when its `subComponentOf` parent declares that same class exactly once; its
- * props and states are merged into the parent's row so no capability is lost.
- *
- * Unrelated components sharing a class remain separate. An ambiguous parent
- * declaration also remains untouched rather than guessing which row is
- * canonical.
+ * Reject two writable declarations for one explicit parent-owned target.
  *
  * @param {Array<ThemingTarget & {parent: string|null}>} targets
- * @returns {ThemingTarget[]}
  */
-function canonicalizeParentTargets(targets) {
-  /** @type {Map<string, Array<ThemingTarget & {parent: string|null}>>} */
-  const rootsByComponentAndClass = new Map();
+function assertNoParentChildTargetDuplicates(targets) {
+  const parentClasses = new Set(
+    targets
+      .filter(target => target.parent == null)
+      .map(target => `${target.component}\0${target.className}`),
+  );
   for (const target of targets) {
-    if (target.parent != null) continue;
-    const identity = `${target.component}\0${target.className}`;
-    const roots = rootsByComponentAndClass.get(identity) ?? [];
-    roots.push(target);
-    rootsByComponentAndClass.set(identity, roots);
+    if (
+      target.parent != null &&
+      parentClasses.has(`${target.parent}\0${target.className}`)
+    ) {
+      throw new Error(
+        `Duplicate theming target ownership: ${target.component} and its parent ${target.parent} both author ${target.className}.`,
+      );
+    }
   }
-
-  /** @type {Set<ThemingTarget & {parent: string|null}>} */
-  const duplicates = new Set();
-  for (const target of targets) {
-    if (target.parent == null) continue;
-    const roots =
-      rootsByComponentAndClass.get(`${target.parent}\0${target.className}`) ?? [];
-    if (roots.length !== 1) continue;
-
-    const canonical = roots[0];
-    canonical.props = [...new Set([...canonical.props, ...target.props])];
-    canonical.states = [...new Set([...canonical.states, ...target.states])];
-    duplicates.add(target);
-  }
-
-  return targets
-    .filter(target => !duplicates.has(target))
-    .map(({parent: _parent, ...target}) => target);
 }
 
 /**

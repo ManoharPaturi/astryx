@@ -2,6 +2,6 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Deduplicate parent-owned theming targets in CLI discovery while preserving each child component's direct documentation. (#5767)
+[fix] Keep parent-owned theming targets in one source while projecting each member's exact anatomy and target into its direct CLI and docsite documentation. (#5767)
 
 @cixzhang

@@ -39,16 +39,21 @@ describe('themeTargets (api/theme/targets)', () => {
     ]);
   }, 60_000);
 
-  it.each(['table-header', 'table-body', 'table-footer'])(
-    '%s appears once under the Table owner',
-    async target => {
-      const {data} = await themeTargets('Table');
+  it.each([
+    ['DropdownMenu', 'dropdown-menu-divider'],
+    ['Table', 'table-header'],
+    ['Table', 'table-body'],
+    ['Table', 'table-footer'],
+  ])(
+    '%s target %s appears once under its parent owner',
+    async (component, target) => {
+      const {data} = await themeTargets(component);
       const matches = data.targets.filter(entry => entry.key === target);
       expect(data.componentCount).toBe(1);
       expect(matches).toHaveLength(1);
       expect(matches[0]).toMatchObject({
         key: target,
-        component: 'Table',
+        component,
       });
     },
     60_000,

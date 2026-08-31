@@ -8,9 +8,23 @@
  * regression guard for the existing component prop-description merge.
  */
 
-import {describe, it, expect} from 'vitest';
+import {afterEach, describe, it, expect} from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
-import {loadComponentDoc, loadDocs, mergeTranslation} from './component-loader.mjs';
+import {
+  loadComponentDoc,
+  loadDocs,
+  loadResolvedComponentDoc,
+  mergeTranslation,
+} from './component-loader.mjs';
+
+const fixtureDirs = [];
+afterEach(() => {
+  for (const dir of fixtureDirs.splice(0)) {
+    fs.rmSync(dir, {recursive: true, force: true});
+  }
+});
 
 /** Minimal HookDoc-shaped fixture with params + returns. */
 function hookDocs() {
@@ -138,5 +152,91 @@ describe('loadComponentDoc — full localized doc overlays', () => {
     expect(direct).toEqual(cli);
     expect(direct.usage.anatomy).not.toEqual(canonical.usage.anatomy);
     expect(direct.usage.anatomy[0].name).toBe('文本区域');
+  });
+});
+
+describe('loadResolvedComponentDoc — parent-owned member projection', () => {
+  function writeProjectionFixture() {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-member-loader-'));
+    fixtureDirs.push(dir);
+    fs.writeFileSync(
+      path.join(dir, 'Parent.doc.mjs'),
+      `export const docs = {
+  name: 'Parent', displayName: 'Parent', props: [],
+  usage: {description: 'Parent usage.', anatomy: [
+    {name: 'First', required: true, description: 'English first.'},
+    {name: 'Second', required: false, description: 'English second.'},
+  ]},
+  theming: {targets: [
+    {className: 'astryx-parent-first'},
+    {className: 'astryx-parent-second'},
+  ]},
+  components: [
+    {name: 'Child', projection: {anatomy: ['Second'], targets: ['astryx-parent-second']}},
+    {name: 'Unprojected'},
+  ],
+};
+export const docsDense = {
+  props: [],
+  usage: {description: 'Dense parent.', anatomy: [
+    {name: 'Dense first section', required: true, description: 'Dense first.'},
+    {name: 'Dense second section', required: false, description: 'Dense second.'},
+  ]},
+};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'Child.doc.mjs'),
+      `export const docs = {
+  name: 'Child', displayName: 'Child', subComponentOf: 'Parent',
+  description: 'English child.', props: [],
+};
+export const docsDense = {description: 'Dense child.'};\n`,
+    );
+    fs.writeFileSync(
+      path.join(dir, 'Unprojected.doc.mjs'),
+      `export const docs = {
+  name: 'Unprojected', displayName: 'Unprojected', subComponentOf: 'Parent',
+  description: 'Unprojected child.', props: [],
+};\n`,
+    );
+    return dir;
+  }
+
+  it('selects canonical entries before applying matching overlays', async () => {
+    const dir = writeProjectionFixture();
+    const resolved = await loadResolvedComponentDoc(
+      path.join(dir, 'Child.doc.mjs'),
+      {dense: true},
+    );
+
+    expect(resolved.description).toBe('Dense child.');
+    expect(resolved.usage).toEqual({
+      description: 'Dense child.',
+      anatomy: [
+        {name: 'Dense second section', required: false, description: 'Dense second.'},
+      ],
+    });
+    expect(resolved.theming.targets).toEqual([
+      {className: 'astryx-parent-second'},
+    ]);
+  });
+
+  it('strips parent projection metadata from public output', async () => {
+    const dir = writeProjectionFixture();
+    const resolved = await loadResolvedComponentDoc(
+      path.join(dir, 'Parent.doc.mjs'),
+    );
+    expect(resolved.components).toEqual([
+      {name: 'Child'},
+      {name: 'Unprojected'},
+    ]);
+  });
+
+  it('leaves an unprojected extracted child unchanged', async () => {
+    const dir = writeProjectionFixture();
+    const childPath = path.join(dir, 'Unprojected.doc.mjs');
+    expect(await loadResolvedComponentDoc(childPath)).toEqual(
+      await loadComponentDoc(childPath),
+    );
   });
 });

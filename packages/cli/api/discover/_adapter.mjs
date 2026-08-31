@@ -20,7 +20,7 @@ import {
   scanAllPackages,
   findComponentInPackages,
 } from './_package-scanner.mjs';
-import {loadDocs} from '../../foundation/discovery/component-loader.mjs';
+import {loadResolvedComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
 
@@ -136,9 +136,13 @@ export function findComponent(packages, name) {
 export async function loadValidatedDoc(result, {lang, zh}) {
   let docs;
   try {
-    docs = await loadDocs(
+    docs = await loadResolvedComponentDoc(
       result.docPath,
-      /** @type {{zh?: boolean, dense?: boolean, lang?: string}} */ ({zh, lang}),
+      /** @type {{zh?: boolean, dense?: boolean, lang?: string, validate?: boolean}} */ ({
+        zh,
+        lang,
+        validate: false,
+      }),
     );
   } catch (e) {
     throw new AstryxError(

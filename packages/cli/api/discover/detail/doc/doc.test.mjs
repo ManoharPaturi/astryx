@@ -29,6 +29,30 @@ beforeAll(() => {
     path.join(docsDir, 'Beta.doc.mjs'),
     `export const docs = {name: 'Beta', usage: {description: 'Beta component'}, props: []};\n`,
   );
+  fs.writeFileSync(
+    path.join(docsDir, 'Parent.doc.mjs'),
+    `export const docs = {
+  name: 'Parent', usage: {description: 'Parent component', anatomy: [
+    {name: 'Child part', required: false, description: 'Projected child part.'},
+  ]}, props: [], theming: {targets: [{className: 'astryx-child-part'}]},
+  components: [{name: 'Child', projection: {anatomy: ['Child part'], targets: ['astryx-child-part']}}],
+};\n`,
+  );
+  fs.writeFileSync(
+    path.join(docsDir, 'Child.doc.mjs'),
+    `export const docs = {name: 'Child', subComponentOf: 'Parent', usage: {description: 'Child component'}, props: []};\n`,
+  );
+  fs.writeFileSync(
+    path.join(docsDir, 'BadProjection.doc.mjs'),
+    `export const docs = {
+  name: 'BadProjection', usage: {description: 'Bad projection parent'}, props: [],
+  components: [{name: 'BadChild', projection: {targetz: ['astryx-missing']}}],
+};\n`,
+  );
+  fs.writeFileSync(
+    path.join(docsDir, 'BadChild.doc.mjs'),
+    `export const docs = {name: 'BadChild', subComponentOf: 'BadProjection', usage: {description: 'Bad child'}, props: []};\n`,
+  );
   pkg = {
     name: '@acme/widgets',
     category: '@acme/widgets',
@@ -36,7 +60,15 @@ beforeAll(() => {
     dir: docsDir,
     astryx: {},
     docsDir,
-    components: ['Alpha', 'AlphaCard', 'Beta'],
+    components: [
+      'Alpha',
+      'AlphaCard',
+      'Beta',
+      'Parent',
+      'Child',
+      'BadProjection',
+      'BadChild',
+    ],
   };
 });
 
@@ -55,6 +87,31 @@ describe('discover.detail.doc leaf', () => {
   it('resolves case-insensitively', async () => {
     const res = await doc([pkg], '@acme/widgets', 'alpha', {});
     expect(res.data.name).toBe('Alpha');
+  });
+
+  it('projects child docs and strips projection metadata from parents', async () => {
+    const child = await doc([pkg], '@acme/widgets', 'Child', {});
+    expect(child.data.usage.anatomy).toEqual([
+      {
+        name: 'Child part',
+        required: false,
+        description: 'Projected child part.',
+      },
+    ]);
+    expect(child.data.theming.targets).toEqual([
+      {className: 'astryx-child-part'},
+    ]);
+
+    const parent = await doc([pkg], '@acme/widgets', 'Parent', {});
+    expect(parent.data.components).toEqual([{name: 'Child'}]);
+  });
+
+  it('rejects unknown projection fields instead of erasing them', async () => {
+    await expect(
+      doc([pkg], '@acme/widgets', 'BadChild', {}),
+    ).rejects.toMatchObject({
+      code: 'ERR_INVALID_DOC',
+    });
   });
 
   it('throws ERR_UNKNOWN_PACKAGE for an unknown scope', async () => {

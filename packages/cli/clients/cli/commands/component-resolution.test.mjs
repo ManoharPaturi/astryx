@@ -55,6 +55,48 @@ describe('component() sub-component scoping', () => {
     expect(result.data.name).not.toBe('TabList');
   });
 
+  it.each([
+    ['DropdownMenuDivider', 'Pointer divider', 'astryx-dropdown-menu-divider'],
+    ['TableHeader', 'Header section', 'astryx-table-header'],
+    ['TableBody', 'Body section', 'astryx-table-body'],
+    ['TableFooter', 'Footer section', 'astryx-table-footer'],
+  ])(
+    'component("%s") returns its exact parent-owned anatomy and target',
+    async (name, anatomy, target) => {
+      const result = await component(name, CWD);
+      expect(result.data.name).toBe(name);
+      expect(result.data.usage.anatomy.map(part => part.name)).toEqual([
+        anatomy,
+      ]);
+      expect(result.data.theming.targets.map(entry => entry.className)).toEqual([
+        target,
+      ]);
+    },
+  );
+
+  it('parent detail keeps aggregate docs while hiding projection metadata', async () => {
+    const table = await component('Table', CWD);
+    expect(table.data.usage.anatomy).toHaveLength(16);
+    expect(table.data.theming.targets.map(target => target.className)).toEqual(
+      expect.arrayContaining([
+        'astryx-table-header',
+        'astryx-table-body',
+        'astryx-table-footer',
+      ]),
+    );
+    expect(
+      table.data.components.some(component => 'projection' in component),
+    ).toBe(false);
+
+    const menu = await component('DropdownMenu', CWD);
+    expect(menu.data.usage.anatomy.map(part => part.name)).toContain(
+      'Touch divider',
+    );
+    expect(menu.data.theming.targets.map(target => target.className)).toContain(
+      'astryx-dropdown-menu-divider',
+    );
+  });
+
   // Non-regression: asking for the parent still returns the full doc, with its
   // family listed as name-only cross-links (sub-component content now lives in
   // each sub-component's own .doc.mjs file).

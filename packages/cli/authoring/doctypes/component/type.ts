@@ -229,11 +229,23 @@ export interface ComponentGroupDoc {
  * `{Name}.doc.mjs` file (see {@link SubComponentDoc}). The parent's
  * `components` array lists these names so the family stays discoverable;
  * the entry's content is emitted from the sub-component's own file, not here.
+ * A name-only reference is a cross-link, not a standalone component contract.
+ * An optional projection may expose exact parent-owned anatomy and theming
+ * targets on the member's read-only consumer view.
  */
 export interface ComponentRef {
   /** Full export name including Astryx prefix, e.g. `"ChatComposer"`. Must
    *  match the `name` field of the referenced sub-component's own doc. */
   name: string;
+  /** Optional read-only projection of exact parent-owned entries onto the
+   *  referenced member's direct documentation. Selectors match anatomy names
+   *  and target class names exactly; the parent remains their only author. */
+  projection?: {
+    /** Exact `parent.usage.anatomy[].name` values. */
+    anatomy?: string[];
+    /** Exact `parent.theming.targets[].className` values. */
+    targets?: string[];
+  };
 }
 
 /**

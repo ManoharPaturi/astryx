@@ -253,6 +253,75 @@ describe('componentRegistry', () => {
     );
   });
 
+  it('projects exact parent-owned anatomy and targets onto extracted members', () => {
+    const core = components['@astryxdesign/core'];
+    const expected = {
+      DropdownMenuDivider: {
+        anatomy: 'Pointer divider',
+        target: 'astryx-dropdown-menu-divider',
+      },
+      TableHeader: {
+        anatomy: 'Header section',
+        target: 'astryx-table-header',
+      },
+      TableBody: {
+        anatomy: 'Body section',
+        target: 'astryx-table-body',
+      },
+      TableFooter: {
+        anatomy: 'Footer section',
+        target: 'astryx-table-footer',
+      },
+    } as const;
+
+    for (const [name, contract] of Object.entries(expected)) {
+      const member = core.find(component => component.name === name);
+      expect(member, name).toBeDefined();
+      expect(
+        member!.usage?.anatomy?.map(part => part.name),
+        name,
+      ).toEqual([contract.anatomy]);
+      expect(
+        member!.theming?.targets.map(target => target.className),
+        name,
+      ).toEqual([contract.target]);
+    }
+
+    const dropdownDivider = core.find(
+      component => component.name === 'DropdownMenuDivider',
+    );
+    expect(
+      dropdownDivider!.usage?.anatomy?.map(part => part.name),
+    ).not.toContain('Touch divider');
+    const tableHeader = core.find(
+      component => component.name === 'TableHeader',
+    );
+    expect(tableHeader!.usage?.anatomy?.map(part => part.name)).not.toContain(
+      'Body section',
+    );
+  });
+
+  it('keeps aggregate anatomy and targets on projection parents', () => {
+    const core = components['@astryxdesign/core'];
+    const table = core.find(component => component.name === 'Table');
+    expect(table!.usage?.anatomy).toHaveLength(16);
+    expect(table!.theming?.targets.map(target => target.className)).toEqual(
+      expect.arrayContaining([
+        'astryx-table-header',
+        'astryx-table-body',
+        'astryx-table-footer',
+      ]),
+    );
+
+    const menu = core.find(component => component.name === 'DropdownMenu');
+    expect(menu!.usage?.anatomy?.map(part => part.name)).toEqual(
+      expect.arrayContaining(['Pointer divider', 'Touch divider']),
+    );
+    expect(menu!.theming?.targets.map(target => target.className)).toContain(
+      'astryx-dropdown-menu-divider',
+    );
+  });
+
   it('sub-components can override inherited playground defaults', () => {
     const core = components['@astryxdesign/core'];
     const avatarGroupOverflow = core.find(

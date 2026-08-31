@@ -29,7 +29,10 @@ import {
   discoverComponents,
   findComponentReadme,
 } from './component-discovery.mjs';
-import {loadComponentDoc} from './component-loader.mjs';
+import {
+  loadComponentDoc,
+  loadResolvedComponentDoc,
+} from './component-loader.mjs';
 import {
   collectThemingTargets,
   collectThemingVars,
@@ -105,35 +108,67 @@ describe('collectThemingTargets', () => {
   });
 
   it.each([
-    ['TableHeader', 'table-header'],
-    ['TableBody', 'table-body'],
-    ['TableFooter', 'table-footer'],
+    ['DropdownMenu', 'DropdownMenuDivider', 'dropdown-menu-divider'],
+    ['Table', 'TableHeader', 'table-header'],
+    ['Table', 'TableBody', 'table-body'],
+    ['Table', 'TableFooter', 'table-footer'],
   ])(
-    'keeps %s theming metadata available in its direct doc',
-    async (name, key) => {
-      const doc = await loadComponentDoc(
-        path.join(coreSrc, 'Table', `${name}.doc.mjs`),
+    'keeps %s theming metadata available in its resolved direct doc',
+    async (parent, name, key) => {
+      const directory = parent === 'DropdownMenu' ? 'DropdownMenu' : 'Table';
+      const doc = await loadResolvedComponentDoc(
+        path.join(coreSrc, directory, `${name}.doc.mjs`),
       );
-      expect(doc.subComponentOf).toBe('Table');
+      expect(doc.subComponentOf).toBe(parent);
       expect(doc.theming.targets).toContainEqual({className: `astryx-${key}`});
     },
   );
 
-  it.each(['table-header', 'table-body', 'table-footer'])(
-    'enumerates %s once under its canonical Table owner',
-    async key => {
+  it.each([
+    ['DropdownMenu', 'dropdown-menu-divider'],
+    ['Table', 'table-header'],
+    ['Table', 'table-body'],
+    ['Table', 'table-footer'],
+  ])(
+    'enumerates %s target %s once under its canonical owner',
+    async (component, key) => {
       const matches = (await enumerated).filter(target => target.key === key);
       expect(matches).toEqual([
         {
           key,
           className: `astryx-${key}`,
-          component: 'Table',
+          component,
           props: [],
           states: [],
         },
       ]);
     },
   );
+
+  it('rejects a parent/child authored target duplicate instead of choosing an owner', async () => {
+    const fixture = fs.mkdtempSync(
+      path.join(process.env.TMPDIR || '/tmp', 'astryx-target-owner-'),
+    );
+    try {
+      const familyDir = path.join(fixture, 'Family');
+      fs.mkdirSync(familyDir);
+      const usage = `usage: {description: 'Fixture.', anatomy: []}`;
+      fs.writeFileSync(
+        path.join(familyDir, 'Parent.doc.mjs'),
+        `export const docs = {name: 'Parent', displayName: 'Parent', props: [], ${usage}, components: [{name: 'Child'}], theming: {targets: [{className: 'astryx-shared'}]}};\n`,
+      );
+      fs.writeFileSync(
+        path.join(familyDir, 'Child.doc.mjs'),
+        `export const docs = {name: 'Child', displayName: 'Child', subComponentOf: 'Parent', description: 'Child.', props: [], theming: {targets: [{className: 'astryx-shared'}]}};\n`,
+      );
+
+      await expect(collectThemingTargets(fixture)).rejects.toThrow(
+        /Child and its parent Parent both author astryx-shared/,
+      );
+    } finally {
+      fs.rmSync(fixture, {recursive: true, force: true});
+    }
+  });
 
   it('is sorted by key, so a diff of two runs is readable', async () => {
     const keys = (await enumerated).map(t => t.key);

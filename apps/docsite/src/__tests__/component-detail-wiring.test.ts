@@ -129,6 +129,26 @@ describe('component detail wiring', () => {
       }
     }
   });
+  it('routes projected member anatomy through the existing Anatomy renderer', () => {
+    const entries = Object.values(components).flat();
+    for (const name of [
+      'DropdownMenuDivider',
+      'TableHeader',
+      'TableBody',
+      'TableFooter',
+    ]) {
+      expect(
+        entries.find(entry => entry.name === name)?.usage?.anatomy,
+      ).toHaveLength(1);
+    }
+
+    const source = fs.readFileSync(
+      path.join(DETAIL_DIR, 'ComponentDetailClient.tsx'),
+      'utf8',
+    );
+    expect(source).toContain('<Anatomy elements={comp.usage.anatomy} />');
+  });
+
   it('carries component accessibility requirements into the registry', () => {
     const button = Object.values(components)
       .flat()

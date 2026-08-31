@@ -23,9 +23,6 @@ export const docs = {
         'StyleX styles for layout customization. Must be a stylex.create() value: not an inline style object like style={{}}.',
     },
   ],
-  theming: {
-    targets: [{className: 'astryx-table-header'}],
-  },
 };
 
 export const docsDense = {

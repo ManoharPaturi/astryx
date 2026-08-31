@@ -4,9 +4,15 @@
  * @file Component doc loader — load and merge translations
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {importUserModule} from '../fs/module-loader.mjs';
 import {parseDoc} from '../../authoring/doctypes/parse.mjs';
+import {
+  projectParentOwnedMemberDoc,
+  stripMemberProjectionMetadata,
+} from '../../authoring/doctypes/component/member-projection.mjs';
 
 /**
  * Load a component doc through the shared load/validation boundary.
@@ -54,6 +60,65 @@ export async function loadComponentDoc(
     return overlayComponentDoc(docs, translation);
   }
   return mergeTranslation(docs, translation);
+}
+
+/**
+ * Load a component's public documentation view. Extracted members resolve
+ * selectors against canonical sibling docs before the same locale overlay is
+ * used for displayed entries. Parent ComponentRef projections are authoring
+ * metadata and never escape this boundary.
+ *
+ * `validate: false` preserves the component API's historical permissive loader
+ * for integration docs; projection validation still runs in the pure helper.
+ *
+ * @param {string} docPath absolute path to a component doc
+ * @param {{zh?: boolean, dense?: boolean, lang?: string, validate?: boolean}} [opts]
+ * @returns {Promise<any>}
+ */
+export async function loadResolvedComponentDoc(
+  docPath,
+  {zh = false, dense = false, lang, validate = true} = {},
+) {
+  const load = validate ? loadComponentDoc : loadDocs;
+  const canonicalDoc = await load(docPath);
+  const loadOptions = {zh, dense, lang};
+  const hasLocale = lang != null || dense || zh;
+  const docView = hasLocale ? await load(docPath, loadOptions) : canonicalDoc;
+  if (!canonicalDoc?.subComponentOf) {
+    return stripMemberProjectionMetadata(docView);
+  }
+
+  const parentPath = findSiblingParentDoc(docPath, canonicalDoc.subComponentOf);
+  if (parentPath == null) return stripMemberProjectionMetadata(docView);
+
+  const canonicalParentDoc = await load(parentPath);
+  const parentView = hasLocale
+    ? await load(parentPath, loadOptions)
+    : canonicalParentDoc;
+  return stripMemberProjectionMetadata(
+    projectParentOwnedMemberDoc(canonicalParentDoc, canonicalDoc, {
+      parentView,
+      childView: docView,
+    }),
+  );
+}
+
+/**
+ * @param {string} docPath
+ * @param {string} parentName
+ * @returns {string | null}
+ */
+function findSiblingParentDoc(docPath, parentName) {
+  const directory = path.dirname(docPath);
+  const currentSuffix = path.basename(docPath).match(/(\.doc\.(?:mjs|js|ts))$/)?.[1];
+  const suffixes = [currentSuffix, '.doc.mjs', '.doc.js', '.doc.ts'].filter(
+    (suffix, index, values) => suffix && values.indexOf(suffix) === index,
+  );
+  for (const suffix of suffixes) {
+    const candidate = path.join(directory, `${parentName}${suffix}`);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return null;
 }
 
 /**

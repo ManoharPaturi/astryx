@@ -287,6 +287,45 @@ function writeButtonDoc(directory) {
   return content;
 }
 
+function writeParentMemberDocs(
+  directory,
+  {projection = false, includeChild = true} = {},
+) {
+  const ref = projection
+    ? `{name: 'Member', projection: {anatomy: ['Member part'], targets: ['astryx-member']}}`
+    : `{name: 'Member'}`;
+  fs.writeFileSync(
+    path.join(directory, 'Parent.doc.mjs'),
+    `export const docs = {
+  name: 'Parent', displayName: 'Parent', props: [],
+  components: [${ref}],
+  usage: {description: 'Parent.', anatomy: [
+    {name: 'Parent root', required: true, description: 'Root.'},
+    {name: 'Member part', required: false, description: 'Member.'},
+  ]},
+  theming: {targets: [
+    {className: 'astryx-parent'},
+    {className: 'astryx-member'},
+  ]},
+};\n`,
+  );
+  if (includeChild) {
+    const childContract = projection
+      ? ''
+      : `usage: {description: 'Member.', anatomy: [
+    {name: 'Child part', required: true, description: 'Child.'},
+  ]},
+  theming: {targets: [{className: 'astryx-child'}]},`;
+    fs.writeFileSync(
+      path.join(directory, 'Member.doc.mjs'),
+      `export const docs = {
+  name: 'Member', displayName: 'Member', subComponentOf: 'Parent',
+  description: 'Member.', props: [], ${childContract}
+};\n`,
+    );
+  }
+}
+
 afterEach(() => {
   for (const root of roots.splice(0))
     fs.rmSync(root, {recursive: true, force: true});
@@ -488,6 +527,147 @@ describe('component theming anatomy metadata', () => {
     expect(
       fs.readFileSync(path.join(directory, 'Button.doc.mjs'), 'utf8'),
     ).toBe(consumerDoc);
+  });
+
+  it('rejects a projected member spec with the parent owner diagnostic', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Parent');
+    fs.mkdirSync(directory);
+    writeParentMemberDocs(directory, {projection: true});
+    fs.writeFileSync(
+      path.join(directory, 'Member.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Member'}),
+        {"Member part": {target: 'member'}},
+      ),
+    );
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toContain(
+      'selected anatomy and targets for Member are owned by Parent and must be mapped in Parent.spec.md',
+    );
+  });
+
+  it('validates child-owned facts independently of parent-owned projections', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Parent');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Parent.doc.mjs'),
+      `export const docs = {
+  name: 'Parent', displayName: 'Parent', props: [],
+  components: [{name: 'Member', projection: {anatomy: ['Shared part'], targets: ['astryx-shared']}}],
+  usage: {description: 'Parent.', anatomy: [
+    {name: 'Shared part', required: false, description: 'Shared.'},
+  ]},
+  theming: {targets: [{className: 'astryx-shared'}]},
+};\n`,
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Member.doc.mjs'),
+      `export const docs = {
+  name: 'Member', displayName: 'Member', subComponentOf: 'Parent',
+  description: 'Member.', props: [],
+  usage: {description: 'Member.', anatomy: [
+    {name: 'Local part', required: true, description: 'Local.'},
+  ]},
+  theming: {targets: [{className: 'astryx-local'}]},
+};\n`,
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Member.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Member'}),
+        {"Local part": {target: 'local'}},
+      ),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('does not validate an extracted child against a name-only ref parent aggregate', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Parent');
+    fs.mkdirSync(directory);
+    writeParentMemberDocs(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Member.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Member'}),
+        {"Parent root": {target: 'parent'}},
+      ),
+    );
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toContain('theming anatomy is missing Child part');
+    expect(problems).toContain('theming anatomy has unknown Parent root');
+    expect(problems).toContain('current target "child" has no anatomy entry');
+  });
+
+  it('does not treat a name-only ref without an exact child doc as a contract', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Parent');
+    fs.mkdirSync(directory);
+    writeParentMemberDocs(directory, {includeChild: false});
+    fs.writeFileSync(
+      path.join(directory, 'Member.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Member'}),
+        {"Parent root": {target: 'parent'}},
+      ),
+    );
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toContain(
+      'no component doc for Member',
+    );
+  });
+
+  it('still validates the parent against its full aggregate contract', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Parent');
+    fs.mkdirSync(directory);
+    writeParentMemberDocs(directory, {projection: true});
+    fs.writeFileSync(
+      path.join(directory, 'Parent.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Parent'}),
+        {
+          "Parent root": {target: 'parent'},
+          "Member part": {target: 'member'},
+        },
+      ),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('preserves full inline legacy component contracts', async () => {
+    const root = fixtureRoot();
+    const directory = path.join(root, 'packages/core/src/Family');
+    fs.mkdirSync(directory);
+    fs.writeFileSync(
+      path.join(directory, 'Family.doc.mjs'),
+      `export const docs = {
+  name: 'Family', displayName: 'Family',
+  usage: {description: 'Family.', anatomy: []},
+  components: [{
+    name: 'Inline', displayName: 'Inline', description: 'Inline member.', props: [],
+    usage: {description: 'Inline.', anatomy: [
+      {name: 'Inline root', required: true, description: 'Root.'},
+    ]},
+    theming: {targets: [{className: 'astryx-inline'}]},
+  }],
+};\n`,
+    );
+    fs.writeFileSync(
+      path.join(directory, 'Inline.spec.md'),
+      withAnatomyTheming(
+        componentRecord({id: 'component:Inline'}),
+        {"Inline root": {target: 'inline'}},
+      ),
+    );
+
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
   });
 
   it('keeps the block optional while existing specs migrate', async () => {

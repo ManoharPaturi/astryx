@@ -217,9 +217,27 @@ export const docs = {
     },
   ],
   components: [
-    {name: 'TableHeader'},
-    {name: 'TableBody'},
-    {name: 'TableFooter'},
+    {
+      name: 'TableHeader',
+      projection: {
+        anatomy: ['Header section'],
+        targets: ['astryx-table-header'],
+      },
+    },
+    {
+      name: 'TableBody',
+      projection: {
+        anatomy: ['Body section'],
+        targets: ['astryx-table-body'],
+      },
+    },
+    {
+      name: 'TableFooter',
+      projection: {
+        anatomy: ['Footer section'],
+        targets: ['astryx-table-footer'],
+      },
+    },
     {name: 'TableRow'},
     {name: 'TableCell'},
     {name: 'TableHeaderCell'},
