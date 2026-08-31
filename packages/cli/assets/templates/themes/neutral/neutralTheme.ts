@@ -1089,6 +1089,15 @@ export const neutralTheme = defineTheme({
     },
 
     'segmented-control-item': {
+      'size:sm': {
+        height: 'calc(var(--size-element-sm) - 8px)',
+      },
+      'size:md': {
+        height: 'calc(var(--size-element-md) - 8px)',
+      },
+      'size:lg': {
+        height: 'calc(var(--size-element-lg) - 8px)',
+      },
       selected: {
         boxShadow: 'none',
       },
