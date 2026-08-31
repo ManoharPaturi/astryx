@@ -780,7 +780,7 @@ export const neutralTheme = defineTheme({
       withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
     ],
     '--color-error-muted': [
-      getPaletteStop('red', 85),
+      getPaletteStop('red', 90),
       withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
     ],
     '--color-warning-muted': [
