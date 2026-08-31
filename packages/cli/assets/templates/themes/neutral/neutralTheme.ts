@@ -613,8 +613,8 @@ const neutralRoleTokens: Record<string, string> = {
   '--color-status-fill-warning': '#ffce2f',
   '--color-status-fill-error': lightDark('#c9303a', '#ff705d'),
   '--color-on-tint-neutral': lightDark(
-    withAlpha(getPaletteStop('neutral', 100), '33'),
-    withAlpha(getPaletteStop('neutral', 0), '33'),
+    withAlpha(getPaletteStop('neutral', 100), '4D'),
+    withAlpha(getPaletteStop('neutral', 0), '4D'),
   ),
   '--color-on-tint-overlay-hover': lightDark(
     withAlpha(getPaletteStop('neutral', 100), '1A'),
@@ -808,7 +808,7 @@ export const neutralTheme = defineTheme({
     '--color-tint-hover': ['black', 'white'],
 
     '--color-background-red': [
-      getPaletteStop('red', 85),
+      getPaletteStop('red', 90),
       withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
     ],
     '--color-border-red': [
@@ -825,7 +825,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-orange': [
-      getPaletteStop('orange', 85),
+      getPaletteStop('orange', 90),
       withAlpha(getPaletteStop('orange', 70, 'dark'), '3D'),
     ],
     '--color-border-orange': [
@@ -859,7 +859,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-green': [
-      getPaletteStop('green', 85),
+      getPaletteStop('green', 90),
       withAlpha(getPaletteStop('green', 70, 'dark'), '3D'),
     ],
     '--color-border-green': [
@@ -876,7 +876,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-teal': [
-      getPaletteStop('teal', 85),
+      getPaletteStop('teal', 90),
       withAlpha(getPaletteStop('teal', 70, 'dark'), '3D'),
     ],
     '--color-border-teal': [
@@ -893,7 +893,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-cyan': [
-      getPaletteStop('cyan', 85),
+      getPaletteStop('cyan', 90),
       withAlpha(getPaletteStop('cyan', 70, 'dark'), '3D'),
     ],
     '--color-border-cyan': [
@@ -910,7 +910,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-blue': [
-      getPaletteStop('blue', 85),
+      getPaletteStop('blue', 90),
       withAlpha(getPaletteStop('blue', 70, 'dark'), '3D'),
     ],
     '--color-border-blue': [
@@ -927,7 +927,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-purple': [
-      getPaletteStop('purple', 85),
+      getPaletteStop('purple', 90),
       withAlpha(getPaletteStop('purple', 70, 'dark'), '3D'),
     ],
     '--color-border-purple': [
@@ -944,7 +944,7 @@ export const neutralTheme = defineTheme({
     ],
 
     '--color-background-pink': [
-      getPaletteStop('pink', 85),
+      getPaletteStop('pink', 90),
       withAlpha(getPaletteStop('pink', 70, 'dark'), '3D'),
     ],
     '--color-border-pink': [
