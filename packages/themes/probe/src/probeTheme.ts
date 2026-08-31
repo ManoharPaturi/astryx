@@ -6,7 +6,7 @@
 // test fixture. Regenerate with: pnpm visual:probe-theme
 //
 // defineTheme takes six things and this covers all six:
-//   components  274 targets, 883 selectors (generated from the docs)
+//   components  273 targets, 884 selectors (generated from the docs)
 //   tokens      custom properties, read back off the themed element
 //   icons       every registry entry swapped for a marked glyph
 //   indicators  check / radio / checkbox swapped — the swap that reaches furthest
@@ -3047,6 +3047,12 @@ export const probeTheme = defineTheme({
         borderColor: 'hsl(40.4 92% 25%)',
         outlineColor: 'hsl(177.8 82% 25%)',
       },
+      readonly: {
+        backgroundColor: 'hsl(291.7 88% 52%)',
+        color: 'hsl(213.7 89% 12%)',
+        borderColor: 'hsl(50.2 86% 25%)',
+        outlineColor: 'hsl(214.5 74% 25%)',
+      },
     },
     'multi-selector-clear-icon': {
       base: {
@@ -3461,14 +3467,6 @@ export const probeTheme = defineTheme({
         color: 'hsl(120.8 82% 12%)',
         borderColor: 'hsl(94.4 91% 25%)',
         outlineColor: 'hsl(42.1 87% 25%)',
-      },
-    },
-    'power-search': {
-      base: {
-        backgroundColor: 'hsl(123.6 94% 47%)',
-        color: 'hsl(136.0 85% 12%)',
-        borderColor: 'hsl(103.5 73% 25%)',
-        outlineColor: 'hsl(203.1 71% 25%)',
       },
     },
     'progress-bar': {
@@ -4135,6 +4133,12 @@ export const probeTheme = defineTheme({
         color: 'hsl(54.2 73% 12%)',
         borderColor: 'hsl(298.2 93% 25%)',
         outlineColor: 'hsl(59.6 86% 25%)',
+      },
+      readonly: {
+        backgroundColor: 'hsl(149.0 90% 62%)',
+        color: 'hsl(226.6 78% 12%)',
+        borderColor: 'hsl(25.9 71% 25%)',
+        outlineColor: 'hsl(86.5 79% 25%)',
       },
     },
     'selector-check': {

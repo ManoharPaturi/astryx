@@ -55,7 +55,6 @@ import {
 } from './formatFilterValue';
 import {PowerSearchEditPopover} from './PowerSearchEditPopover';
 import {resolveOperatorLabel} from './resolveOperatorLabel';
-import {themeProps} from '../utils/themeProps';
 import {truncateCharacters} from '../utils/characters';
 import {useTranslator} from '../i18n';
 import {useLocale} from '../i18n/useLocale';
@@ -1056,8 +1055,7 @@ export function PowerSearch({
         ref={useMergedRefs(
           ref,
           popover.triggerRef as React.Ref<HTMLDivElement>,
-        )}
-        {...themeProps('power-search')}>
+        )}>
         <Tokenizer
           handleRef={tokenizerRef}
           label={label}

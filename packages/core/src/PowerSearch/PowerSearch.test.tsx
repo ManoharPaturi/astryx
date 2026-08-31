@@ -9,7 +9,7 @@
  * SYNC: When PowerSearch.tsx changes, update tests to match
  */
 
-import {useState} from 'react';
+import {createRef, useState} from 'react';
 import {describe, it, expect, vi, beforeAll, afterAll, afterEach} from 'vitest';
 import {
   render,
@@ -129,19 +129,24 @@ function PowerSearchWrapper(props: {config: PowerSearchConfig}) {
 
 describe('PowerSearch', () => {
   it('forwards ref to the root element', () => {
-    let root: HTMLDivElement | null = null;
-    render(
+    const root = createRef<HTMLDivElement>();
+    const {container} = render(
       <PowerSearch
-        ref={el => {
-          root = el;
-        }}
+        ref={root}
         config={config}
         filters={[]}
         onChange={() => {}}
       />,
     );
-    expect(root).toBeInstanceOf(HTMLDivElement);
-    expect(root).toHaveClass('astryx-power-search');
+    expect(root.current).toBeInstanceOf(HTMLDivElement);
+    const tokenizerTarget =
+      container.querySelector<HTMLElement>('.astryx-tokenizer');
+    const tokenizerRoot = tokenizerTarget?.closest('.astryx-field');
+    expect(tokenizerTarget).toBeInstanceOf(HTMLDivElement);
+    expect(tokenizerTarget).not.toBe(root.current);
+    expect(root.current?.firstElementChild).toBe(tokenizerRoot);
+    expect(tokenizerRoot).toContainElement(tokenizerTarget ?? null);
+    expect(root.current).not.toHaveClass('astryx-power-search');
   });
 
   it('exposes typeahead focus through handleRef', () => {

@@ -230,7 +230,7 @@ export const docs = {
     ],
   },
   theming: {
-    targets: [{className: 'astryx-power-search'}],
+    targets: [],
   },
 };
 
