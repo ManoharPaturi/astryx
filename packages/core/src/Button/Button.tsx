@@ -99,19 +99,17 @@ const styles = stylex.create({
   pressable: {
     transform: {
       default: 'scale(1)',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))': 'scale(0.98)',
+      ':active': 'scale(0.98)',
     },
   },
-  inactive: {
+  disabled: {
     cursor: 'default',
+    opacity: 0.5,
     backgroundImage: 'none',
     transform: {
       default: 'none',
       ':active': 'none',
     },
-  },
-  disabled: {
-    opacity: 0.5,
   },
   ariaDisabled: {
     // The variants' hover treatment already steps aside for
@@ -575,7 +573,6 @@ export function Button({
   // not disabled, so clicks keep landing and can interrupt the in-flight action.
   const buttonDisabled =
     isDisabled || groupDisabled || (isLoadingState && !isInterruptible);
-  const visuallyDisabled = isDisabled || groupDisabled;
   // isIconOnly prop is the source of truth for icon-only rendering.
   // When false (default), label is always rendered as visible text.
 
@@ -642,8 +639,7 @@ export function Button({
     sizeStyles[size],
     isIconOnly && styles.iconOnly,
     interactionOverlayStyles.backgroundImage,
-    buttonDisabled && styles.inactive,
-    visuallyDisabled && styles.disabled,
+    buttonDisabled && styles.disabled,
     useAriaDisabled && styles.ariaDisabled,
     renderAsLink && styles.link,
     !buttonGroup && styles.pressable,
