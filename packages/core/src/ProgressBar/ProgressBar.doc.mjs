@@ -1,12 +1,65 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
+/** @type {import('@astryxdesign/cli/authoring').ComponentAnatomyElement[]} */
+const anatomy = [
+  {
+    name: 'Progress bar',
+    required: true,
+    description: 'Container arranging the label row and progress track.',
+  },
+  {
+    name: 'Label',
+    required: true,
+    description:
+      'Text naming the operation, optionally hidden visually while remaining accessible.',
+  },
+  {
+    name: 'Value text',
+    required: false,
+    description:
+      'Formatted determinate value shown beside the label when requested.',
+  },
+  {
+    name: 'Track',
+    required: true,
+    description:
+      'Remaining-progress rail that carries the progressbar semantics.',
+  },
+  {
+    name: 'Fill',
+    required: true,
+    description:
+      'Painted segment showing completed progress or indeterminate movement.',
+  },
+  {
+    name: 'Range end marker',
+    required: false,
+    description:
+      'Visual marker identifying the end of the full range in the self-contained presentation.',
+  },
+  {
+    name: 'Mark',
+    required: false,
+    description: 'Labeled target tick positioned on a determinate track.',
+  },
+];
+
 /** @type {import('@astryxdesign/cli/authoring').ComponentDoc} */
 
 export const docs = {
   name: 'ProgressBar',
   displayName: 'Progress Bar',
   category: 'Feedback & Status',
-  keywords: ["progressbar","progress","loader","loading","linear","determinate","indeterminate","meter"],
+  keywords: [
+    'progressbar',
+    'progress',
+    'loader',
+    'loading',
+    'linear',
+    'determinate',
+    'indeterminate',
+    'meter',
+  ],
   props: [
     {
       name: 'label',
@@ -55,7 +108,7 @@ export const docs = {
       type: "'self-contained' | 'paired-with-value'",
       description:
         '`self-contained` includes a range-end marker. `paired-with-value` requires an equivalent visible value. When omitted, `hasValueLabel` selects `paired-with-value`; otherwise `self-contained` is used. Nearby external text must be declared explicitly.',
-      default: "derived from `hasValueLabel`",
+      default: 'derived from `hasValueLabel`',
     },
     {
       name: 'isIndeterminate',
@@ -68,12 +121,13 @@ export const docs = {
       name: 'marks',
       type: 'ReadonlyArray<{value: number; label: string}>',
       description:
-        'Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them, and take their color from what they sit on: a mark inside the filled area uses the fill variant\'s on-color (on-accent, on-warning, on-error, and so on), a mark still out on the bare track uses the primary text color (the secondary one on a disabled bar, which dims everything it draws). Each mark requires a label: it is the mark\'s accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.',
+        "Fixed target marks drawn on the track at values in the same 0..max scale as value (e.g. a goal line). They stay visible whether progress is below or past them, and take their color from what they sit on: a mark inside the filled area uses the fill variant's on-color (on-accent, on-warning, on-error, and so on), a mark still out on the bare track uses the primary text color (the secondary one on a disabled bar, which dims everything it draws). Each mark requires a label: it is the mark's accessible name and the text revealed via a tooltip on hover/focus. Ignored when indeterminate.",
     },
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: 'Visually disabled state: grays out the fill and text. Use for canceled or inactive operations.',
+      description:
+        'Visually disabled state: grays out the fill and text. Use for canceled or inactive operations.',
       default: 'false',
     },
     {
@@ -85,7 +139,10 @@ export const docs = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progress-bar', visualProps: ['variant', 'presentation']},
+      {
+        className: 'astryx-progress-bar',
+        visualProps: ['variant', 'presentation'],
+      },
       {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
       {className: 'astryx-progress-bar-track'},
       {
@@ -108,7 +165,10 @@ export const docs = {
         visualProps: ['variant'],
         deprecatedFor: 'progress-bar-fill',
       },
-      {className: 'astryx-progressbar-track', deprecatedFor: 'progress-bar-track'},
+      {
+        className: 'astryx-progressbar-track',
+        deprecatedFor: 'progress-bar-track',
+      },
       {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
@@ -116,28 +176,83 @@ export const docs = {
       },
     ],
     vars: [
-      {name: '--_progressbar-mark-width', description: 'Target mark tick width', default: '2px', private: true},
-      {name: '--_progressbar-mark-height', description: 'Target mark tick height', default: '8px', private: true},
+      {
+        name: '--_progressbar-mark-width',
+        description: 'Target mark tick width',
+        default: '2px',
+        private: true,
+      },
+      {
+        name: '--_progressbar-mark-height',
+        description: 'Target mark tick height',
+        default: '8px',
+        private: true,
+      },
     ],
     derived: [
       {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
-      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
+      {
+        property: 'height',
+        vars: ['--_progressbar-mark-height'],
+        replaces: true,
+      },
     ],
   },
   usage: {
+    anatomy,
     description:
       'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
-      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
-      { guidance: true, description: 'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.' },
-      { guidance: true, description: 'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.' },
-      { guidance: true, description: 'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.' },
-      { guidance: false, description: 'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.' },
-      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
+      {
+        guidance: true,
+        description:
+          "Use a determinate bar when the total amount of work is known, and indeterminate when it's not.",
+      },
+      {
+        guidance: true,
+        description:
+          'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.',
+      },
+      {
+        guidance: true,
+        description:
+          "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place icons or labels inside the bar; compose them alongside it using layout components.',
+      },
+      {
+        guidance: false,
+        description:
+          "Use a progress bar for instant actions; it's meant for operations that take noticeable time.",
+      },
+      {
+        guidance: false,
+        description:
+          'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.',
+      },
     ],
   },
 };
@@ -180,8 +295,7 @@ export const docsZh = {
     {
       name: 'formatValueLabel',
       type: '(value: number, max: number) => string',
-      description:
-        '自定义值标签格式化器；默认为百分比字符串。',
+      description: '自定义值标签格式化器；默认为百分比字符串。',
     },
     {
       name: 'variant',
@@ -194,7 +308,7 @@ export const docsZh = {
       type: "'self-contained' | 'paired-with-value'",
       description:
         '`self-contained` 使用范围终点标记。`paired-with-value` 需要等效的可见数值。未指定时，`hasValueLabel` 会选择 `paired-with-value`；否则使用 `self-contained`。附近的外部文本必须显式声明。',
-      default: "根据 `hasValueLabel` 决定",
+      default: '根据 `hasValueLabel` 决定',
     },
     {
       name: 'isIndeterminate',
@@ -211,7 +325,8 @@ export const docsZh = {
     {
       name: 'isDisabled',
       type: 'boolean',
-      description: '视觉禁用状态——使填充条和文本变灰。用于已取消或不活跃的操作。',
+      description:
+        '视觉禁用状态——使填充条和文本变灰。用于已取消或不活跃的操作。',
       default: 'false',
     },
     {
@@ -223,7 +338,10 @@ export const docsZh = {
   ],
   theming: {
     targets: [
-      {className: 'astryx-progress-bar', visualProps: ['variant', 'presentation']},
+      {
+        className: 'astryx-progress-bar',
+        visualProps: ['variant', 'presentation'],
+      },
       {className: 'astryx-progress-bar-fill', visualProps: ['variant']},
       {className: 'astryx-progress-bar-track'},
       {
@@ -246,7 +364,10 @@ export const docsZh = {
         visualProps: ['variant'],
         deprecatedFor: 'progress-bar-fill',
       },
-      {className: 'astryx-progressbar-track', deprecatedFor: 'progress-bar-track'},
+      {
+        className: 'astryx-progressbar-track',
+        deprecatedFor: 'progress-bar-track',
+      },
       {
         className: 'astryx-progressbar-mark',
         visualProps: ['variant', 'placement'],
@@ -254,28 +375,83 @@ export const docsZh = {
       },
     ],
     vars: [
-      {name: '--_progressbar-mark-width', description: '目标标记刻度宽度', default: '2px', private: true},
-      {name: '--_progressbar-mark-height', description: '目标标记刻度高度', default: '8px', private: true},
+      {
+        name: '--_progressbar-mark-width',
+        description: '目标标记刻度宽度',
+        default: '2px',
+        private: true,
+      },
+      {
+        name: '--_progressbar-mark-height',
+        description: '目标标记刻度高度',
+        default: '8px',
+        private: true,
+      },
     ],
     derived: [
       {property: 'width', vars: ['--_progressbar-mark-width'], replaces: true},
-      {property: 'height', vars: ['--_progressbar-mark-height'], replaces: true},
+      {
+        property: 'height',
+        vars: ['--_progressbar-mark-height'],
+        replaces: true,
+      },
     ],
   },
   usage: {
+    anatomy,
     description:
       'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
-      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
-      { guidance: true, description: 'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.' },
-      { guidance: true, description: 'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.' },
-      { guidance: true, description: 'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.' },
-      { guidance: false, description: 'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.' },
-      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
+      {
+        guidance: true,
+        description:
+          "Use a determinate bar when the total amount of work is known, and indeterminate when it's not.",
+      },
+      {
+        guidance: true,
+        description:
+          'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.',
+      },
+      {
+        guidance: true,
+        description:
+          "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place icons or labels inside the bar; compose them alongside it using layout components.',
+      },
+      {
+        guidance: false,
+        description:
+          "Use a progress bar for instant actions; it's meant for operations that take noticeable time.",
+      },
+      {
+        guidance: false,
+        description:
+          'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.',
+      },
     ],
   },
 };
@@ -285,19 +461,60 @@ export const docsDense = {
   description:
     'Progress bar for displaying determinate or indeterminate progress.',
   usage: {
+    anatomy,
     description:
       'A horizontal bar showing task completion. Self-contained carries the full visual range itself; paired-with-value is for bars paired with an equivalent visible value. A built-in value label selects paired-with-value automatically. Use indeterminate progress only when the amount completed cannot be calculated.',
     bestPractices: [
-      { guidance: true, description: "Use a determinate bar when the total amount of work is known, and indeterminate when it's not." },
-      { guidance: true, description: 'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.' },
-      { guidance: true, description: "Always provide a label, even if hidden; screen readers need it to announce what's loading." },
-      { guidance: true, description: 'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.' },
-      { guidance: true, description: 'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.' },
-      { guidance: true, description: 'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.' },
-      { guidance: false, description: 'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.' },
-      { guidance: false, description: 'Place icons or labels inside the bar; compose them alongside it using layout components.' },
-      { guidance: false, description: "Use a progress bar for instant actions; it's meant for operations that take noticeable time." },
-      { guidance: false, description: 'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.' },
+      {
+        guidance: true,
+        description:
+          "Use a determinate bar when the total amount of work is known, and indeterminate when it's not.",
+      },
+      {
+        guidance: true,
+        description:
+          'Choose a color variant that matches the context: accent for general progress, success for completion, warning or error for alerts.',
+      },
+      {
+        guidance: true,
+        description:
+          "Always provide a label, even if hidden; screen readers need it to announce what's loading.",
+      },
+      {
+        guidance: true,
+        description:
+          'Use self-contained when the graphic is the only visible progress cue; its range-end marker identifies the total range.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use paired-with-value only when a visible value such as “65%” or “3 of 5” provides equivalent information. `hasValueLabel` is the built-in pairing.',
+      },
+      {
+        guidance: true,
+        description:
+          'Expect self-contained warning progress to use a darker warning color than badges or paired-with-value progress. The darker marker preserves 3:1 fill-to-track contrast; use paired-with-value with a visible value when the brighter semantic yellow is preferred.',
+      },
+      {
+        guidance: false,
+        description:
+          'Use paired-with-value only because it looks quieter. A hidden label or ARIA value is not an equivalent visible cue.',
+      },
+      {
+        guidance: false,
+        description:
+          'Place icons or labels inside the bar; compose them alongside it using layout components.',
+      },
+      {
+        guidance: false,
+        description:
+          "Use a progress bar for instant actions; it's meant for operations that take noticeable time.",
+      },
+      {
+        guidance: false,
+        description:
+          'Use multiple progress bars stacked together for the same operation; use one bar with a value label instead.',
+      },
     ],
   },
   propDescriptions: {
@@ -306,12 +523,17 @@ export const docsDense = {
     max: 'Maximum value.',
     isLabelHidden: 'Visually hide label (remains accessible).',
     hasValueLabel: 'Show formatted value text (ignored when indeterminate).',
-    formatValueLabel: 'Custom value label formatter; defaults to percentage string.',
+    formatValueLabel:
+      'Custom value label formatter; defaults to percentage string.',
     variant: 'Semantic color variant.',
-    presentation: 'self-contained includes the range-end marker; paired-with-value requires an equivalent visible value. When omitted, hasValueLabel selects paired-with-value and other determinate bars use self-contained.',
-    isIndeterminate: 'Animated loading indicator for unknown progress. Uses the self-contained treatment and omits the range-end marker.',
-    marks: 'Fixed target marks ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. Marks inside the fill take the variant on-color; marks on the bare track take the primary text color (secondary when disabled). A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
+    presentation:
+      'self-contained includes the range-end marker; paired-with-value requires an equivalent visible value. When omitted, hasValueLabel selects paired-with-value and other determinate bars use self-contained.',
+    isIndeterminate:
+      'Animated loading indicator for unknown progress. Uses the self-contained treatment and omits the range-end marker.',
+    marks:
+      'Fixed target marks ({value, label?}) drawn on the track in the 0..max scale; stay visible past the fill. Marks inside the fill take the variant on-color; marks on the bare track take the primary text color (secondary when disabled). A label reveals a tooltip on hover/focus. Ignored when indeterminate.',
     isDisabled: 'Visually disabled: grays out fill and text.',
-    xstyle: 'StyleX styles for layout customization. Must be stylex.create() value.',
+    xstyle:
+      'StyleX styles for layout customization. Must be stylex.create() value.',
   },
 };
