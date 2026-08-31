@@ -1082,6 +1082,12 @@ export const neutralTheme = defineTheme({
       'variant:error': {backgroundColor: statusFill.error},
     },
 
+    'segmented-control-item': {
+      selected: {
+        boxShadow: 'none',
+      },
+    },
+
     banner: {
       base: {
         '--color-neutral': 'var(--color-on-tint-neutral)',
