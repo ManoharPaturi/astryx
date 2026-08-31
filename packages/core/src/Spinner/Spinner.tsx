@@ -75,6 +75,19 @@ const RESOLVED_STROKE = '--_spinner-ring-stroke';
 const RESOLVED_GEOMETRY_VARS = [RESOLVED_DIAMETER, RESOLVED_STROKE];
 
 /**
+ * An unregistered bridge from the labelled public root to the painted status
+ * element. A missing public var makes the bridge invalid, so the status falls
+ * back to its own default or theme declaration. A consumer `style`, `className`,
+ * or `xstyle` declaration on the root makes the bridge concrete; the inherited
+ * value then keeps consumer precedence even when the theme declares that public
+ * var directly on the child target.
+ */
+const ROOT_DIAMETER = '--_spinner-root-diameter';
+const ROOT_STROKE = '--_spinner-root-stroke';
+const ROOT_COLOR = '--_spinner-root-color';
+const ROOT_TRACK_COLOR = '--_spinner-root-track-color';
+
+/**
  * The composed box size: diameter plus a stroke width on each side.
  *
  * It is deliberately NOT registered, unlike the pair above. The element reads
@@ -222,18 +235,20 @@ const styles = stylex.create({
     flexDirection: 'column',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],
+    [ROOT_DIAMETER]: 'var(--spinner-diameter)',
+    [ROOT_STROKE]: 'var(--spinner-stroke-width)',
+    [ROOT_COLOR]: 'var(--spinner-color)',
+    [ROOT_TRACK_COLOR]: 'var(--spinner-track-color)',
   },
   spinner: {
     display: 'inline-grid',
     placeItems: 'center',
     verticalAlign: 'middle',
-    // The public geometry vars, resolved into the registered `<length>` pair
-    // the arithmetic below needs. Reading them here rather than in each
-    // `calc()` keeps one place where a themed value enters the component, and
-    // it is the span that reads them whether the theme target is the span or
-    // the wrapper — a custom property inherits either way.
-    [RESOLVED_DIAMETER]: 'var(--spinner-diameter)',
-    [RESOLVED_STROKE]: 'var(--spinner-stroke-width)',
+    // A labelled root may supply a consumer override through the private bridge.
+    // Without one, the invalid first arm falls back to the public value declared
+    // directly on this target by the component default or active theme.
+    [RESOLVED_DIAMETER]: `var(${ROOT_DIAMETER}, var(--spinner-diameter))`,
+    [RESOLVED_STROKE]: `var(${ROOT_STROKE}, var(--spinner-stroke-width))`,
     // The size of the box, composed here and applied as an inline style at the
     // element, so that the box and the drawn ring come from the same two vars
     // and a themed size moves both together — without the sizing moving from
@@ -309,11 +324,9 @@ const styles = stylex.create({
     r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
     strokeWidth: `var(${RESOLVED_STROKE})`,
   },
-  // The two ring colors ride `stroke` directly, read off the public vars the
-  // shade declares. The paint comes from the cascade, so every notation a
-  // theme can write — `var()`, `color-mix()`, and the `currentColor` the
-  // inherit shade is built on — resolves where it is used, and a color changed
-  // after mount repaints instead of going stale.
+  // The ring colors use the same bridge as geometry. This preserves the public
+  // root's consumer overrides without moving the target away from the element
+  // that paints the ring.
   //
   // The dash pattern is composed from the resolved diameter the same way, so a
   // themed ring keeps the same fraction of arc rather than the same absolute
@@ -323,18 +336,21 @@ const styles = stylex.create({
   // default arc by 0.64% and moves the cap by half a pixel. Composing the
   // lengths keeps the default byte-identical to what it drew before.
   arc: {
-    stroke: 'var(--spinner-color)',
+    stroke: `var(${ROOT_COLOR}, var(--spinner-color))`,
     transform: 'rotate(-90deg)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
   },
-  track: {stroke: 'var(--spinner-track-color)'},
+  track: {stroke: `var(${ROOT_TRACK_COLOR}, var(--spinner-track-color))`},
 });
 
-// What each named `size` and `shade` resolve to. Both groups DECLARE the four
-// public vars, on the element that carries the `spinner` theme target, and
-// everything downstream reads them — so a theme's `@layer astryx-theme` rule
-// against `.astryx-spinner.xl` overrides the default the same way it does for
-// `--tree-list-indent` or `--button-focus-offset`, e.g.
+// What each named `size` and `shade` resolves to. Both groups declare the four
+// public vars on the status element that carries the `spinner` target. A
+// labelled wrapper declares only the private bridges above: they are invalid
+// until a consumer sets the corresponding public var on that root, so normal
+// defaults and theme overrides resolve on the target while a root override keeps
+// the documented consumer precedence. A theme's `@layer astryx-theme` rule
+// against `.astryx-spinner.xl` overrides the target's default the same way it
+// does for `--tree-list-indent` or `--button-focus-offset`, e.g.
 // spinner: { 'size:xl': { '--spinner-diameter': '40px' } }.
 //
 // Declaring is only safe because #5410 moved the compiled StyleX CSS inside
@@ -505,16 +521,11 @@ export function Spinner({
       data-testid={hasLabel ? undefined : testId}
       {...(hasLabel ? {} : restProps)}
       {...mergeProps(
-        hasLabel ? '' : themeProps('spinner', {size, shade}),
+        themeProps('spinner', {size, shade}),
         stylex.props(
           styles.spinner,
-          // The defaults are declared on whichever element carries the theme
-          // target, and only there: when a label moves the target to the
-          // wrapper, this span must inherit the wrapper's value rather than
-          // declare its own, which would shadow a theme's override with the
-          // default it is trying to replace.
-          !hasLabel && sizeStyles[size],
-          !hasLabel && shadeStyles[shade],
+          sizeStyles[size],
+          shadeStyles[shade],
           !hasLabel && xstyle,
         ),
         hasLabel ? undefined : className,
@@ -572,17 +583,7 @@ export function Spinner({
       ref={ref as React.Ref<HTMLDivElement>}
       data-testid={testId}
       {...restProps}
-      {...mergeProps(
-        themeProps('spinner', {size, shade}),
-        stylex.props(
-          styles.wrapper,
-          sizeStyles[size],
-          shadeStyles[shade],
-          xstyle,
-        ),
-        className,
-        style,
-      )}>
+      {...mergeProps(stylex.props(styles.wrapper, xstyle), className, style)}>
       {spinner}
       {typeof label === 'string' ? (
         <Text id={labelId} type="body" weight="bold">

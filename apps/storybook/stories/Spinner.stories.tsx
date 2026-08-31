@@ -1,8 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import type {CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import type {Meta, StoryObj} from '@storybook/react';
-import {Spinner} from '@astryxdesign/core/Spinner';
+import {Spinner, type SpinnerProps} from '@astryxdesign/core/Spinner';
 import {Text} from '@astryxdesign/core/Text';
 import {HStack, VStack} from '@astryxdesign/core/Layout';
 import {Theme, defineTheme} from '@astryxdesign/core/theme';
@@ -267,5 +268,91 @@ export const NarrowFlexHost: Story = {
         </div>
       </VStack>
     </VStack>
+  ),
+};
+
+const cascadeContractTheme = defineTheme({
+  name: 'spinner-cascade-contract',
+  components: {
+    spinner: {
+      'size:xl': {
+        '--spinner-diameter': '60px',
+        '--spinner-stroke-width': '7px',
+      },
+      'shade:subtle': {
+        '--spinner-color': 'rgb(71, 72, 73)',
+        '--spinner-track-color': 'rgb(74, 75, 76)',
+      },
+    },
+  },
+});
+
+const rootStyleOverride = {
+  '--spinner-diameter': '40px',
+  '--spinner-stroke-width': '5px',
+  '--spinner-color': 'rgb(1, 2, 3)',
+  '--spinner-track-color': 'rgb(4, 5, 6)',
+} as CSSProperties;
+
+const rootXstyleOverride = stylex.create({
+  root: {
+    '--spinner-diameter': '42px',
+    '--spinner-stroke-width': '6px',
+    '--spinner-color': 'rgb(7, 8, 9)',
+    '--spinner-track-color': 'rgb(10, 11, 12)',
+  },
+});
+
+/**
+ * A browser fixture for the labelled root / painted target split. A theme owns
+ * the status target, while consumer styling remains on the public wrapper and
+ * must keep its higher precedence through the private variable bridge.
+ */
+export const ThemeCascadeContract: Story = {
+  render: () => (
+    <Theme theme={cascadeContractTheme} mode="light">
+      <VStack gap={3} hAlign="start">
+        <style>{`
+          .spinner-root-class-override {
+            --spinner-diameter: 44px;
+            --spinner-stroke-width: 8px;
+            --spinner-color: rgb(13, 14, 15);
+            --spinner-track-color: rgb(16, 17, 18);
+          }
+        `}</style>
+        <Spinner
+          size="xl"
+          shade="subtle"
+          data-spinner-cascade="theme-unlabelled"
+        />
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Theme only"
+          data-spinner-cascade="theme-labelled"
+        />
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Root style override"
+          style={rootStyleOverride}
+          data-spinner-cascade="root-style"
+        />
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Root xstyle override"
+          xstyle={rootXstyleOverride.root as unknown as SpinnerProps['xstyle']}
+          data-spinner-cascade="root-xstyle"
+        />
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Root class override"
+          className="spinner-root-class-override"
+          data-spinner-cascade="root-class"
+        />
+      </VStack>
+    </Theme>
   ),
 };

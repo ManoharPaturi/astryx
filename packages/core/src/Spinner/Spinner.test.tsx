@@ -9,9 +9,11 @@
  * SYNC: When Spinner.tsx changes, update tests to match new behavior
  */
 
+import type {CSSProperties} from 'react';
+import * as stylex from '@stylexjs/stylex';
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
-import {Spinner} from './Spinner';
+import {Spinner, type SpinnerProps} from './Spinner';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
@@ -22,6 +24,15 @@ const SIZES = {
   lg: {diameter: 18, border: 3},
   xl: {diameter: 28, border: 4},
 } as const;
+
+const rootVariableOverrides = stylex.create({
+  spinner: {
+    '--spinner-diameter': '42px',
+    '--spinner-stroke-width': '6px',
+    '--spinner-color': 'rgb(7, 8, 9)',
+    '--spinner-track-color': 'rgb(10, 11, 12)',
+  },
+});
 
 const ring = (testId = 'spinner') =>
   screen.getByTestId(testId).querySelector('svg') as SVGSVGElement;
@@ -141,6 +152,117 @@ describe('Spinner', () => {
     render(<Spinner data-testid="spinner" />);
     const spinner = screen.getByTestId('spinner');
     expect(spinner.tagName.toLowerCase()).toBe('span');
+  });
+
+  describe('theme target ownership', () => {
+    const expectSpinnerTarget = (element: HTMLElement) => {
+      expect(element).toHaveClass('astryx-spinner', 'xl', 'subtle');
+      expect(element).toHaveAttribute('data-size', 'xl');
+      expect(element).toHaveAttribute('data-shade', 'subtle');
+    };
+
+    const expectSpinnerVars = (element: HTMLElement) => {
+      const computed = window.getComputedStyle(element);
+      expect(computed.getPropertyValue('--spinner-diameter')).toBe('28px');
+      expect(computed.getPropertyValue('--spinner-stroke-width')).toBe('4px');
+      expect(computed.getPropertyValue('--spinner-color')).not.toBe('');
+      expect(computed.getPropertyValue('--spinner-track-color')).not.toBe('');
+    };
+
+    it('places the target and variant declarations on an unlabelled status span', () => {
+      render(<Spinner size="xl" shade="subtle" data-testid="spinner" />);
+      const root = screen.getByTestId('spinner');
+
+      expect(root).toBe(screen.getByRole('status'));
+      expect(root.tagName).toBe('SPAN');
+      expectSpinnerTarget(root);
+      expectSpinnerVars(root);
+    });
+
+    it('places the labelled target on the status span while its root owns the variant declarations', () => {
+      render(
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Loading results"
+          data-testid="spinner"
+        />,
+      );
+      const root = screen.getByTestId('spinner');
+      const status = screen.getByRole('status');
+
+      expect(root.tagName).toBe('DIV');
+      expect(status.tagName).toBe('SPAN');
+      expect(status.parentElement).toBe(root);
+      expectSpinnerTarget(status);
+      expect(root).not.toHaveClass('astryx-spinner', 'xl', 'subtle');
+      expect(root).not.toHaveAttribute('data-size');
+      expect(root).not.toHaveAttribute('data-shade');
+      expectSpinnerVars(status);
+    });
+
+    it('keeps labelled root CSS variable overrides on the ring ancestor without shadowing them', () => {
+      const style = {
+        '--spinner-diameter': '40px',
+        '--spinner-stroke-width': '5px',
+        '--spinner-color': 'rgb(1, 2, 3)',
+        '--spinner-track-color': 'rgb(4, 5, 6)',
+      } as CSSProperties;
+      render(
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Loading results"
+          style={style}
+          data-testid="spinner"
+        />,
+      );
+      const root = screen.getByTestId('spinner');
+      const status = screen.getByRole('status');
+
+      const rootStyle = window.getComputedStyle(root);
+      expect(rootStyle.getPropertyValue('--spinner-diameter')).toBe('40px');
+      expect(rootStyle.getPropertyValue('--spinner-stroke-width')).toBe('5px');
+      expect(rootStyle.getPropertyValue('--spinner-color')).toBe(
+        'rgb(1, 2, 3)',
+      );
+      expect(rootStyle.getPropertyValue('--spinner-track-color')).toBe(
+        'rgb(4, 5, 6)',
+      );
+      // jsdom does not resolve inherited custom-property bridges. It can still
+      // pin both ends: the root keeps the consumer values, while the targeted
+      // status owns the component defaults that a theme can override. The real
+      // cascade and painted result are covered in Chromium.
+      expectSpinnerVars(status);
+      expect(status.parentElement).toBe(root);
+      expect(status.querySelectorAll('circle')).toHaveLength(2);
+    });
+
+    it('keeps labelled root xstyle variable overrides on the ring ancestor', () => {
+      render(
+        <Spinner
+          size="xl"
+          shade="subtle"
+          label="Loading results"
+          xstyle={
+            rootVariableOverrides.spinner as unknown as SpinnerProps['xstyle']
+          }
+          data-testid="spinner"
+        />,
+      );
+      const root = screen.getByTestId('spinner');
+      const status = screen.getByRole('status');
+      const rootStyle = window.getComputedStyle(root);
+
+      expect(rootStyle.getPropertyValue('--spinner-diameter')).toBe('42px');
+      expect(rootStyle.getPropertyValue('--spinner-stroke-width')).toBe('6px');
+      expect(rootStyle.getPropertyValue('--spinner-color')).toBe('rgb(7,8,9)');
+      expect(rootStyle.getPropertyValue('--spinner-track-color')).toBe(
+        'rgb(10,11,12)',
+      );
+      expect(status.parentElement).toBe(root);
+      expectSpinnerVars(status);
+    });
   });
 
   // The box has always been sized by an inline width/height written after the

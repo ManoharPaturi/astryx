@@ -1,11 +1,10 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
- * @description Asserts every documented public component var is settable from a theme
+ * @description Asserts documented component vars and the Spinner root cascade in Chromium
  * @input --storybook-dir <path> [--port <n>]
- * @output One line per var; exit 1 if any var cannot be reached from @layer astryx-theme
+ * @output One line per check; exit 1 if a theme or root override cannot reach its painted owner
  *
  * A public var is a promise: set it on the component's theme target and the
  * component changes. Nothing in the unit suite can check that promise. jsdom
@@ -26,8 +25,10 @@
  *   3. the theme rule loses               — an inline write or an unlayered
  *                                           declaration outranks it (#4530)
  *
- * What it does NOT prove is the pixel: it stops at the value arriving on the
- * element. What the component then paints with it is that component's own test.
+ * The generic pass stops at the value arriving on the declared element; it does
+ * not prove the component paints with it. Spinner's focused regression below
+ * continues through computed SVG geometry and stroke paint because its public
+ * root and painted target are different elements.
  */
 
 const {chromium} = require('playwright');
@@ -139,9 +140,7 @@ function reachInPage([name, classNames, sentinel]) {
   const declaring = [...document.querySelectorAll('*')].find(el => {
     if (!getComputedStyle(el).getPropertyValue(name).trim()) return false;
     const parent = el.parentElement;
-    return (
-      !parent || !getComputedStyle(parent).getPropertyValue(name).trim()
-    );
+    return !parent || !getComputedStyle(parent).getPropertyValue(name).trim();
   });
   if (!declaring) return {status: 'undeclared'};
 
@@ -195,6 +194,114 @@ async function probe(context, entry, index) {
   return last;
 }
 
+/**
+ * Spinner's labelled public root and painted theme target are different
+ * elements. This browser fixture proves the private bridge keeps the normal
+ * theme path and all three root styling escape hatches in the promised order.
+ */
+async function probeSpinnerCascade(context, index) {
+  const id = 'core-spinner--theme-cascade-contract';
+  if (!Object.values(index.entries || {}).some(entry => entry.id === id)) {
+    return {status: 'nostory'};
+  }
+
+  const page = await context.newPage();
+  try {
+    await page.goto(
+      `http://localhost:${port}/iframe.html?id=${id}&viewMode=story`,
+      {waitUntil: 'networkidle', timeout: 30000},
+    );
+    await page.waitForSelector('[data-spinner-cascade="root-class"]', {
+      timeout: 20000,
+    });
+    const readings = await page.evaluate(() => {
+      const read = name => {
+        const root = document.querySelector(`[data-spinner-cascade="${name}"]`);
+        const status = root?.matches('[role="status"]')
+          ? root
+          : root?.querySelector('[role="status"]');
+        const circles = status?.querySelectorAll('circle');
+        const svg = status?.querySelector('svg');
+        if (
+          !(root instanceof HTMLElement) ||
+          !(status instanceof HTMLElement) ||
+          !svg ||
+          circles?.length !== 2
+        ) {
+          return {name, error: 'missing root, status, svg, or circles'};
+        }
+        const statusStyle = getComputedStyle(status);
+        const svgStyle = getComputedStyle(svg);
+        const box = status.getBoundingClientRect();
+        return {
+          name,
+          rootHasTarget: root.classList.contains('astryx-spinner'),
+          statusHasTarget: status.classList.contains('astryx-spinner'),
+          publicDiameter: statusStyle
+            .getPropertyValue('--spinner-diameter')
+            .trim(),
+          publicStroke: statusStyle
+            .getPropertyValue('--spinner-stroke-width')
+            .trim(),
+          rootDiameter: statusStyle
+            .getPropertyValue('--_spinner-root-diameter')
+            .trim(),
+          rootStroke: statusStyle
+            .getPropertyValue('--_spinner-root-stroke')
+            .trim(),
+          box: [box.width, box.height],
+          svgBox: [svgStyle.width, svgStyle.height],
+          radius: getComputedStyle(circles[1]).r,
+          strokeWidth: getComputedStyle(circles[1]).strokeWidth,
+          arcPaint: getComputedStyle(circles[1]).stroke,
+          trackPaint: getComputedStyle(circles[0]).stroke,
+        };
+      };
+      return [
+        read('theme-unlabelled'),
+        read('theme-labelled'),
+        read('root-style'),
+        read('root-xstyle'),
+        read('root-class'),
+      ];
+    });
+
+    const expected = {
+      'theme-unlabelled': [74, 30, 7, 'rgb(71, 72, 73)', 'rgb(74, 75, 76)', ''],
+      'theme-labelled': [74, 30, 7, 'rgb(71, 72, 73)', 'rgb(74, 75, 76)', ''],
+      'root-style': [50, 20, 5, 'rgb(1, 2, 3)', 'rgb(4, 5, 6)', '40px'],
+      'root-xstyle': [54, 21, 6, 'rgb(7, 8, 9)', 'rgb(10, 11, 12)', '42px'],
+      'root-class': [60, 22, 8, 'rgb(13, 14, 15)', 'rgb(16, 17, 18)', '44px'],
+    };
+    const near = (value, number) =>
+      Math.abs(Number.parseFloat(String(value)) - number) < 0.05;
+    const failed = readings.find(reading => {
+      const want = expected[reading.name];
+      return (
+        reading.error ||
+        !reading.statusHasTarget ||
+        (reading.name !== 'theme-unlabelled' && reading.rootHasTarget) ||
+        reading.publicDiameter !== '60px' ||
+        reading.publicStroke !== '7px' ||
+        reading.rootDiameter !== want[5] ||
+        !near(reading.box?.[0], want[0]) ||
+        !near(reading.box?.[1], want[0]) ||
+        !near(reading.svgBox?.[0], want[0]) ||
+        !near(reading.svgBox?.[1], want[0]) ||
+        !near(reading.radius, want[1]) ||
+        !near(reading.strokeWidth, want[2]) ||
+        reading.arcPaint !== want[3] ||
+        reading.trackPaint !== want[4]
+      );
+    });
+    return failed == null
+      ? {status: 'reaches', readings}
+      : {status: 'failed', reading: failed};
+  } finally {
+    await page.close();
+  }
+}
+
 async function run() {
   const repoRoot = process.cwd();
   const dir = path.resolve(repoRoot, storybookDir);
@@ -231,7 +338,9 @@ async function run() {
       const r = await probe(context, entry, index);
       const where = `${entry.component} ${entry.name}`;
       if (r.status === 'reaches') {
-        console.log(`✓ ${where} — .${r.target} sets it (${r.before} → ${r.after})`);
+        console.log(
+          `✓ ${where} — .${r.target} sets it (${r.before} → ${r.after})`,
+        );
         continue;
       }
       failures.push(where);
@@ -252,6 +361,18 @@ async function run() {
         );
       }
     }
+
+    const spinnerCascade = await probeSpinnerCascade(context, index);
+    if (spinnerCascade.status === 'reaches') {
+      console.log(
+        '✓ Spinner labelled root overrides — theme, style, xstyle, and className precedence reaches the ring',
+      );
+    } else {
+      failures.push('Spinner labelled root override precedence');
+      console.error(
+        `✗ Spinner labelled root override precedence: ${JSON.stringify(spinnerCascade)}`,
+      );
+    }
   } finally {
     await browser.close();
     server.close();
@@ -259,13 +380,15 @@ async function run() {
 
   if (failures.length > 0) {
     console.error(
-      `\nFailing: ${failures.length} documented public var(s) a theme cannot set — ` +
-        `${failures.join(', ')}. A var an author reads about and cannot use is ` +
-        `worse than no var.`,
+      `\nFailing: ${failures.length} theme reachability check(s) — ` +
+        `${failures.join(', ')}. A documented override that cannot reach its ` +
+        `painted owner is worse than no override.`,
     );
     return 1;
   }
-  console.log(`\nAll ${entries.length} public component vars are settable from a theme.`);
+  console.log(
+    `\nAll ${entries.length} public component vars and the Spinner root override cascade are reachable.`,
+  );
   return 0;
 }
 
