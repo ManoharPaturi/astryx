@@ -597,9 +597,7 @@ const neutralSyntax = defineSyntaxTheme({
       getPaletteStop('yellow', 80, 'dark'),
     ],
     property: [getPaletteStop('teal', 30), getPaletteStop('teal', 80, 'dark')],
-    // #a3a3a3/#525252 (this pair's own disabled-text stop) failed WCAG AA
-    // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
-    punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
+    punctuation: ['#6e6e6e', '#a0a0a0'],
     background: [
       getPaletteStop('neutral', 95),
       getPaletteStop('neutral', 0, 'dark'),
@@ -715,9 +713,6 @@ export const neutralTheme = defineTheme({
       getPaletteStop('neutral', 10),
       getPaletteStop('neutral', 95),
     ],
-    // Light secondary is stop 35 (#525252), not stop 50 (#777777): stop 50 only
-    // reaches 4.19:1 on the stop 95 body (#f1f1f1), just under WCAG AA 4.5:1.
-    // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
     '--color-text-secondary': [
       getPaletteStop('neutral', 35),
       getPaletteStop('neutral', 65),
