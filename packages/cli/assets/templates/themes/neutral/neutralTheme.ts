@@ -1,7 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/** Neutral theme with a grayscale foundation and approved OKLCH color ramps. */
-
 import {
   defineTheme,
   defineSyntaxTheme,
@@ -10,7 +8,6 @@ import {
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
-/** Approved tonal palette. Prefer semantic tokens before selecting a stop. */
 export const neutralPalettes = defineTonalPalettes({
   neutral: {
     light: {
@@ -564,7 +561,6 @@ function withAlpha(
   return `${color}${alpha}`;
 }
 
-/** Syntax colors use the same palette stops as categorical icons. */
 const neutralSyntax = defineSyntaxTheme({
   name: 'xds-neutral',
   tokens: {
@@ -605,20 +601,42 @@ const neutralSyntax = defineSyntaxTheme({
     // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
     punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
     background: [
-      getPaletteStop('neutral', 95, 'light'),
-      getPaletteStop('neutral', 0),
+      getPaletteStop('neutral', 100),
+      getPaletteStop('neutral', 0, 'dark'),
     ],
   },
 });
+
+const neutralRoleTokens: Record<string, string> = {
+  '--color-status-fill-accent': lightDark('#0074e2', '#6d9cfe'),
+  '--color-status-fill-success': lightDark('#198100', '#64af4c'),
+  '--color-status-fill-warning': '#ffce2f',
+  '--color-status-fill-error': lightDark('#c9303a', '#ff705d'),
+  '--color-on-tint-neutral': lightDark(
+    withAlpha(getPaletteStop('neutral', 100), '33'),
+    withAlpha(getPaletteStop('neutral', 0), '33'),
+  ),
+  '--color-on-tint-overlay-hover': lightDark(
+    withAlpha(getPaletteStop('neutral', 100), '1A'),
+    withAlpha(getPaletteStop('neutral', 0), '1A'),
+  ),
+  '--color-on-tint-overlay-pressed': lightDark(
+    withAlpha(getPaletteStop('neutral', 100), '33'),
+    withAlpha(getPaletteStop('neutral', 0), '33'),
+  ),
+};
+
+const statusFill = {
+  accent: 'var(--color-status-fill-accent)',
+  success: 'var(--color-status-fill-success)',
+  warning: 'var(--color-status-fill-warning)',
+  error: 'var(--color-status-fill-error)',
+} as const;
 
 export const neutralTheme = defineTheme({
   name: 'neutral',
   palettes: neutralPalettes,
 
-  // Typography: Figtree across body, heading, and display sizes (display
-  // size tokens inherit from heading.family). Monospace stays as the
-  // platform default for code.
-  // Scale: base=14, ratio=1.2. Bold weights on h3/h4 for subsection hierarchy.
   typography: {
     scale: {base: 14, ratio: 1.2},
     body: {
@@ -639,22 +657,13 @@ export const neutralTheme = defineTheme({
     },
   },
 
-  // Motion: snappier than default to match shadcn/Tailwind conventions.
-  // Produces: fast-min=95ms, fast=125ms, fast-max=165ms,
-  //           medium-min=225ms, medium=300ms, medium-max=400ms.
   motion: {fast: 125, medium: 300, slow: 700, ratio: 0.75},
 
   syntax: neutralSyntax,
 
-  // All mapped colors come from `palettes`; syntax punctuation is the only
-  // documented opaque exception.
   tokens: {
-    // =========================================================================
-    // Core — exact numbered stops from neutralPalettes.neutral.
-    // =========================================================================
+    ...neutralRoleTokens,
 
-    // Dark cards and popovers match the body and rely on elevation; interactive
-    // surfaces use the next lighter neutral stop.
     '--color-background-surface': [
       getPaletteStop('neutral', 100),
       getPaletteStop('neutral', 10, 'dark'),
@@ -676,7 +685,6 @@ export const neutralTheme = defineTheme({
       getPaletteStop('neutral', 5, 'dark'),
     ],
 
-    // Accent + neutral surface tints (sit alongside backgrounds)
     '--color-accent': [
       getPaletteStop('neutral', 15),
       getPaletteStop('neutral', 90, 'dark'),
@@ -690,7 +698,6 @@ export const neutralTheme = defineTheme({
       withAlpha(getPaletteStop('neutral', 100), '1A'),
     ],
 
-    // Overlays (modal scrims, hover/pressed tints)
     '--color-overlay': [
       withAlpha(getPaletteStop('neutral', 0), '80'),
       withAlpha(getPaletteStop('neutral', 0), 'CC'),
@@ -704,7 +711,6 @@ export const neutralTheme = defineTheme({
       withAlpha(getPaletteStop('neutral', 100), '1A'),
     ],
 
-    // Text
     '--color-text-primary': [
       getPaletteStop('neutral', 10),
       getPaletteStop('neutral', 95),
@@ -726,7 +732,6 @@ export const neutralTheme = defineTheme({
     ],
     '--color-on-dark': getPaletteStop('neutral', 100),
     '--color-on-light': getPaletteStop('neutral', 10),
-    // Contrast: neutral accent is near-black (L) / near-white (D)
     '--color-on-accent': [
       getPaletteStop('neutral', 100),
       getPaletteStop('neutral', 10),
@@ -741,7 +746,6 @@ export const neutralTheme = defineTheme({
     ],
     '--color-on-warning': getPaletteStop('neutral', 10),
 
-    // Icon
     '--color-icon-accent': [
       getPaletteStop('neutral', 15),
       getPaletteStop('neutral', 90, 'dark'),
@@ -759,13 +763,10 @@ export const neutralTheme = defineTheme({
       getPaletteStop('neutral', 35),
     ],
 
-    // Status colors pair dark foregrounds with pastel surfaces in light mode,
-    // and light foregrounds with translucent hue surfaces in dark mode.
     '--color-success': [
       getPaletteStop('green', 30),
       getPaletteStop('green', 80, 'dark'),
     ],
-    // Error uses stronger stops to preserve contrast through pressed overlays.
     '--color-error': [
       getPaletteStop('red', 25),
       getPaletteStop('red', 85, 'dark'),
@@ -787,9 +788,6 @@ export const neutralTheme = defineTheme({
       withAlpha(getPaletteStop('yellow', 70, 'dark'), '3D'),
     ],
 
-    // Borders retain the released Neutral appearance while referencing exact
-    // approved stops. Components that require a 3:1 identifying boundary
-    // should provide that treatment through a component-specific mapping.
     '--color-border': [
       withAlpha(getPaletteStop('neutral', 0), '14'),
       withAlpha(getPaletteStop('neutral', 100), '1A'),
@@ -799,7 +797,6 @@ export const neutralTheme = defineTheme({
       getPaletteStop('neutral', 30, 'dark'),
     ],
 
-    // Effects
     '--color-skeleton': [
       getPaletteStop('neutral', 90),
       getPaletteStop('neutral', 30, 'dark'),
@@ -810,8 +807,6 @@ export const neutralTheme = defineTheme({
     ],
     '--color-tint-hover': ['black', 'white'],
 
-    // Categorical roles use pastel surfaces and dark text in light mode, then
-    // translucent hue surfaces and light text in dark mode.
     '--color-background-red': [
       getPaletteStop('red', 85),
       withAlpha(getPaletteStop('red', 70, 'dark'), '3D'),
@@ -965,7 +960,6 @@ export const neutralTheme = defineTheme({
       getPaletteStop('pink', 80, 'dark'),
     ],
 
-    // Gray uses the neutral categorical surface rather than a chromatic ramp.
     '--color-background-gray': [
       getPaletteStop('neutral', 90),
       'var(--color-neutral)',
@@ -983,12 +977,6 @@ export const neutralTheme = defineTheme({
       getPaletteStop('neutral', 90, 'dark'),
     ],
 
-    // =========================================================================
-    // Radius — slightly larger than default (kept as-is)
-    // --radius-none and --radius-full are always fixed and must never be
-    // scaled by a theme (see defineTheme's radius config docs) — 0 and
-    // 9999px respectively, matching @astryxdesign/core's own defaults.
-    // =========================================================================
     '--radius-none': '0px',
     '--radius-inner': '0.375rem',
     '--radius-element': '0.625rem',
@@ -996,24 +984,6 @@ export const neutralTheme = defineTheme({
     '--radius-page': '1.75rem',
     '--radius-full': '9999px',
 
-    // =========================================================================
-    // Shadows
-    //
-    // Light mode: matches origin/main exactly (5%/10% low+med, 10%/15% high).
-    // Subtle drops; light surfaces don't need rim highlights.
-    //
-    // Dark mode: deepened drops + an all-around 1px white inset that wraps
-    // every edge ("Figma-style bezel"). The inset mimics ambient light
-    // catching the surface's rim on every side, giving cards/popovers/modals
-    // a substantial "lit from above" feel that drop shadows alone can't
-    // achieve against a dark canvas.
-    //   low  :  drops 25%/40% + 8%  white all-around inset
-    //   med  :  drops 35%/50% + 12% white all-around inset
-    //   high :  drops 50%/70% + 15% white all-around inset
-    //
-    // The inset layer uses light-dark(transparent, ...) so light mode is
-    // unaffected — main's exact light values are preserved.
-    // =========================================================================
     '--shadow-low':
       '0 2px 4px light-dark(oklch(0 0 0 / 5%), oklch(0 0 0 / 25%)), ' +
       '0 4px 8px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 40%)), ' +
@@ -1034,84 +1004,35 @@ export const neutralTheme = defineTheme({
   },
 
   components: {
-    // =========================================================================
-    // Button — primary gets white text, secondary gets a border, destructive
-    // uses the OKLCH red filled treatment.
-    // =========================================================================
     button: {
       'variant:destructive': {
-        backgroundColor: 'var(--color-error-muted)', // locked pastel red bg
-        color: 'var(--color-error)', // locked T30 red — matches banner/input error text
+        backgroundColor: 'var(--color-error-muted)',
+        color: 'var(--color-error)',
       },
     },
 
-    // =========================================================================
-    // Badge —
-    //   Semantic (info/success/warning/error): filled saturated T50 + contrasting
-    //     text (white, or dark on yellow). The filled-button rule from #2150
-    //     §3 — text contrast locks the bg stop, so this stays at T50 in
-    //     BOTH modes, unlike pastel surfaces which invert by mode.
-    //   Categorical (blue/green/red/orange/etc.): pastel-tinted hue surface +
-    //     colored text — light mode = soft T87-T90 + dark T30 text; dark mode
-    //     = T20 tinted + T80 light pastel text (sources: --color-background-X
-    //     and --color-text-X tokens).
-    //   Neutral: light gray bg + dark text (or inverted in dark mode).
-    // =========================================================================
     badge: {
-      // Semantic — filled saturated bg + contrasting text.
-      //   Light: vivid T45-T55 from the OKLCH palette + white text
-      //          (~4.5-5:1 — Material/Linear/Vercel pop).
-      //   Dark : T60 stop from the dark-mode tonal palette (chroma×0.85,
-      //          +5 stop-lift taper from issue #2150 §4) + DARK text.
-      //          T60+white fails AA-large (~2.7:1); T60+dark hits 6.6-7:1
-      //          and tames the §4 vibration. Same dark-text-on-bright-bg
-      //          treatment that warning yellow uses in both modes.
       'variant:info': {
-        // Light: T50 #0074e2 (palette saturated stop)
-        // Dark : T60 stop from dark-mode tonal palette of source #0074e2
-        backgroundColor: 'light-dark(#0074e2, #6d9cfe)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.accent,
+        color: 'var(--color-on-accent)',
       },
       'variant:neutral': {
-        // Mirrors the gray categorical badge — same neutral chip treatment
-        // (Neutral 200 light / semi-transparent white wash dark) sourced
-        // from the gray hue tokens, so a single change at the token layer
-        // updates both variants.
         backgroundColor: 'var(--color-background-gray)',
         color: 'var(--color-text-gray)',
       },
       'variant:success': {
-        // Light: T45 #198100 (palette saturated stop)
-        // Dark : T60 stop from dark-mode tonal palette of source #198100
-        backgroundColor: 'light-dark(#198100, #64af4c)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.success,
+        color: 'var(--color-on-success)',
       },
       'variant:warning': {
-        // Yellow stays at the same hex in both modes — chroma reduction
-        // is barely visible at T85, and dark text on yellow doesn't
-        // suffer from the §4 vibration concern.
-        backgroundColor: '#ffce2f',
-        color: '#171717',
+        backgroundColor: statusFill.warning,
+        color: 'var(--color-on-warning)',
       },
       'variant:error': {
-        // Light: T58 #c9303a. The T55 stop #e33f4a pairs with white at only
-        //        4.14:1 — the label is 12px/500, so AA wants 4.5, not the 3:1
-        //        large-text allowance. One tonal step down holds the hue
-        //        (OKLCH H 21.9 -> 22.8, C 0.200 -> 0.189) and reaches 5.29:1.
-        // Dark : T60 stop from dark-mode tonal palette of Tailwind red-600
-        //        source #dc2626 (kept on H=27 alarm-red rather than coral).
-        //        Dark text on it is 6.60:1 and unchanged.
-        backgroundColor: 'light-dark(#c9303a, #ff705d)',
-        color: 'light-dark(#ffffff, #171717)',
+        backgroundColor: statusFill.error,
+        color: 'var(--color-on-error)',
       },
 
-      // Categorical — bg + text reference the per-hue tokens, so behavior
-      // tracks the categorical palette automatically:
-      //   Light: pastel T87-T90 bg + dark T30 colored text (low-key chip)
-      //   Dark : tinted T20 bg + light T80 colored text (per #2150 §5,
-      //          inverted from light to avoid the "pastel-in-both-modes"
-      //          anti-pattern that makes locked light pastels glow on a
-      //          dark body)
       'variant:red': {
         backgroundColor: 'var(--color-background-red)',
         color: 'var(--color-text-red)',
@@ -1154,64 +1075,30 @@ export const neutralTheme = defineTheme({
       },
     },
 
-    // =========================================================================
-    // StatusDot — fill uses the SAME vivid stops as the filled semantic Badge
-    // (and ProgressBar), so a dot and its badge read as one status language.
-    //
-    // The default component maps each variant to a raw semantic token
-    // (--color-success / --color-error / --color-warning / --color-icon-
-    // secondary), which in light mode are the dark T30/T40 stops meant to
-    // sit as TEXT on a pastel surface — as a solid dot they read muddy
-    // (dark green / maroon / brown). Redirect them to the badge fills.
-    //
-    //   success → badge success bg  (green T45 / dark-ramp T60)
-    //   warning → badge warning bg  (yellow T85, same hex both modes)
-    //   error   → badge error bg    (red T58 / dark-ramp T60)
-    //   accent  → badge info bg     (blue T50 / dark-ramp T60) — the
-    //             StatusDot "accent" is the info/attention color, so it
-    //             pairs with the info badge rather than --color-accent
-    //             (near-black #262626, the darkest offender).
-    //
-    // `neutral` is intentionally NOT overridden: the neutral badge bg is a
-    // near-invisible light gray (--color-background-gray #e5e5e5 / 10% white
-    // wash), fine as a large pill but unreadable as an 8px dot. It keeps the
-    // component default's visible mid-gray (--color-icon-secondary), which is
-    // not among the "too dark" cases.
-    // =========================================================================
-    statusdot: {
-      'variant:success': {backgroundColor: 'light-dark(#198100, #64af4c)'},
-      'variant:warning': {backgroundColor: '#ffce2f'},
-      'variant:error': {backgroundColor: 'light-dark(#c9303a, #ff705d)'},
-      'variant:accent': {backgroundColor: 'light-dark(#0074e2, #6d9cfe)'},
+    'status-dot': {
+      'variant:accent': {backgroundColor: statusFill.accent},
+      'variant:success': {backgroundColor: statusFill.success},
+      'variant:warning': {backgroundColor: statusFill.warning},
+      'variant:error': {backgroundColor: statusFill.error},
     },
 
-    // =========================================================================
-    // Banner — sits on a hue-tinted surface with colored text/icon:
-    //   Light: pastel T90 bg (pulled from --color-{X}-muted / --color-background-blue)
-    //          + dark T30 colored text (--color-text-{hue}).
-    //   Dark : tinted T20 bg (same tokens, dark slot) + light T80 colored text.
-    //          Per #2150 §5 — large hue-tinted surfaces in dark mode invert
-    //          to a deep tinted bg + light text rather than locking the
-    //          light-mode pastel.
-    //
-    // The inner-header *-muted token carries the tinted background for every
-    // status, info included. A theme override that sets a plain CSS property
-    // instead lands in @layer astryx-theme, which StyleX's @layer priority4
-    // outranks, so `backgroundColor` here would silently do nothing and the
-    // info banner would paint no background at all.
-    //
-    // Status overrides reference --color-text-{hue} so text/icon colors
-    // stay in sync with the palette anchors automatically.
+    'avatar-status-dot': {
+      'variant:success': {backgroundColor: statusFill.success},
+      'variant:error': {backgroundColor: statusFill.error},
+    },
+
     banner: {
+      base: {
+        '--color-neutral': 'var(--color-on-tint-neutral)',
+        '--color-overlay-hover': 'var(--color-on-tint-overlay-hover)',
+        '--color-overlay-pressed': 'var(--color-on-tint-overlay-pressed)',
+      },
       'status:info': {
         '--color-accent-muted': 'var(--color-background-blue)',
         '--color-text-primary': 'var(--color-text-blue)',
         '--color-text-secondary': 'var(--color-text-blue)',
         '--color-accent': 'var(--color-text-blue)',
       },
-      // success/warning/error banner bgs come from --color-{X}-muted, which
-      // already carries the correct light/dark tinted values. We only need
-      // to redirect the text/icon to the palette colored stop.
       'status:success': {
         '--color-text-primary': 'var(--color-text-green)',
         '--color-text-secondary': 'var(--color-text-green)',
@@ -1223,85 +1110,85 @@ export const neutralTheme = defineTheme({
         '--color-warning': 'var(--color-text-yellow)',
       },
       'status:error': {
+        '--color-error-muted': 'var(--color-background-red)',
         '--color-text-primary': 'var(--color-text-red)',
         '--color-text-secondary': 'var(--color-text-red)',
         '--color-error': 'var(--color-text-red)',
       },
     },
 
-    // =========================================================================
-    // TextInput — no per-status overrides needed. The global tokens
-    // --color-{success,error,warning} carry the correct values in both
-    // modes (light=T40 dark colored, dark=T80 light pastel) for both
-    // surfaces the input border/icon touches: the input surface
-    // (white/T15-dark) and the status message bubble (light pastel T90 /
-    // dark T20). Verified all six combinations clear AA non-text 3:1.
-    // =========================================================================
+    'step-indicator': {
+      'status:accent': {'--color-accent': statusFill.accent},
+      'status:success': {'--color-success': statusFill.success},
+      'status:error': {'--color-error': statusFill.error},
+    },
 
-    // =========================================================================
-    // Switch — off-state track uses the same lifted-neutral surface as the
-    // ProgressBar track (--color-border-emphasized). Aligns the two
-    // "channel-on-body" components so their off-states share one visual
-    // language: light T85 #d4d4d4 sits one step darker than the body T95
-    // bg, dark T35 #525252 sits one step lighter than the body T10. Each
-    // is a defined channel, not a wash that blends in.
-    // =========================================================================
+    'table-row-status': {
+      'color:accent+presentation:dot': {
+        '--color-icon-accent': statusFill.accent,
+      },
+      'color:success+presentation:dot': {
+        '--color-icon-green': statusFill.success,
+      },
+      'color:warning+presentation:dot': {
+        '--color-icon-orange': statusFill.warning,
+      },
+      'color:error+presentation:dot': {
+        '--color-icon-red': statusFill.error,
+      },
+      'color:accent+presentation:icon': {
+        color: statusFill.accent,
+      },
+      'color:success+presentation:icon': {
+        color: statusFill.success,
+      },
+      'color:error+presentation:icon': {
+        color: statusFill.error,
+      },
+    },
+
     switch: {
       base: {
         '--color-background-gray': 'var(--color-border-emphasized)',
       },
     },
 
-    progressbar: {
+    'progress-bar': {
       base: {
-        // Track uses --color-background-muted; override it to
-        // --color-border-emphasized (Neutral T85 #d4d4d4 in light mode) so
-        // the track is clearly darker than the body bg (Neutral T95 #f1f1f1)
-        // and reads as a defined channel rather than blending in. Dark
-        // mode inherits T35 #525252 — same one-step-lighter behavior.
         '--color-background-muted': 'var(--color-border-emphasized)',
       },
-      // Vivid stops match the filled semantic badge colors (info/success/
-      // warning/error variants in the badge override above). Same hex
-      // values; documented per role with palette provenance.
       'variant:accent': {
-        // Blue T50 saturated stop (= variant:info badge bg)
-        '--color-accent': '#0074e2',
+        '--color-accent': statusFill.accent,
       },
       'variant:success': {
-        // Green T45 saturated stop (= variant:success badge bg)
-        '--color-success': '#198100',
-      },
-      'variant:warning': {
-        // Yellow T85 saturated stop (= variant:warning badge bg)
-        '--color-warning': '#ffce2f',
+        '--color-success': statusFill.success,
       },
       'variant:error': {
-        // Red T58 saturated stop (= variant:error badge bg)
-        '--color-error': '#c9303a',
+        '--color-error': statusFill.error,
+      },
+    },
+    'progress-bar-fill': {
+      'variant:neutral': {
+        '--color-text-disabled': 'var(--color-accent)',
+      },
+    },
+    'progress-bar-mark': {
+      'variant:neutral+placement:fill': {
+        '--color-text-primary': 'var(--color-on-accent)',
       },
     },
 
-    // =========================================================================
-    // Card — tighter padding via public card padding token
-    // =========================================================================
     card: {
       base: {
         padding: 'var(--spacing-3)',
       },
     },
 
-    // =========================================================================
-    // Section — tighter padding via public section padding token
-    // =========================================================================
     section: {
       base: {
         padding: 'var(--spacing-3)',
       },
     },
-
-    // Heading and text component overrides are auto-generated by typography.scale.
-    // h3/h4 bold weights come from typography.heading.weights above.
   },
 
   icons: neutralIconRegistry,
