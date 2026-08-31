@@ -1082,6 +1082,12 @@ export const neutralTheme = defineTheme({
       'variant:error': {backgroundColor: statusFill.error},
     },
 
+    'segmented-control': {
+      base: {
+        padding: 'var(--spacing-1)',
+      },
+    },
+
     'segmented-control-item': {
       selected: {
         boxShadow: 'none',
