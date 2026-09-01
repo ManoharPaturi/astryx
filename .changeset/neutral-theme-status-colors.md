@@ -1,8 +1,9 @@
 ---
 '@astryxdesign/theme-neutral': patch
 '@astryxdesign/cli': patch
+'@astryxdesign/core': patch
 ---
 
-[fix] Update Neutral theme color remapping with scoped reusable status-fill and tint role tokens.
+[new] Add the opt-in theme-local token contract and use it for Neutral's scoped status-fill and tint roles.
 
 @rubyycheung

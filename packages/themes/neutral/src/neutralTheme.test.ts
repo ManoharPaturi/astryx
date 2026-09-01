@@ -33,7 +33,7 @@ describe('neutral theme palette contract', () => {
       `light-dark(${neutralPalettes.neutral.light[95]}, ${neutralPalettes.neutral.dark[5]})`,
     );
     expect(neutralTheme.tokens['--color-background-blue']).toBe(
-      `light-dark(${neutralPalettes.blue.light[85]}, ${neutralPalettes.blue.dark[70]}3D)`,
+      `light-dark(${neutralPalettes.blue.light[90]}, ${neutralPalettes.blue.dark[70]}3D)`,
     );
   });
 
@@ -47,5 +47,31 @@ describe('neutral theme palette contract', () => {
     expect(neutralTheme.tokens['--color-error']).toBe(
       `light-dark(${neutralPalettes.red.light[25]}, ${neutralPalettes.red.dark[85]})`,
     );
+  });
+
+  it('owns reusable status fills through exact Neutral-local token names', () => {
+    expect(neutralTheme.localTokens).toMatchObject({
+      '--astryx-theme-neutral-color-status-fill-accent':
+        'light-dark(#0074e2, #6d9cfe)',
+      '--astryx-theme-neutral-color-status-fill-success':
+        'light-dark(#198100, #64af4c)',
+      '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
+      '--astryx-theme-neutral-color-status-fill-error':
+        'light-dark(#c9303a, #ff705d)',
+    });
+    expect(neutralTheme.tokens).not.toHaveProperty(
+      '--astryx-theme-neutral-color-status-fill-accent',
+    );
+  });
+
+  it('maps warning Stepper and ProgressBar states to the Neutral fill role', () => {
+    const warningFill = 'var(--astryx-theme-neutral-color-status-fill-warning)';
+
+    expect(
+      neutralTheme.components?.['step-indicator']?.['status:warning'],
+    ).toEqual({'--color-warning': warningFill});
+    expect(
+      neutralTheme.components?.['progress-bar']?.['variant:warning'],
+    ).toEqual({'--color-warning': warningFill});
   });
 });

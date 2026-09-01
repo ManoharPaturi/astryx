@@ -4,6 +4,7 @@ import {
   defineTheme,
   defineSyntaxTheme,
   defineTonalPalettes,
+  type TokenValue,
   type TonalPaletteTone,
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
@@ -550,10 +551,6 @@ function getPaletteStop(
   return neutralPalettes[family][mode][stop];
 }
 
-function lightDark(light: string, dark: string): string {
-  return `light-dark(${light}, ${dark})`;
-}
-
 function withAlpha(
   color: string,
   alpha: '0D' | '0F' | '14' | '1A' | '33' | '3D' | '4D' | '80' | 'CC',
@@ -605,35 +602,36 @@ const neutralSyntax = defineSyntaxTheme({
   },
 });
 
-const neutralRoleTokens: Record<string, string> = {
-  '--color-status-fill-accent': lightDark('#0074e2', '#6d9cfe'),
-  '--color-status-fill-success': lightDark('#198100', '#64af4c'),
-  '--color-status-fill-warning': '#ffce2f',
-  '--color-status-fill-error': lightDark('#c9303a', '#ff705d'),
-  '--color-on-tint-neutral': lightDark(
+const neutralLocalTokens: Record<string, TokenValue> = {
+  '--astryx-theme-neutral-color-status-fill-accent': ['#0074e2', '#6d9cfe'],
+  '--astryx-theme-neutral-color-status-fill-success': ['#198100', '#64af4c'],
+  '--astryx-theme-neutral-color-status-fill-warning': '#ffce2f',
+  '--astryx-theme-neutral-color-status-fill-error': ['#c9303a', '#ff705d'],
+  '--astryx-theme-neutral-color-on-tint-neutral': [
     withAlpha(getPaletteStop('neutral', 100), '4D'),
     withAlpha(getPaletteStop('neutral', 0), '4D'),
-  ),
-  '--color-on-tint-overlay-hover': lightDark(
+  ],
+  '--astryx-theme-neutral-color-on-tint-overlay-hover': [
     withAlpha(getPaletteStop('neutral', 100), '1A'),
     withAlpha(getPaletteStop('neutral', 0), '1A'),
-  ),
-  '--color-on-tint-overlay-pressed': lightDark(
+  ],
+  '--astryx-theme-neutral-color-on-tint-overlay-pressed': [
     withAlpha(getPaletteStop('neutral', 100), '33'),
     withAlpha(getPaletteStop('neutral', 0), '33'),
-  ),
+  ],
 };
 
 const statusFill = {
-  accent: 'var(--color-status-fill-accent)',
-  success: 'var(--color-status-fill-success)',
-  warning: 'var(--color-status-fill-warning)',
-  error: 'var(--color-status-fill-error)',
+  accent: 'var(--astryx-theme-neutral-color-status-fill-accent)',
+  success: 'var(--astryx-theme-neutral-color-status-fill-success)',
+  warning: 'var(--astryx-theme-neutral-color-status-fill-warning)',
+  error: 'var(--astryx-theme-neutral-color-status-fill-error)',
 } as const;
 
 export const neutralTheme = defineTheme({
   name: 'neutral',
   palettes: neutralPalettes,
+  localTokens: neutralLocalTokens,
 
   typography: {
     scale: {base: 14, ratio: 1.2},
@@ -660,8 +658,6 @@ export const neutralTheme = defineTheme({
   syntax: neutralSyntax,
 
   tokens: {
-    ...neutralRoleTokens,
-
     '--color-background-surface': [
       getPaletteStop('neutral', 100),
       getPaletteStop('neutral', 10, 'dark'),
@@ -1105,9 +1101,11 @@ export const neutralTheme = defineTheme({
 
     banner: {
       base: {
-        '--color-neutral': 'var(--color-on-tint-neutral)',
-        '--color-overlay-hover': 'var(--color-on-tint-overlay-hover)',
-        '--color-overlay-pressed': 'var(--color-on-tint-overlay-pressed)',
+        '--color-neutral': 'var(--astryx-theme-neutral-color-on-tint-neutral)',
+        '--color-overlay-hover':
+          'var(--astryx-theme-neutral-color-on-tint-overlay-hover)',
+        '--color-overlay-pressed':
+          'var(--astryx-theme-neutral-color-on-tint-overlay-pressed)',
       },
       'status:info': {
         '--color-accent-muted': 'var(--color-background-blue)',
@@ -1136,6 +1134,7 @@ export const neutralTheme = defineTheme({
     'step-indicator': {
       'status:accent': {'--color-accent': statusFill.accent},
       'status:success': {'--color-success': statusFill.success},
+      'status:warning': {'--color-warning': statusFill.warning},
       'status:error': {'--color-error': statusFill.error},
     },
 
@@ -1178,6 +1177,9 @@ export const neutralTheme = defineTheme({
       },
       'variant:success': {
         '--color-success': statusFill.success,
+      },
+      'variant:warning': {
+        '--color-warning': statusFill.warning,
       },
       'variant:error': {
         '--color-error': statusFill.error,
