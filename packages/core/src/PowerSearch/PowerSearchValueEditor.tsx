@@ -136,7 +136,9 @@ function StringEditor({
         placeholder={t('@astryx.powersearch.valueEditor.searchPlaceholder')}
         debounceMs={150}
         maxMenuItems={maxMenuItems}
+        hasClear={controlXStyle == null}
         isDisabled={isDisabled}
+        __inputWrapperXStyle={controlXStyle}
         xstyle={controlXStyle}
       />
     );
@@ -211,6 +213,7 @@ function StringListEditor({
       hasCreate={hasCreate}
       maxMenuItems={maxMenuItems}
       isDisabled={isDisabled}
+      __inputWrapperXStyle={controlXStyle}
       xstyle={controlXStyle}
     />
   );
@@ -685,6 +688,7 @@ function EnumListEditor({
       hasEntriesOnFocus
       debounceMs={0}
       isDisabled={isDisabled}
+      __inputWrapperXStyle={controlXStyle}
       xstyle={controlXStyle}
     />
   );
@@ -751,6 +755,7 @@ function EntityListEditor({
       debounceMs={operatorValue.searchSource ? 150 : 0}
       maxMenuItems={maxMenuItems}
       isDisabled={isDisabled}
+      __inputWrapperXStyle={controlXStyle}
       xstyle={controlXStyle}
     />
   );
