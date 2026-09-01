@@ -59,7 +59,10 @@ name: Review signal
 on:
   pull_request_target:
     branches: ['main']
-    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
+    # Draft/ready transitions do not change review classification. Excluding
+    # them avoids a same-head lifecycle event cancelling the synchronize run
+    # that carries the actual update.
+    types: [opened, synchronize, reopened]
   pull_request_review:
     types: [submitted]
   # Manual re-trigger. The App only auto-runs on the PR events above, so if it
@@ -76,12 +79,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  # One group per PR for the event/single-dispatch paths; a run-scoped group for
-  # the backfill-all dispatch so it is never cancelled by an unrelated re-run.
-  group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
-  cancel-in-progress: true
-
 env:
   CODE_LABEL: 'needs:code-review'
   DESIGN_LABEL: 'needs:design-review'
@@ -96,6 +93,15 @@ jobs:
       github.event_name == 'pull_request_target'
       || github.event_name == 'workflow_dispatch'
     name: Flag review signals
+    # Serialize effect-bearing flag jobs instead of cancelling them. Every write
+    # rechecks the live head, so a superseded run exits successfully without
+    # overwriting the newer head's result. The read-only review anchor does not
+    # join this group.
+    concurrency:
+      # One group per PR for event/single-dispatch paths; a run-scoped group for
+      # backfill-all so an unrelated re-run cannot delay it.
+      group: review-signal-${{ github.event.pull_request.number || github.event.inputs.pr || github.run_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-slim
     permissions:
       pull-requests: write
@@ -119,9 +125,33 @@ jobs:
             const DESIGN = process.env.DESIGN_LABEL;
             const COMMUNITY = process.env.COMMUNITY_LABEL;
 
-            // Resolve which PR(s) to flag. On a PR event we get the payload PR.
-            // On manual dispatch we take the `pr` input (one PR), or re-flag
-            // every open PR when it's blank (backfill / mass recovery).
+            // Load the event and mutation policy from the trusted base branch.
+            // This workflow never checks out or executes PR-controlled code.
+            const policyRef = context.payload.pull_request?.base?.ref ||
+              context.payload.repository.default_branch;
+            const { data: policyFile } = await github.rest.repos.getContent({
+              owner,
+              repo,
+              ref: policyRef,
+              path: '.github/scripts/review-signal-policy.cjs',
+            });
+            if (Array.isArray(policyFile) || !policyFile.content) {
+              throw new Error('Trusted review-signal policy is unavailable.');
+            }
+            const policySource = Buffer.from(policyFile.content, 'base64').toString('utf8');
+            const policyModule = { exports: {} };
+            new Function('module', 'exports', 'require', policySource)(
+              policyModule,
+              policyModule.exports,
+              () => { throw new Error('review-signal-policy.cjs must stay dependency-free'); },
+            );
+            const { mutateIfCurrentHead, reviewSignalEventPlan } = policyModule.exports;
+
+            // Resolve which PR(s) to flag. On a PR event, compare the event head
+            // with the live PR before classification. Lifecycle-only or already
+            // superseded events finish successfully without any mutation.
+            // On manual dispatch, take the `pr` input (one PR), or re-flag every
+            // open PR when it is blank (backfill / mass recovery).
             let prs;
             if (context.eventName === 'workflow_dispatch') {
               const num = (context.payload.inputs.pr || '').trim();
@@ -137,7 +167,21 @@ jobs:
                 core.info(`Backfill: re-flagging ${prs.length} open PR(s).`);
               }
             } else {
-              prs = [context.payload.pull_request];
+              const eventPr = context.payload.pull_request;
+              const { data: currentPr } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: eventPr.number,
+              });
+              const plan = reviewSignalEventPlan({
+                eventName: context.eventName,
+                eventAction: context.payload.action,
+                eventHeadSha: eventPr.head.sha,
+                currentHeadSha: currentPr.head.sha,
+              });
+              core.info(`Event plan: ${plan.reason}.`);
+              if (!plan.shouldMutate) return;
+              prs = [currentPr];
             }
 
             let hadError = false;
@@ -153,6 +197,31 @@ jobs:
 
             // ================= per-PR detection + routing =================
             async function flagOne(pr) {
+            const expectedHead = pr.head.sha;
+            let superseded = false;
+            async function applyForCurrentHead(description, mutate) {
+              if (superseded) return false;
+              const result = await mutateIfCurrentHead({
+                expectedHead,
+                getCurrentHead: async () => {
+                  const { data: current } = await github.rest.pulls.get({
+                    owner,
+                    repo,
+                    pull_number: pr.number,
+                  });
+                  return current.head.sha;
+                },
+                mutate,
+              });
+              if (!result.applied) {
+                superseded = true;
+                core.info(
+                  `Skipping ${description}: ${expectedHead} was superseded by ${result.currentHead}.`,
+                );
+              }
+              return result.applied;
+            }
+
             const author = pr.user.login.toLowerCase();
             // Bots (Dependabot, github-actions, etc.) are our own automation,
             // not community contributors, and their PRs (dep bumps, chores) are
@@ -197,19 +266,23 @@ jobs:
               for (const name of [CODE, DESIGN, COMMUNITY]) {
                 if (current.includes(name)) {
                   try {
-                    await github.rest.issues.removeLabel({
-                      owner, repo, issue_number: pr.number, name,
-                    });
+                    await applyForCurrentHead(`remove ${name}`, () =>
+                      github.rest.issues.removeLabel({
+                        owner, repo, issue_number: pr.number, name,
+                      }),
+                    );
                   } catch (e) {
                     core.warning(`Could not remove ${name}: ${e.message}`);
                   }
                 }
               }
-              await github.rest.repos.createCommitStatus({
-                owner, repo, sha: pr.head.sha,
-                context: 'review-required', state: 'success',
-                description: 'Automated (bot) PR — exempt from review gates.',
-              });
+              await applyForCurrentHead('mark the bot review gate successful', () =>
+                github.rest.repos.createCommitStatus({
+                  owner, repo, sha: expectedHead,
+                  context: 'review-required', state: 'success',
+                  description: 'Automated (bot) PR — exempt from review gates.',
+                }),
+              );
               return;
             }
 
@@ -424,17 +497,21 @@ jobs:
             // (authorIsOwner is defined above.)
             if (!authorIsOwner && !current.includes(COMMUNITY)) toAdd.push(COMMUNITY);
             if (toAdd.length) {
-              await github.rest.issues.addLabels({
-                owner, repo, issue_number: pr.number, labels: toAdd,
-              });
+              await applyForCurrentHead(`add ${toAdd.join(', ')}`, () =>
+                github.rest.issues.addLabels({
+                  owner, repo, issue_number: pr.number, labels: toAdd,
+                }),
+              );
             }
             // Keep it accurate: if an owner's PR somehow carries it (e.g. author
             // was added to an owners file after opening), drop it.
             if (authorIsOwner && current.includes(COMMUNITY)) {
               try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number: pr.number, name: COMMUNITY,
-                });
+                await applyForCurrentHead(`remove ${COMMUNITY}`, () =>
+                  github.rest.issues.removeLabel({
+                    owner, repo, issue_number: pr.number, name: COMMUNITY,
+                  }),
+                );
               } catch (e) {
                 core.warning(`Could not remove ${COMMUNITY}: ${e.message}`);
               }
@@ -444,10 +521,12 @@ jobs:
             // fire for forks, so we reconcile here from the reviews we read).
             async function dropLabel(name) {
               try {
-                await github.rest.issues.removeLabel({
-                  owner, repo, issue_number: pr.number, name,
-                });
-                core.info(`Cleared ${name} (approved).`);
+                const applied = await applyForCurrentHead(`remove ${name}`, () =>
+                  github.rest.issues.removeLabel({
+                    owner, repo, issue_number: pr.number, name,
+                  }),
+                );
+                if (applied) core.info(`Cleared ${name} (approved).`);
               } catch (e) {
                 core.warning(`Could not remove ${name}: ${e.message}`);
               }
@@ -464,9 +543,11 @@ jobs:
               const reviewers = [...new Set(handles)].filter((h) => h !== author);
               if (!reviewers.length) return;
               try {
-                await github.rest.pulls.requestReviewers({
-                  owner, repo, pull_number: pr.number, reviewers,
-                });
+                await applyForCurrentHead('request design reviewers', () =>
+                  github.rest.pulls.requestReviewers({
+                    owner, repo, pull_number: pr.number, reviewers,
+                  }),
+                );
               } catch (e) {
                 core.warning(`requestReviewers(${reviewers.join(',')}) failed: ${e.message}`);
               }
@@ -478,15 +559,17 @@ jobs:
             //     disable auto-merge or block the merge. ---
             if (codeGated && pr.auto_merge) {
               try {
-                await github.graphql(
-                  `mutation ($id: ID!) {
-                     disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
-                       pullRequest { number }
-                     }
-                   }`,
-                  { id: pr.node_id },
+                await applyForCurrentHead('disable auto-merge', () =>
+                  github.graphql(
+                    `mutation ($id: ID!) {
+                       disablePullRequestAutoMerge(input: { pullRequestId: $id }) {
+                         pullRequest { number }
+                       }
+                     }`,
+                    { id: pr.node_id },
+                  ),
                 );
-                core.info('Disabled auto-merge (code review required).');
+                if (!superseded) core.info('Disabled auto-merge (code review required).');
               } catch (e) {
                 core.warning(`Could not disable auto-merge: ${e.message}`);
               }
@@ -513,33 +596,41 @@ jobs:
             // whose POST failed is blocked on a status that will never arrive.
             // Throwing marks the run red and lets the per-PR catch continue a
             // backfill; re-run the workflow to retry.
-            await github.rest.repos.createCommitStatus({
-              owner,
-              repo,
-              sha: pr.head.sha,
-              context: 'review-required',
-              state: codeGated ? 'pending' : 'success',
-              description: codeGated
-                ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
-                : 'No code review required.',
-            });
-            core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
+            const statusApplied = await applyForCurrentHead('publish review-required status', () =>
+              github.rest.repos.createCommitStatus({
+                owner,
+                repo,
+                sha: expectedHead,
+                context: 'review-required',
+                state: codeGated ? 'pending' : 'success',
+                description: codeGated
+                  ? `Waiting on code review: ${gateReasons.join(', ')}`.slice(0, 140)
+                  : 'No code review required.',
+              }),
+            );
+            if (statusApplied) {
+              core.info(`review-required status: ${codeGated ? 'pending' : 'success'}`);
+            }
             // Neutralize any stale "review-required" CHECK RUN left over from the
             // pre-status gate. Such a leftover (conclusion action_required) drags
             // the status rollup to FAILURE even though we now gate via a commit
             // status — so once the status is set, clear the old check-run.
             try {
               const { data } = await github.rest.checks.listForRef({
-                owner, repo, ref: pr.head.sha, check_name: 'review-required', per_page: 100,
+                owner, repo, ref: expectedHead, check_name: 'review-required', per_page: 100,
               });
               for (const cr of data.check_runs) {
                 if (cr.conclusion && cr.conclusion !== 'success' && cr.conclusion !== 'neutral') {
-                  await github.rest.checks.update({
-                    owner, repo, check_run_id: cr.id,
-                    conclusion: 'neutral',
-                    output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
-                  });
-                  core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+                  await applyForCurrentHead(`neutralize stale check-run ${cr.id}`, () =>
+                    github.rest.checks.update({
+                      owner, repo, check_run_id: cr.id,
+                      conclusion: 'neutral',
+                      output: { title: 'Superseded by review-required status', summary: 'The gate is now a review-required commit status; see that context.' },
+                    }),
+                  );
+                  if (!superseded) {
+                    core.info(`Neutralized stale review-required check-run ${cr.id}.`);
+                  }
                 }
               }
             } catch (e) {
