@@ -23,13 +23,13 @@ const SPEC_RECORD_PATTERNS = [
 
 const CHANGESET_PATTERN = /^\.changeset\/(?!README\.md$)[^/]+\.md$/;
 
-const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
+const THEME_DOC_PREFIX = 'docs/themes/';
+const THEME_DOC_GUIDANCE = `${THEME_DOC_PREFIX}README.md`;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
 
 const KNOWLEDGE_RECORD_PATTERNS = [
   ...SPEC_RECORD_PATTERNS,
-  THEME_DOC_CANDIDATE,
   THEME_PACKAGE_CANDIDATE,
   /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/,
   /^docs\/design\/assets\//,
@@ -59,8 +59,13 @@ function isPackageReleasePath(filePath) {
 }
 
 function isKnowledgeRecordPath(filePath) {
+  const isThemeDocCandidate =
+    filePath.startsWith(THEME_DOC_PREFIX) &&
+    filePath.endsWith('.md') &&
+    filePath !== THEME_DOC_GUIDANCE;
   return (
     isSpecRecordPath(filePath) ||
+    isThemeDocCandidate ||
     KNOWLEDGE_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
   );
 }

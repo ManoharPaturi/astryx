@@ -106,8 +106,37 @@ describe('spec-only change scope', () => {
     expect(classifyChanges([{filename}]).specOnly).toBe(false);
   });
 
+  it('classifies allowed, canonical, and nested theme paths distinctly', () => {
+    const guidance = classifyChanges([{filename: 'docs/themes/README.md'}]);
+    expect(guidance.touchesKnowledgeRecords).toBe(false);
+    expect(guidance.specOnly).toBe(false);
+
+    const canonical = classifyChanges([
+      {filename: 'packages/themes/neutral/neutral.spec.md'},
+    ]);
+    expect(canonical.touchesKnowledgeRecords).toBe(true);
+    expect(canonical.specOnly).toBe(true);
+
+    const nestedCandidate = classifyChanges([
+      {filename: 'docs/themes/subdir/neutral.md'},
+    ]);
+    expect(nestedCandidate.touchesKnowledgeRecords).toBe(true);
+    expect(nestedCandidate.specOnly).toBe(false);
+
+    const minimalCandidate = classifyChanges([{filename: 'docs/themes/.md'}]);
+    expect(minimalCandidate.touchesKnowledgeRecords).toBe(true);
+    expect(minimalCandidate.specOnly).toBe(false);
+
+    const nonMarkdown = classifyChanges([
+      {filename: 'docs/themes/subdir/neutral.md.txt'},
+    ]);
+    expect(nonMarkdown.touchesKnowledgeRecords).toBe(false);
+    expect(nonMarkdown.specOnly).toBe(false);
+  });
+
   it.each([
     'docs/themes/neutral.md',
+    'docs/themes/subdir/neutral.md',
     'packages/themes/neutral/Theme.spec.md',
     'packages/themes/neutral/subdir/neutral.spec.md',
   ])('treats misplaced theme candidate %s as unsafe knowledge', filename => {

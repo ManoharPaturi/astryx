@@ -120,7 +120,7 @@ function matchingFiles(directory, predicate) {
 function matchingFilesRecursively(
   directory,
   predicate,
-  {skipDirectory = () => false} = {},
+  {skipDirectory = () => false, includeSymlinks = false} = {},
 ) {
   if (!fs.existsSync(directory)) return [];
   const matches = [];
@@ -134,7 +134,10 @@ function matchingFilesRecursively(
           continue;
         }
         pending.push(candidate);
-      } else if (entry.isFile() && predicate(entry.name, candidate)) {
+      } else if (
+        (entry.isFile() || (includeSymlinks && entry.isSymbolicLink())) &&
+        predicate(entry.name, candidate)
+      ) {
         matches.push(candidate);
       }
     }
@@ -146,11 +149,31 @@ export function discoverThemeRecordCandidates(root = DEFAULT_ROOT) {
   const records = [];
   const problems = [];
 
-  for (const filePath of matchingFiles(
-    path.join(root, 'docs/themes'),
-    name => name.endsWith('.md') && name !== 'README.md',
-  )) {
-    records.push(filePath);
+  const themeDocsDirectory = path.join(root, 'docs/themes');
+  const allowedThemeDocs = new Set([
+    path.join(themeDocsDirectory, 'README.md'),
+  ]);
+  let themeDocsIsDirectory = false;
+  try {
+    themeDocsIsDirectory = fs.lstatSync(themeDocsDirectory).isDirectory();
+    if (!themeDocsIsDirectory) {
+      problems.push(
+        'docs/themes: theme guidance root must be a directory and may not be a symlink.',
+      );
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+  for (const filePath of themeDocsIsDirectory
+    ? matchingFilesRecursively(
+        themeDocsDirectory,
+        name => name.endsWith('.md'),
+        {includeSymlinks: true},
+      )
+    : []) {
+    const isRegularFile = fs.lstatSync(filePath).isFile();
+    if (isRegularFile && allowedThemeDocs.has(filePath)) continue;
+    if (isRegularFile) records.push(filePath);
     problems.push(
       `${path.relative(root, filePath)}: theme records must be placed at packages/themes/<theme>/<theme>.spec.md; docs/themes contains guidance only.`,
     );

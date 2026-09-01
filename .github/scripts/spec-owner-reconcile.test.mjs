@@ -568,8 +568,33 @@ describe('spec owner workflow reconciliation', () => {
     expect(harness.state.pr.auto_merge).toBe(null);
   });
 
+  it('treats the allowed theme guidance index as no knowledge change', async () => {
+    const harness = createHarness({
+      changedFile: {filename: 'docs/themes/README.md', status: 'modified'},
+      headContent: '# Theme guidance\n',
+      baseContent: '# Theme guidance\n',
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'cixzhang',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description: 'No knowledge records changed.',
+    });
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
   it.each([
     'docs/themes/neutral.md',
+    'docs/themes/.md',
+    'docs/themes/subdir/neutral.md',
     'packages/themes/neutral/Theme.spec.md',
     'packages/themes/neutral/subdir/neutral.spec.md',
   ])(

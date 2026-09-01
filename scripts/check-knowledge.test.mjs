@@ -1175,10 +1175,81 @@ describe('knowledge validation', () => {
     expect(await validateKnowledgeRoot(root)).toEqual([]);
   });
 
+  it('does not follow symlink directories while scanning theme guidance', async () => {
+    const root = fixtureRoot();
+    const outside = path.join(root, 'outside-theme-docs');
+    fs.mkdirSync(outside);
+    fs.writeFileSync(path.join(outside, 'neutral.md'), themeRecord());
+    fs.symlinkSync(outside, path.join(root, 'docs/themes/linked'), 'dir');
+
+    const discovered = discoverKnowledgeRecords(root).map(filePath =>
+      path.relative(root, filePath),
+    );
+    expect(discovered).not.toContain('docs/themes/linked/neutral.md');
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
+  it('rejects a symlinked theme guidance root without following it', async () => {
+    const root = fixtureRoot();
+    const outside = path.join(root, 'outside-theme-docs');
+    fs.mkdirSync(outside);
+    fs.writeFileSync(
+      path.join(outside, 'README.md'),
+      '# Not repository guidance\n',
+    );
+    fs.rmSync(path.join(root, 'docs/themes'), {recursive: true});
+    fs.symlinkSync(outside, path.join(root, 'docs/themes'), 'dir');
+
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toMatch(
+      /docs\/themes: theme guidance root must be a directory and may not be a symlink/,
+    );
+  });
+
+  it('rejects Markdown symlinks without following their targets', async () => {
+    const root = fixtureRoot();
+    const outside = path.join(root, 'outside-theme.md');
+    fs.writeFileSync(outside, themeRecord());
+    fs.symlinkSync(outside, path.join(root, 'docs/themes/linked.md'));
+
+    const discovered = discoverKnowledgeRecords(root).map(filePath =>
+      path.relative(root, filePath),
+    );
+    expect(discovered).not.toContain('docs/themes/linked.md');
+    const problems = (await validateKnowledgeRoot(root)).join('\n');
+    expect(problems).toMatch(
+      /docs\/themes\/linked\.md: theme records must be placed/,
+    );
+    expect(problems).not.toMatch(/outside-theme\.md/);
+  });
+
+  it('ignores nested non-Markdown files', async () => {
+    const root = fixtureRoot();
+    const nested = path.join(root, 'docs/themes/subdir/neutral.md.txt');
+    fs.mkdirSync(path.dirname(nested), {recursive: true});
+    fs.writeFileSync(nested, themeRecord());
+
+    const discovered = discoverKnowledgeRecords(root).map(filePath =>
+      path.relative(root, filePath),
+    );
+    expect(discovered).not.toContain('docs/themes/subdir/neutral.md.txt');
+    expect(await validateKnowledgeRoot(root)).toEqual([]);
+  });
+
   it.each([
     [
       'docs guidance directory',
       'docs/themes/neutral.md',
+      /theme records must be placed at packages\/themes\/<theme>\/<theme>\.spec\.md/,
+    ],
+    [
+      'minimal Markdown filename',
+      'docs/themes/.md',
+      /theme records must be placed at packages\/themes\/<theme>\/<theme>\.spec\.md/,
+    ],
+    [
+      'nested docs guidance path',
+      'docs/themes/subdir/neutral.md',
       /theme records must be placed at packages\/themes\/<theme>\/<theme>\.spec\.md/,
     ],
     [
