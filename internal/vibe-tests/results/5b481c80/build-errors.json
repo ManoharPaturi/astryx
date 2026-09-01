@@ -1,0 +1,90 @@
+{
+  "cs-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 29,
+        "message": "Type '(val: string) => void' is not assignable to type '(value: unknown) => void'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "cwm-1": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "dd-1": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-8": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 18,
+        "message": "Type '`${number}-${number}-${number}`' is not assignable to type '`${number}${number}${number}${number}-${number}${number}-${number}${number}`'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "io-5": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ps-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "rc-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 28,
+        "message": "Property 'label' is missing in type '{ children: string; key: string; href: string; }' but required in type 'TopNavItemProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 36,
+        "message": "Property 'title' is missing in type '{ children: Element[]; }' but required in type 'SideNavSectionProps'.",
+        "code": "TS2741"
+      },
+      {
+        "line": 38,
+        "message": "Property 'label' is missing in type '{ children: string; key: string; href: string; }' but required in type 'SideNavItemProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 3,
+    "buildSuccess": false
+  },
+  "sd-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "ty-8": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-3": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  }
+}
