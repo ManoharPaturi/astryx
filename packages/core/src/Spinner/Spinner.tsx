@@ -33,19 +33,17 @@
 import {useId, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {useIndicator} from '../Indicator';
+import {SPINNER_SIZES, spinnerSizeStyles} from './spinnerGeometry.stylex';
+import {
+  SpinnerIndicator,
+  SpinnerIndicatorWithoutLegacyTarget,
+} from '../Indicator/SpinnerIndicator';
 import type {IndicatorSizeOf} from '../Indicator';
 import {colorVars, spacingVars} from '../theme/tokens.stylex';
 import type {BaseProps} from '../BaseProps';
 import {Text} from '../Text/Text';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-
-const SIZES = {
-  sm: {diameter: 10, border: 2},
-  md: {diameter: 14, border: 3},
-  lg: {diameter: 18, border: 3},
-  xl: {diameter: 28, border: 4},
-};
 
 const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
 const RESOLVED_STROKE = '--_spinner-ring-stroke';
@@ -61,30 +59,11 @@ const styles = stylex.create({
   status: {
     display: 'inline-grid',
     placeItems: 'center',
-    overflow: 'hidden',
     verticalAlign: 'middle',
+    flexShrink: 0,
     [RESOLVED_DIAMETER]: 'var(--spinner-diameter)',
     [RESOLVED_STROKE]: 'var(--spinner-stroke-width)',
     [BOX_SIZE]: `calc(var(${RESOLVED_DIAMETER}) + var(${RESOLVED_STROKE}) * 2)`,
-  },
-});
-
-const sizeStyles = stylex.create({
-  sm: {
-    '--spinner-diameter': `${SIZES.sm.diameter}px`,
-    '--spinner-stroke-width': `${SIZES.sm.border}px`,
-  },
-  md: {
-    '--spinner-diameter': `${SIZES.md.diameter}px`,
-    '--spinner-stroke-width': `${SIZES.md.border}px`,
-  },
-  lg: {
-    '--spinner-diameter': `${SIZES.lg.diameter}px`,
-    '--spinner-stroke-width': `${SIZES.lg.border}px`,
-  },
-  xl: {
-    '--spinner-diameter': `${SIZES.xl.diameter}px`,
-    '--spinner-stroke-width': `${SIZES.xl.border}px`,
   },
 });
 
@@ -202,7 +181,13 @@ export function Spinner({
   ...restProps
 }: SpinnerProps) {
   const BusyIndicator = useIndicator('spinner');
-  const {border, diameter} = SIZES[size];
+  const busyVisual =
+    BusyIndicator === SpinnerIndicator ? (
+      <SpinnerIndicatorWithoutLegacyTarget size={size} />
+    ) : (
+      <BusyIndicator size={size} />
+    );
+  const {border, diameter} = SPINNER_SIZES[size];
   const frameSize = diameter + border * 2;
   const hasLabel = label != null;
   const labelId = useId();
@@ -230,7 +215,7 @@ export function Spinner({
         hasLabel ? '' : themeProps('spinner', {size, shade}),
         stylex.props(
           styles.status,
-          !hasLabel && sizeStyles[size],
+          !hasLabel && spinnerSizeStyles[size],
           !hasLabel && shadeStyles[shade],
           !hasLabel && xstyle,
         ),
@@ -241,7 +226,7 @@ export function Spinner({
           height: `var(${BOX_SIZE}, ${frameSize}px)`,
         },
       )}>
-      <BusyIndicator size={size} />
+      {busyVisual}
     </span>
   );
 
@@ -258,7 +243,7 @@ export function Spinner({
         themeProps('spinner', {size, shade}),
         stylex.props(
           styles.wrapper,
-          sizeStyles[size],
+          spinnerSizeStyles[size],
           shadeStyles[shade],
           xstyle,
         ),

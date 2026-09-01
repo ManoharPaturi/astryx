@@ -290,7 +290,7 @@ export function ChatMessageList({
         ref={ref}
         role="log"
         aria-live="polite"
-        aria-busy={isStreaming || undefined}
+        aria-busy={isStreaming || isLoadingTop || undefined}
         tabIndex={0}
         data-testid={testId}
         {...mergeProps(

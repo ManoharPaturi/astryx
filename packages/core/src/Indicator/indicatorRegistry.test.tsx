@@ -26,8 +26,12 @@ import type {CoreIndicatorName} from './indicatorRegistry';
 import type {IndicatorName, IndicatorProps} from './types';
 
 declare module './types' {
+  interface IndicatorFamilyMap {
+    brandState: 'off' | 'on';
+  }
   interface IndicatorMap {
     'brand-star': 'singleSelection';
+    'brand-state': 'brandState';
   }
 }
 
@@ -66,9 +70,25 @@ describe('SpinnerIndicator', () => {
       'sm',
     );
   });
+
+  it('keeps the default ring for false children', () => {
+    const {container} = render(
+      <SpinnerIndicator size="sm">{false}</SpinnerIndicator>,
+    );
+    expect(container.querySelector('svg')).not.toBeNull();
+  });
 });
 
 describe('getIndicator', () => {
+  it('keeps augmented families on the existing size contract', () => {
+    const valid: IndicatorProps<'brandState'> = {state: 'on', size: 'md'};
+    // @ts-expect-error — only the core busy family adds standalone sizes.
+    const invalid: IndicatorProps<'brandState'> = {state: 'on', size: 'lg'};
+
+    expect(valid.size).toBe('md');
+    expect(invalid.size).toBe('lg');
+  });
+
   it('resolves a core name to its built-in with no theme', () => {
     expect(getIndicator('check')).toBe(CheckIndicator);
     expect(getIndicator('radio')).toBe(RadioIndicator);

@@ -37,7 +37,6 @@ export type {
   IndicatorComponent,
   IndicatorFamily,
   IndicatorFamilyMap,
-  IndicatorFamilySizeMap,
   IndicatorMap,
   IndicatorName,
   IndicatorNameOfFamily,

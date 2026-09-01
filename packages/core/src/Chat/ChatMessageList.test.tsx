@@ -1,7 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {describe, it, expect} from 'vitest';
-import {render, screen} from '@testing-library/react';
+import {describe, it, expect, vi} from 'vitest';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {ChatMessageList} from './ChatMessageList';
 import {ChatMessage} from './ChatMessage';
 import {ChatMessageBubble} from './ChatMessageBubble';
@@ -44,6 +44,63 @@ describe('ChatMessageList', () => {
       </ChatMessageList>,
     );
     expect(screen.getByTestId('list')).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('marks the log aria-busy while loading older messages', async () => {
+    let notify!: IntersectionObserverCallback;
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class implements IntersectionObserver {
+        readonly root = null;
+        readonly rootMargin = '0px';
+        readonly scrollMargin = '0px';
+        readonly thresholds = [0];
+
+        constructor(callback: IntersectionObserverCallback) {
+          notify = callback;
+        }
+
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords(): IntersectionObserverEntry[] {
+          return [];
+        }
+      },
+    );
+    let finish!: () => void;
+    const scrollToTopAction = vi.fn(
+      async () =>
+        new Promise<void>(resolve => {
+          finish = resolve;
+        }),
+    );
+
+    try {
+      render(
+        <ChatMessageList
+          data-testid="list"
+          scrollToTopAction={scrollToTopAction}>
+          <div>msg</div>
+        </ChatMessageList>,
+      );
+      act(() => {
+        notify(
+          [{isIntersecting: true} as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      });
+      await waitFor(() =>
+        expect(screen.getByTestId('list')).toHaveAttribute('aria-busy', 'true'),
+      );
+
+      await act(async () => finish());
+      await waitFor(() =>
+        expect(screen.getByTestId('list')).not.toHaveAttribute('aria-busy'),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('renders empty state when no children', () => {

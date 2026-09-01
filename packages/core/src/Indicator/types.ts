@@ -47,19 +47,19 @@ import type {BaseProps} from '../BaseProps';
  * two states are ever passed, and a radio cannot be asked to draw a partial
  * state it has no picture for.
  *
- * Adding a family is additive *when the family has states*: declare it here,
- * then declare indicators of that family in {@link IndicatorMap}. Packages
- * outside core can contribute families through module augmentation.
+ * Adding a family is additive: declare its state space here, then declare
+ * indicators of that family in {@link IndicatorMap}. Packages outside core can
+ * contribute families through module augmentation. Every added family keeps the
+ * established `sm | md` indicator size scale; the core `busy` family is the one
+ * exception because standalone Spinner already ships `lg` and `xl`.
  *
  * A family with NO states is not additive, and `busy` is the case that found
  * it. `state` was declared unconditionally required, so an empty state space
  * (`never`) makes every call site unsatisfiable and a single-member filler
  * state (`'busy'`) makes every call site write a word that carries nothing.
- * Admitting one costs a change to {@link IndicatorProps}: `state` and `size`
- * are now derived from the family rather than fixed, so a family declares the
- * domain of each prop instead of only the state enum. Existing families
- * resolve to exactly the props they had, which is why nothing downstream of
- * them changed.
+ * Admitting one costs a change to {@link IndicatorProps}: `state` is derived
+ * from the family rather than fixed. Existing and augmented families resolve
+ * to exactly the props they had, which is why nothing downstream changes.
  */
 export interface IndicatorFamilyMap {
   /** Is this one thing chosen? Radios, and the mark on a selected option. */
@@ -89,29 +89,13 @@ export type IndicatorState<F extends IndicatorFamily = IndicatorFamily> =
 export type IndicatorSize = 'sm' | 'md';
 
 /**
- * The size scale each family draws at.
+ * The sizes an indicator of family `F` can be asked to draw at.
  *
- * A family fixes the size space for the same reason it fixes the state space:
- * the scale belongs to what the indicator IS, not to the mechanism. Selection
- * marks sit inside a control and take the control's two sizes. A busy visual
- * also stands alone — a page-level spinner is not sized by any control — so
- * its family keeps the four sizes `Spinner` has always shipped.
- *
- * Every host that renders a busy indicator inside a control passes `sm` or
- * `md`; `lg` and `xl` only ever appear on a standalone `<Spinner>`. So the two
- * extra sizes cost the control hosts nothing, and a replacement that only
- * draws `sm`/`md` is still a valid selection-mark replacement — the widening
- * is confined to the family that asked for it.
+ * Existing and augmented families retain the established control scale. Busy
+ * alone widens it because the standalone Spinner already exposes `lg` and `xl`.
  */
-export interface IndicatorFamilySizeMap {
-  singleSelection: IndicatorSize;
-  multiSelection: IndicatorSize;
-  busy: IndicatorSize | 'lg' | 'xl';
-}
-
-/** The sizes an indicator of family `F` can be asked to draw at. */
 export type IndicatorSizeOf<F extends IndicatorFamily = IndicatorFamily> =
-  IndicatorFamilySizeMap[F];
+  F extends 'busy' ? IndicatorSize | 'lg' | 'xl' : IndicatorSize;
 
 /**
  * Which edge of its row an indicator sits on.

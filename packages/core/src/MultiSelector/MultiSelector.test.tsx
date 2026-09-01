@@ -1408,7 +1408,7 @@ describe('MultiSelector', () => {
       />,
     );
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-busy', 'true');
-    expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+    expect(document.querySelector('.astryx-spinner-indicator')).not.toBeNull();
   });
 
   it('renders with custom selectAllLabel', async () => {
@@ -2005,7 +2005,9 @@ describe('MultiSelector', () => {
 
       const trigger = screen.getByRole('combobox', {name: 'Fruit'});
       expect(trigger).toHaveAttribute('aria-busy', 'true');
-      expect(screen.getByRole('status', {name: 'Loading'})).toBeInTheDocument();
+      expect(
+        document.querySelector('.astryx-spinner-indicator'),
+      ).not.toBeNull();
 
       await user.click(trigger);
       expect(screen.queryByRole('listbox', h)).not.toBeInTheDocument();

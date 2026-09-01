@@ -12,16 +12,12 @@
 import {describe, it, expect, vi, afterEach} from 'vitest';
 import {render, screen} from '@testing-library/react';
 import {Spinner} from './Spinner';
+import {SPINNER_SIZES} from './spinnerGeometry.stylex';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
 
 /** sm/md/lg/xl, as Spinner.tsx defines them. */
-const SIZES = {
-  sm: {diameter: 10, border: 2},
-  md: {diameter: 14, border: 3},
-  lg: {diameter: 18, border: 3},
-  xl: {diameter: 28, border: 4},
-} as const;
+const SIZES = SPINNER_SIZES;
 
 const ring = (testId = 'spinner') =>
   screen.getByTestId(testId).querySelector('svg') as SVGSVGElement;
@@ -141,6 +137,11 @@ describe('Spinner', () => {
     render(<Spinner data-testid="spinner" />);
     const spinner = screen.getByTestId('spinner');
     expect(spinner.tagName.toLowerCase()).toBe('span');
+  });
+
+  it('applies the released spinner target once', () => {
+    const {container} = render(<Spinner data-testid="spinner" />);
+    expect(container.querySelectorAll('.astryx-spinner')).toHaveLength(1);
   });
 
   // The box has always been sized by an inline width/height written after the

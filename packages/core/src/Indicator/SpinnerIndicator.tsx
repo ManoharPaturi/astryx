@@ -28,9 +28,13 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {colorVars, durationVars} from '../theme/tokens.stylex';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
-import type {IndicatorProps, IndicatorSizeOf} from './types';
+import {
+  SPINNER_SIZES,
+  resolvedSpinnerSizeStyles,
+} from '../Spinner/spinnerGeometry.stylex';
+import type {IndicatorProps} from './types';
 
 /**
  * Fraction of the ring the moving arc covers. The canvas ring this replaces
@@ -40,16 +44,6 @@ const ARC_FRACTION = 0.375;
 const PI = 3.141592653589793;
 const ARC_DASH = PI * ARC_FRACTION;
 const ARC_GAP = PI * (1 - ARC_FRACTION);
-
-const SIZES: Record<
-  IndicatorSizeOf<'busy'>,
-  {diameter: number; border: number}
-> = {
-  sm: {diameter: 10, border: 2},
-  md: {diameter: 14, border: 3},
-  lg: {diameter: 18, border: 3},
-  xl: {diameter: 28, border: 4},
-};
 
 const RESOLVED_DIAMETER = '--_spinner-ring-diameter';
 const RESOLVED_STROKE = '--_spinner-ring-stroke';
@@ -134,7 +128,6 @@ const styles = stylex.create({
   root: {
     display: 'inline-grid',
     placeItems: 'center',
-    overflow: 'hidden',
     verticalAlign: 'middle',
     flexShrink: 0,
     color: `var(--_spinner-color, var(--spinner-color, ${colorVars['--color-accent']}))`,
@@ -143,6 +136,8 @@ const styles = stylex.create({
   ring: {
     backfaceVisibility: 'hidden',
     display: 'block',
+    width: `var(${BOX_SIZE})`,
+    height: `var(${BOX_SIZE})`,
     willChange: 'transform',
     overflow: 'visible',
     // Slow the rotation dramatically under reduced-motion rather than freezing
@@ -157,12 +152,15 @@ const styles = stylex.create({
   },
   circle: {
     fill: 'none',
+    transformBox: 'fill-box',
+    transformOrigin: 'center',
     strokeLinecap: 'round',
     r: `calc(var(${RESOLVED_DIAMETER}) / 2)`,
     strokeWidth: `var(${RESOLVED_STROKE})`,
   },
   arc: {
     stroke: 'var(--spinner-color, currentColor)',
+    transform: 'rotate(-90deg)',
     strokeDasharray: `calc(var(${RESOLVED_DIAMETER}) * ${ARC_DASH}) calc(var(${RESOLVED_DIAMETER}) * ${ARC_GAP})`,
   },
   track: {
@@ -170,25 +168,6 @@ const styles = stylex.create({
     strokeOpacity: 'var(--_spinner-track-opacity, 1)',
   },
   disabled: {opacity: 0.5},
-});
-
-const resolvedSizeStyles = stylex.create({
-  sm: {
-    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 10px)',
-    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 2px)',
-  },
-  md: {
-    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 14px)',
-    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 3px)',
-  },
-  lg: {
-    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 18px)',
-    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 3px)',
-  },
-  xl: {
-    [RESOLVED_DIAMETER]: 'var(--spinner-diameter, 28px)',
-    [RESOLVED_STROKE]: 'var(--spinner-stroke-width, 4px)',
-  },
 });
 
 /**
@@ -210,7 +189,11 @@ const resolvedSizeStyles = stylex.create({
  * defineTheme({name: 'brand', indicators: {spinner: BouncingDots}});
  * ```
  */
-export function SpinnerIndicator({
+type SpinnerIndicatorVisualProps = IndicatorProps<'busy'> & {
+  hasLegacyTarget: boolean;
+};
+
+function SpinnerIndicatorVisual({
   size = 'md',
   isDisabled = false,
   children,
@@ -218,11 +201,11 @@ export function SpinnerIndicator({
   className,
   style,
   xstyle,
+  hasLegacyTarget,
   ...rest
-}: IndicatorProps<'busy'>) {
-  const {border, diameter} = SIZES[size];
+}: SpinnerIndicatorVisualProps) {
+  const {border, diameter} = SPINNER_SIZES[size];
   const frameSize = diameter + border * 2;
-  const center = frameSize / 2;
   const circumference = Math.PI * diameter;
   const arcLength = circumference * ARC_FRACTION;
 
@@ -235,10 +218,14 @@ export function SpinnerIndicator({
       ref={ref}
       aria-hidden="true"
       {...mergeProps(
-        themeProps('spinner-indicator', {size}, {legacyNames: ['spinner']}),
+        themeProps(
+          'spinner-indicator',
+          {size},
+          hasLegacyTarget ? {legacyNames: ['spinner']} : undefined,
+        ),
         stylex.props(
           styles.root,
-          resolvedSizeStyles[size],
+          resolvedSpinnerSizeStyles[size],
           isDisabled && styles.disabled,
           xstyle,
         ),
@@ -249,34 +236,45 @@ export function SpinnerIndicator({
           height: `var(${BOX_SIZE}, ${frameSize}px)`,
         },
       )}>
-      {children ?? (
+      {isRenderable(children) ? (
+        children
+      ) : (
         <svg
           ref={syncRotationPhase}
           width={frameSize}
           height={frameSize}
-          viewBox={`0 0 ${frameSize} ${frameSize}`}
           aria-hidden="true"
           {...stylex.props(styles.ring)}>
           <circle
-            cx={center}
-            cy={center}
+            cx="50%"
+            cy="50%"
             r={diameter / 2}
             strokeWidth={border}
             {...stylex.props(styles.circle, styles.track)}
           />
           <circle
-            cx={center}
-            cy={center}
+            cx="50%"
+            cy="50%"
             r={diameter / 2}
             strokeWidth={border}
             strokeDasharray={`${arcLength} ${circumference - arcLength}`}
-            transform={`rotate(-90 ${center} ${center})`}
             {...stylex.props(styles.circle, styles.arc)}
           />
         </svg>
       )}
     </span>
   );
+}
+
+export function SpinnerIndicator(props: IndicatorProps<'busy'>) {
+  return <SpinnerIndicatorVisual {...props} hasLegacyTarget />;
+}
+
+/** Internal standalone-Spinner path: the wrapper already owns the legacy target. */
+export function SpinnerIndicatorWithoutLegacyTarget(
+  props: IndicatorProps<'busy'>,
+) {
+  return <SpinnerIndicatorVisual {...props} hasLegacyTarget={false} />;
 }
 
 SpinnerIndicator.displayName = 'SpinnerIndicator';
