@@ -54,8 +54,9 @@ import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
 import type {SizeValue} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
 import {selectorPresentationStyles} from '../Selector/selectorPresentation.stylex';
+import {SelectorBottomSheet} from '../Selector/SelectorBottomSheet';
 import {useSelectorPresentation} from '../Selector/useSelectorPresentation';
-import {ComplexSelectorBottomSheet} from './ComplexSelectorBottomSheet';
+import {stableClassName} from '../naming';
 
 const COMPLEX_SELECTOR_VIEWPORT_GUTTER = spacingVars['--spacing-4'];
 const COMPLEX_SELECTOR_MAX_INLINE_SIZE = `calc(100vi - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-left, 0px)) - max(${COMPLEX_SELECTOR_VIEWPORT_GUTTER}, env(safe-area-inset-right, 0px)))`;
@@ -477,6 +478,7 @@ export function ComplexSelector<Value>({
       .join(' ') || undefined;
 
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const [isPending, startTransition] = useTransition();
   const [optimisticValue, setOptimisticValue] = useOptimistic(value);
@@ -576,6 +578,7 @@ export function ComplexSelector<Value>({
 
   const content = (
     <div
+      ref={contentRef}
       id={contentId}
       {...stylex.props(
         styles.content,
@@ -671,13 +674,16 @@ export function ComplexSelector<Value>({
       </div>
 
       {surface.activePresentation === 'bottom-sheet' ? (
-        <ComplexSelectorBottomSheet
+        <SelectorBottomSheet
           isOpen={surface.isSheetOpen}
           onOpenChange={surface.onSheetOpenChange}
           finalFocusRef={triggerRef}
-          label={label}>
+          initialFocusContainerRef={contentRef}
+          label={label}
+          layout="rich"
+          className={stableClassName('complex-selector-popup')}>
           {content}
-        </ComplexSelectorBottomSheet>
+        </SelectorBottomSheet>
       ) : (
         popover.render(content, {
           placement,
