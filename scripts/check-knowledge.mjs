@@ -201,6 +201,27 @@ export function discoverKnowledgeRecords(root = DEFAULT_ROOT) {
   return records.sort();
 }
 
+export function validateSystemSpecIdentity(root, absolutePath, document) {
+  const filePath = path.relative(root, absolutePath).split(path.sep).join('/');
+  const match = filePath.match(/^docs\/specs\/([^/]+)\/spec\.md$/);
+  if (!match) return [];
+
+  const directoryId = match[1];
+  if (!/^AST-[0-9]{3}$/.test(directoryId)) {
+    return [
+      `${filePath}: system specs must be placed at docs/specs/AST-NNN/spec.md.`,
+    ];
+  }
+
+  const expectedId = `spec:${directoryId}`;
+  const actualId = document.frontmatter.get('id');
+  return actualId === expectedId
+    ? []
+    : [
+        `${filePath}: frontmatter id must be ${expectedId} to match its directory; received ${JSON.stringify(actualId)}.`,
+      ];
+}
+
 export function parseAnatomyThemingBlock(
   content,
   filePath = '<component spec>',
@@ -896,6 +917,7 @@ export async function validateKnowledgeRoot(root = DEFAULT_ROOT) {
     const filePath = path.relative(root, absolutePath);
     const content = fs.readFileSync(absolutePath, 'utf8');
     const document = parseKnowledgeDocument(content, filePath);
+    problems.push(...validateSystemSpecIdentity(root, absolutePath, document));
     const recordVersion = document.frontmatter.get('schema_version');
     const versionedSchema = schemas.get(recordVersion);
     if (!versionedSchema) {

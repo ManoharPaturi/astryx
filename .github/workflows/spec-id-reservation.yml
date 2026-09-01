@@ -1,0 +1,54 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+
+# A spec ID is reserved by an open PR that adds or renames a new
+# docs/specs/AST-NNN/spec.md path. This trusted, read-only workflow compares the
+# exact current PR head with complete file inventories for every open PR.
+name: Spec ID reservation
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: spec-id-reservation
+  cancel-in-progress: false
+
+jobs:
+  collision:
+    name: Spec ID collision
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      # pull_request_target is privileged context, so execute only helpers from
+      # the trusted default branch. Never check out or run the PR head here.
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Check open spec ID reservations
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const path = require('node:path');
+            const {runSpecIdCollisionGate} = require(path.join(
+              process.env.GITHUB_WORKSPACE,
+              '.github/scripts/spec-id-collision.cjs',
+            ));
+            try {
+              await runSpecIdCollisionGate({
+                github,
+                context,
+                core,
+                root: process.env.GITHUB_WORKSPACE,
+              });
+            } catch (error) {
+              core.setFailed(
+                `Spec ID collision check could not complete safely: ${error.message}`,
+              );
+            }

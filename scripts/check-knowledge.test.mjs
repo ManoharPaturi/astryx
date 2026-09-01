@@ -251,6 +251,35 @@ afterEach(() => {
     fs.rmSync(root, {recursive: true, force: true});
 });
 
+describe('system-spec identity', () => {
+  it('accepts matching AST-NNN directory and frontmatter IDs', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-900', systemSpecRecord());
+
+    expect(await validateKnowledgeRoot(root)).not.toContainEqual(
+      expect.stringContaining('to match its directory'),
+    );
+  });
+
+  it('rejects a frontmatter ID that differs from the directory ID', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-901', systemSpecRecord());
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toContain(
+      'frontmatter id must be spec:AST-901 to match its directory; received "spec:AST-900".',
+    );
+  });
+
+  it('rejects a system-spec directory outside the AST-NNN format', async () => {
+    const root = fixtureRoot();
+    writeSystemSpec(root, 'AST-90', systemSpecRecord({id: 'spec:AST-90'}));
+
+    expect((await validateKnowledgeRoot(root)).join('\n')).toContain(
+      'system specs must be placed at docs/specs/AST-NNN/spec.md.',
+    );
+  });
+});
+
 describe('schema evolution', () => {
   it('tracks latest schema versions per kind', () => {
     const raw = new Map([
