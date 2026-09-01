@@ -54,7 +54,9 @@ import {
   collectDirectionalDecorations,
   coverageHasFindings,
   evaluateDirectionalDecorations,
+  orderD1StoryCandidates,
   validateKnownCoverageGaps,
+  validateStoryRtlAuditParameters,
   validateVerifiedNotApplicable,
 } from './rtl-audit-coverage.mjs';
 
@@ -162,6 +164,22 @@ async function settle(page) {
     })
     .catch(() => {});
   await page.waitForTimeout(200);
+}
+
+async function readStoryRtlAuditParameters(page, storyId) {
+  const raw = await page
+    .locator('[data-astryx-rtl-audit]')
+    .first()
+    .getAttribute('data-astryx-rtl-audit')
+    .catch(() => null);
+  if (raw == null) return {};
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${storyId} rtlAudit metadata is not valid JSON`);
+  }
+  return validateStoryRtlAuditParameters(parsed, storyId);
 }
 
 async function doSetup(page, t) {
@@ -597,10 +615,12 @@ async function autoPositionalMirror(page, port, storyId, component) {
 }
 
 // Auto-discovery D1 for one story: compare LTR vs RTL directional-icon flip.
-async function autoD1(page, port, storyId, component) {
+async function autoD1(page, port, storyId, component, {ltrReady = false} = {}) {
   const card = {component, storyId, dim: 'D1', verdict: 'N-A', notes: [], icons: 0};
-  await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
-  await settle(page);
+  if (!ltrReady) {
+    await page.goto(storyUrl(port, storyId, false), {waitUntil: 'domcontentloaded'});
+    await settle(page);
+  }
   const revealedL = await revealInteractionGated(page);
   const ltr = await detectDirectionalIcons(page);
   await page.goto(storyUrl(port, storyId, true), {waitUntil: 'domcontentloaded'});
@@ -674,6 +694,36 @@ async function autoD1(page, port, storyId, component) {
   card._ltr = ltr;
   card._rtl = rtl;
   return card;
+}
+
+async function autoD1ForComponent(page, port, candidates, component) {
+  const skippedStories = [];
+  for (const candidate of orderD1StoryCandidates(candidates)) {
+    await page.goto(storyUrl(port, candidate.id, false), {waitUntil: 'domcontentloaded'});
+    await settle(page);
+    const parameters = await readStoryRtlAuditParameters(page, candidate.id);
+    if (parameters.D1?.applicable === false) {
+      skippedStories.push({storyId: candidate.id, reason: parameters.D1.reason});
+      continue;
+    }
+    const card = await autoD1(page, port, candidate.id, component, {
+      ltrReady: true,
+    });
+    card.skippedStories = skippedStories;
+    if (skippedStories.length > 0) {
+      card.notes.unshift(`skipped ${skippedStories.length} fixture(s) explicitly not applicable to D1`);
+    }
+    return card;
+  }
+  return {
+    component,
+    storyId: null,
+    dim: 'D1',
+    verdict: 'N-A',
+    notes: ['every candidate story is explicitly not applicable to D1'],
+    icons: 0,
+    skippedStories,
+  };
 }
 
 // ===========================================================================
@@ -813,6 +863,38 @@ async function scoreCurated(page, coarsePage, port, t) {
 }
 
 // ---------------------------------------------------------------------------
+const STORY_SOURCE_ROOT = path.resolve(PROJECT_ROOT, 'apps/storybook');
+const storySourceCache = new Map();
+
+function storySourceOrder(entry) {
+  const importPath = entry?.importPath ?? '';
+  const exportName = entry?.exportName ?? '';
+  const sourcePath = path.resolve(
+    STORY_SOURCE_ROOT,
+    importPath.replace(/^\.\//, ''),
+  );
+  if (
+    !sourcePath.startsWith(`${STORY_SOURCE_ROOT}${path.sep}`) ||
+    !exportName
+  ) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+  let source = storySourceCache.get(sourcePath);
+  if (source == null) {
+    try {
+      source = fs.readFileSync(sourcePath, 'utf8');
+    } catch {
+      source = '';
+    }
+    storySourceCache.set(sourcePath, source);
+  }
+  const escaped = exportName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return (
+    new RegExp(`export\\s+(?:const|function)\\s+${escaped}\\b`).exec(source)
+      ?.index ?? Number.MAX_SAFE_INTEGER
+  );
+}
+
 function componentFromId(id) {
   // core-tabletree--default -> core/tabletree (best-effort display name)
   // lab-listinput--tag-options -> lab/listinput
@@ -910,29 +992,34 @@ async function mapPool(items, pages, fn) {
   const pmResults = []; // D5 positional-mirror
   const decorationResults = []; // D6 contextual directional decoration
   if (!CURATED_ONLY) {
-    // D1 runs one representative story per component (extra stories add little
-    // D1 signal). D5 (positional-mirror) runs over EVERY core story — a
-    // positioned bug can be story-specific (only a `withStatus` variant mounts
-    // the offending element), so we don't collapse to one-per-component.
+    // D1 uses one deterministic representative story per component. Repository
+    // story-file/export order preserves the existing representative while
+    // remaining independent of index.json object order. Fixtures may opt out
+    // with typed rtlAudit metadata; D5 and D6 still scan every story.
     const perComponent = new Map();
     for (const id of storyIds) {
       const comp = componentFromId(id);
-      if (!perComponent.has(comp)) perComponent.set(comp, id);
+      if (!perComponent.has(comp)) perComponent.set(comp, []);
+      perComponent.get(comp).push({
+        id,
+        importPath: entries[id]?.importPath ?? '',
+        sourceOrder: storySourceOrder(entries[id]),
+      });
     }
     const d1Targets = [...perComponent]
       .filter(([comp]) => matchesFilter(comp))
-      .map(([comp, id]) => ({comp, id}));
+      .map(([comp, candidates]) => ({comp, candidates}));
     autoResults.push(
-      ...(await mapPool(d1Targets, pages, async ({comp, id}, workerPage) => {
+      ...(await mapPool(d1Targets, pages, async ({comp, candidates}, workerPage) => {
         try {
-          const card = await autoD1(workerPage, port, id, comp);
+          const card = await autoD1ForComponent(workerPage, port, candidates, comp);
           if (card.verdict !== 'N-A') {
             console.error(`AUTO ${card.verdict.toUpperCase().padEnd(4)} ${comp.padEnd(24)} icons=${card.icons}`);
           }
           return card;
         } catch (e) {
           console.error(`AUTO ERROR ${comp}: ${String(e).slice(0, 120)}`);
-          return {component: comp, storyId: id, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
+          return {component: comp, storyId: null, dim: 'D1', verdict: 'ERROR', notes: [String(e).slice(0, 160)], icons: 0};
         }
       })),
     );

@@ -272,6 +272,64 @@ function componentMatchesFilter(component, filter) {
 }
 
 /**
+ * Keep D1 representative selection stable when Storybook changes index order.
+ * Story source-file and export order preserve the repository's existing choice;
+ * the story id is the deterministic fallback.
+ */
+export function orderD1StoryCandidates(candidates) {
+  return [...candidates].sort(
+    (left, right) =>
+      left.importPath.localeCompare(right.importPath) ||
+      left.sourceOrder - right.sourceOrder ||
+      left.id.localeCompare(right.id),
+  );
+}
+
+/** Validate the resolved Storybook applicability parameters for one story. */
+export function validateStoryRtlAuditParameters(value, storyId = 'story') {
+  if (value == null) {
+    return {};
+  }
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`${storyId} rtlAudit parameters must be an object`);
+  }
+
+  const allowed = new Set(['D1']);
+  const normalized = {};
+  for (const [dimension, applicability] of Object.entries(value)) {
+    if (!allowed.has(dimension)) {
+      throw new Error(
+        `${storyId} rtlAudit names unknown dimension ${dimension}`,
+      );
+    }
+    if (
+      applicability == null ||
+      typeof applicability !== 'object' ||
+      Array.isArray(applicability) ||
+      typeof applicability.applicable !== 'boolean'
+    ) {
+      throw new Error(
+        `${storyId} rtlAudit.${dimension} needs a boolean applicable field`,
+      );
+    }
+    const reason =
+      typeof applicability.reason === 'string'
+        ? applicability.reason.trim()
+        : '';
+    if (!applicability.applicable && reason.length === 0) {
+      throw new Error(
+        `${storyId} rtlAudit.${dimension} needs a non-empty reason when not applicable`,
+      );
+    }
+    normalized[dimension] = {
+      applicable: applicability.applicable,
+      ...(reason ? {reason} : {}),
+    };
+  }
+  return normalized;
+}
+
+/**
  * Build the component roster for a scoped audit.
  *
  * Storybook can expose an umbrella story whose name matches the PR analyzer's

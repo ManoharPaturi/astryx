@@ -13,8 +13,10 @@ import {
   collectDirectionalDecorations,
   coverageHasFindings,
   diffVerifiedNotApplicable,
+  orderD1StoryCandidates,
   validateKnownCoverageGaps,
   validateKnownCoverageGapTransition,
+  validateStoryRtlAuditParameters,
   validateVerifiedNotApplicable,
 } from '../../apps/storybook/rtl-audit/rtl-audit-coverage.mjs';
 
@@ -102,6 +104,76 @@ describe('classifyDirectionalDecorationPair', () => {
         decoration('›', 'auto-bidi', MIRROR),
       ),
     ).toMatchObject({verdict: 'fail'});
+  });
+});
+
+describe('D1 story applicability', () => {
+  const defaultStory = {
+    id: 'lab-svgicon--default',
+    importPath: './stories/SVGIcon.stories.tsx',
+    sourceOrder: 10,
+  };
+  const registryFixture = {
+    id: 'lab-svgicon--default-registry-icons',
+    importPath: './stories/SVGIconRegistry.stories.tsx',
+    sourceOrder: 10,
+  };
+
+  it.each([
+    [registryFixture, defaultStory],
+    [defaultStory, registryFixture],
+  ])(
+    'selects the same representative when Storybook order changes',
+    (...stories) => {
+      expect(orderD1StoryCandidates(stories).map(story => story.id)).toEqual([
+        defaultStory.id,
+        registryFixture.id,
+      ]);
+    },
+  );
+
+  it('preserves source export order for stories in one file', () => {
+    const later = {
+      id: 'core-example--later',
+      importPath: './stories/Example.stories.tsx',
+      sourceOrder: 200,
+    };
+    const earlier = {...later, id: 'core-example--earlier', sourceOrder: 100};
+    expect(orderD1StoryCandidates([later, earlier])).toEqual([earlier, later]);
+  });
+
+  it('requires a reason for a story-level D1 exclusion', () => {
+    expect(
+      validateStoryRtlAuditParameters(
+        {
+          D1: {
+            applicable: false,
+            reason: '  Reference glyphs preserve caller-supplied geometry.  ',
+          },
+        },
+        registryFixture.id,
+      ),
+    ).toEqual({
+      D1: {
+        applicable: false,
+        reason: 'Reference glyphs preserve caller-supplied geometry.',
+      },
+    });
+    expect(() =>
+      validateStoryRtlAuditParameters(
+        {D1: {applicable: false, reason: '  '}},
+        registryFixture.id,
+      ),
+    ).toThrow('needs a non-empty reason');
+  });
+
+  it('rejects mistyped dimensions instead of silently ignoring them', () => {
+    expect(() =>
+      validateStoryRtlAuditParameters(
+        {D7: {applicable: false, reason: 'Typo.'}},
+        registryFixture.id,
+      ),
+    ).toThrow('unknown dimension D7');
   });
 });
 

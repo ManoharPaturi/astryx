@@ -52,6 +52,28 @@ Directional-icon mirroring. For each audited story it:
 This is the broad safety net: a component that lands a directional chevron
 without RTL support shows up as a not-RTL finding automatically.
 
+D1 selects its representative by stable story source-file and export order,
+rather than depending on Storybook `index.json` object order. A reference fixture whose raw glyphs are data rather than directional UI
+can opt out beside the story, with a required rationale:
+
+```ts
+import {rtlAuditParameters} from '../rtl-audit/story-parameters';
+
+export const RegistryFixture: Story = {
+  parameters: rtlAuditParameters({
+    D1: {
+      applicable: false,
+      reason: 'Reference samples preserve caller-supplied glyph geometry.',
+    },
+  }),
+};
+```
+
+A component-wide default may live in the story `meta`; a story-level value wins
+through Storybook's resolved-parameter precedence. The global preview decorator
+exposes that resolved metadata to the Playwright audit. D5 and D6 still scan the
+fixture unless their own detectors return N-A; this is not a general audit skip.
+
 #### Interaction-revealed icons (popovers, dialogs, menus)
 
 Many directional icons live inside content that is closed by default — e.g. the
