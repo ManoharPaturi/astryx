@@ -844,7 +844,7 @@
     "component": "core/TypeaheadItem",
     "reason": "TypeaheadItem is the default dropdown row: an optional consumer icon followed by a label and an optional description in a `flex` line spaced with `gap`. It declares no `position`, no transform, no event handler and no text beyond the item's own label — the row simply reverses with the writing mode. When `item.element` is set it returns that node untouched, so even then it contributes no direction-sensitive markup of its own.",
     "evidence": {
-      "apps/storybook/stories/Typeahead.stories.tsx": "sha256:aae6266be72b56171efa997c7dc6031b3ddf1c3be37fec7836b720547c31c820",
+      "apps/storybook/stories/Typeahead.stories.tsx": "sha256:67dca97b65bf5c3e6dd00de7ceaf5c5115c2c3d5528e5b445b62a25b1ee3ad55",
       "packages/core/src/Typeahead/TypeaheadItem.tsx": "sha256:cfd4d60e7c9931f2a51e581f8450334d52645a56118d34db2b3c56af53e367be",
       "packages/core/src/Typeahead/types.ts": "sha256:3e56d17e359c0abaa9040d0c95f586d41ff8155ffe04daeacb74679d047af65f"
     }
