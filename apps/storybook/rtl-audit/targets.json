@@ -125,5 +125,27 @@
       "prev": "[data-transfer-list-panel-body=\"selected\"]",
       "next": "[data-transfer-list-panel-body=\"available\"]"
     }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
+  },
+  {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
   }
 ]
