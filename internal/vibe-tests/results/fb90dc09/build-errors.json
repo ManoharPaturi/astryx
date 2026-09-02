@@ -1,0 +1,113 @@
+{
+  "cs-1": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "cwm-3": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 79,
+        "message": "Type '{ isOpen: boolean; onOpenChange: Dispatch<SetStateAction<boolean>>; trigger: Element; content: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 123,
+        "message": "Type '{ trigger: Element; content: Element; }' is not assignable to type 'IntrinsicAttributes & PopoverProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "dd-8": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "fwc-14": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 73,
+        "message": "Type 'string' is not assignable to type 'number'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "io-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 47,
+        "message": "Type '{ children: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 50,
+        "message": "Type '{ children: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "ps-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 27,
+        "message": "Property 'heading' is missing in type '{ children: string; }' but required in type 'SideNavHeadingProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  },
+  "rc-3": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "sd-1": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 48,
+        "message": "Type '\"space-between\"' is not assignable to type '\"end\" | \"start\" | \"center\" | \"between\" | \"around\" | \"evenly\" | undefined'.",
+        "code": "TS2322"
+      },
+      {
+        "line": 61,
+        "message": "Type '{ children: string; variant: string; }' is not assignable to type 'IntrinsicAttributes & BannerProps'.",
+        "code": "TS2322"
+      }
+    ],
+    "errorCount": 2,
+    "buildSuccess": false
+  },
+  "ty-4": {
+    "target": "astryx",
+    "errors": [],
+    "errorCount": 0,
+    "buildSuccess": true
+  },
+  "wd-2": {
+    "target": "astryx",
+    "errors": [
+      {
+        "line": 35,
+        "message": "Property 'step' is missing in type '{ key: string; label: string; }' but required in type 'StepProps'.",
+        "code": "TS2741"
+      }
+    ],
+    "errorCount": 1,
+    "buildSuccess": false
+  }
+}

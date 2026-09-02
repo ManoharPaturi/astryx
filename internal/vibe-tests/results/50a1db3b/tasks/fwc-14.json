@@ -1,0 +1,12 @@
+{
+  "promptId": "fwc-14",
+  "category": "feature-with-constraint",
+  "prompt": "Build a media gallery that mixes images and videos. Clicking any item opens a lightbox viewer. Videos should show native playback controls. Images should support zoom on double-click.",
+  "expectedComponents": [
+    "Lightbox"
+  ],
+  "target": "baseline",
+  "persona": "naive",
+  "taskPrompt": "You are generating React/TSX code using shadcn/ui components with Tailwind CSS.\nYour project is at /vercel/sandbox/repos/xds/internal/vibe-tests/results/50a1db3b/projects/fwc-14. Explore it to find available components.\n\n## Task\n\nBuild a media gallery that mixes images and videos. Clicking any item opens a lightbox viewer. Videos should show native playback controls. Images should support zoom on double-click.\n\n## Output\n\nWrite the TSX code to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/50a1db3b/projects/fwc-14/fwc-14.tsx\nWrite metadata to: /vercel/sandbox/repos/xds/internal/vibe-tests/results/50a1db3b/projects/fwc-14/fwc-14.json\n\nMetadata: {\"completedAt\": \"<ISO timestamp>\", \"docsRead\": [<docs you read>]}\nWrite ONLY valid TSX. No markdown fences, no explanation.",
+  "createdAt": "2026-09-02T11:05:26.650Z"
+}
