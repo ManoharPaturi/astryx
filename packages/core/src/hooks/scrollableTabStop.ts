@@ -15,7 +15,7 @@
  * - /packages/core/src/hooks/scrollableTabStop.test.ts
  */
 import {hasFocusableDescendant} from './focusableSelector';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
 
 const TOLERANCE = 1;
 const SCROLLABLE = new Set(['auto', 'scroll']);
@@ -39,7 +39,7 @@ const OBSERVED_ATTRIBUTES = [
  * visible sequential-focus descendant. Returns the detach function.
  */
 export function attachScrollableTabStop(element: HTMLElement): () => void {
-  const observedChildren = new Set<Element>();
+  const observedChildren = new Map<Element, () => void>();
   let active = true;
   let managed = false;
   let measuring = false;
@@ -78,16 +78,15 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   };
 
   const syncChildren = () => {
-    for (const child of observedChildren) {
+    for (const [child, unobserve] of observedChildren) {
       if (child.parentNode !== element) {
-        unobserveResize(child, scheduleMeasure);
+        unobserve();
         observedChildren.delete(child);
       }
     }
     for (const child of element.children) {
       if (!observedChildren.has(child)) {
-        observedChildren.add(child);
-        observeResize(child, scheduleMeasure);
+        observedChildren.set(child, observeResize(child, scheduleMeasure));
       }
     }
   };
@@ -116,7 +115,7 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
   }
 
   measure();
-  observeResize(element, scheduleMeasure);
+  const unobserveElement = observeResize(element, scheduleMeasure);
   initializing = false;
 
   element.addEventListener('focusout', scheduleMeasure);
@@ -155,9 +154,9 @@ export function attachScrollableTabStop(element: HTMLElement): () => void {
       cancelAnimationFrame(measureFrame);
       measureFrame = null;
     }
-    unobserveResize(element, scheduleMeasure);
-    for (const child of observedChildren) {
-      unobserveResize(child, scheduleMeasure);
+    unobserveElement();
+    for (const unobserve of observedChildren.values()) {
+      unobserve();
     }
     observedChildren.clear();
     if (managed) {

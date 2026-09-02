@@ -8,7 +8,5 @@
 
 BottomSheet now uses the hook on its scrolling body. A text-only sheet can be reached and scrolled with the keyboard, with the standard themeable focus outline, while a sheet with a visible control adds no extra stop.
 
-The shared resize observer now supports independent callbacks on the same element without one cleanup removing another.
-
 @cixzhang
 @jiunshinn
