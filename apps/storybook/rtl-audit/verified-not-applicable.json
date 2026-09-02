@@ -1,15 +1,15 @@
 [
   {
     "component": "core/AlertDialog",
-    "reason": "AlertDialog renders a title, a description paragraph, and a Cancel/action Button pair inside Dialog's centred modal surface — no icons, no positioned decoration, no scrolling or dragging. Its one layout decision, stacking the actions and putting the destructive button above Cancel, is driven by a max-width media query, and the wide-viewport row is aligned with the logical `hAlign=\"end\"` that CSS mirrors on its own. Every style it declares is a width constraint."
+    "reason": "AlertDialog renders a title, a description paragraph, and a Cancel/action Button pair inside Dialog's centred modal surface \u2014 no icons, no positioned decoration, no scrolling or dragging. Its one layout decision, stacking the actions and putting the destructive button above Cancel, is driven by a max-width media query, and the wide-viewport row is aligned with the logical `hAlign=\"end\"` that CSS mirrors on its own. Every style it declares is a width constraint."
   },
   {
     "component": "core/AspectRatio",
-    "reason": "AspectRatio renders a ratio box and one absolutely-positioned child wrapper that fills it edge to edge (`inset-inline-start: 0; width: 100%; height: 100%`), so the child occupies the whole box and has no side to land on. Its only other visual is `border-radius: 50%` for the `ellipse` shape, which is symmetric about both axes. The fifteen stories render images, Skeletons and coloured placeholders inside Grid and HStack — no glyph, no separator, no positioned affordance, and no control the user can press."
+    "reason": "AspectRatio renders a ratio box and one absolutely-positioned child wrapper that fills it edge to edge (`inset-inline-start: 0; width: 100%; height: 100%`), so the child occupies the whole box and has no side to land on. Its only other visual is `border-radius: 50%` for the `ellipse` shape, which is symmetric about both axes. The fifteen stories render images, Skeletons and coloured placeholders inside Grid and HStack \u2014 no glyph, no separator, no positioned affordance, and no control the user can press."
   },
   {
     "component": "core/AvatarGroupOverflow",
-    "reason": "AvatarGroupOverflow renders a single circular/pill \"+N\" counter — one text node inside a relatively-positioned inline-flex box, with no icon, no positioned child, and no second control to order against. Its one inline-axis rule is the negative `marginInlineStart` overlap, a logical property that already reverses under RTL so the stack overlaps from the correct edge. There is no scroll, drag, keyboard, or overlay behaviour to invert."
+    "reason": "AvatarGroupOverflow renders a single circular/pill \"+N\" counter \u2014 one text node inside a relatively-positioned inline-flex box, with no icon, no positioned child, and no second control to order against. Its one inline-axis rule is the negative `marginInlineStart` overlap, a logical property that already reverses under RTL so the stack overlaps from the correct edge. There is no scroll, drag, keyboard, or overlay behaviour to invert."
   },
   {
     "component": "core/Badge",
@@ -17,7 +17,7 @@
   },
   {
     "component": "core/Banner",
-    "reason": "Banner renders a single wrap-capable flex header row — status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` — above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180° about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert."
+    "reason": "Banner renders a single wrap-capable flex header row \u2014 status icon, title/description column, and an end area pushed over with `marginInlineStart: 'auto'` \u2014 above an optional content panel. Its status, close and expand glyphs (`info`, `warning`, `error`, `success`, `close`, `chevronDown`) are all radially symmetric or vertical, and the expanded state rotates the chevron 180\u00b0 about the block axis. Every inset, corner radius and border it draws is a logical property, so the whole banner mirrors under RTL with nothing positioned, ordered or animated along the inline axis for the audit to assert."
   },
   {
     "component": "core/Blockquote",
@@ -29,11 +29,11 @@
   },
   {
     "component": "core/BottomSheetSwitcher",
-    "reason": "BottomSheetSwitcher renders one full-viewport `<dialog>` (`position: fixed; inset: 0`) holding sheet panels centred by a full-width positioner, and coordinates their handoff purely in the block axis — the entering panel slides up on `translateY`, the retained panel moves down by an `alignmentOffset`, and both fade. It contributes no icon, no glyph, no inline-axis offset, and no horizontal gesture; its only affordances are Escape, scrim click, and a vertical swipe."
+    "reason": "BottomSheetSwitcher renders one full-viewport `<dialog>` (`position: fixed; inset: 0`) holding sheet panels centred by a full-width positioner, and coordinates their handoff purely in the block axis \u2014 the entering panel slides up on `translateY`, the retained panel moves down by an `alignmentOffset`, and both fade. It contributes no icon, no glyph, no inline-axis offset, and no horizontal gesture; its only affordances are Escape, scrim click, and a vertical swipe."
   },
   {
     "component": "core/Button",
-    "reason": "Button lays out an optional icon, a label span and an optional end slot as one `inline-flex` row with `gap` and `paddingInline` — a plain row with logical spacing, which CSS reverses under RTL with nothing for the audit to assert. Its only positioned element is the loading spinner overlay, anchored with `insetInlineStart`/`insetInlineEnd` and carrying no transform, so it cannot land on the wrong side. Every icon in the fifteen stories is a gear, trash, plus or badge — none is a left/right glyph."
+    "reason": "Button lays out an optional icon, a label span and an optional end slot as one `inline-flex` row with `gap` and `paddingInline` \u2014 a plain row with logical spacing, which CSS reverses under RTL with nothing for the audit to assert. Its only positioned element is the loading spinner overlay, anchored with `insetInlineStart`/`insetInlineEnd` and carrying no transform, so it cannot land on the wrong side. Every icon in the fifteen stories is a gear, trash, plus or badge \u2014 none is a left/right glyph."
   },
   {
     "component": "core/Card",
@@ -49,7 +49,7 @@
   },
   {
     "component": "core/chatdictation",
-    "reason": "These eight stories render a microphone toggle button that swaps its icon for five volume-reactive equalizer bars while listening. Every animated quantity is vertical or scalar — `scaleY` on the bars, a percentage-width volume meter, and band heights — and the bar row is a symmetric equalizer with no start or end meaning. The three composer-wrapped stories (`InSendActions`, `AsSendButton`, `Interactive`) add only slot layout whose inline spacing is logical, and the send glyph they surface is `arrowUp`, which does not mirror."
+    "reason": "These eight stories render a microphone toggle button that swaps its icon for five volume-reactive equalizer bars while listening. Every animated quantity is vertical or scalar \u2014 `scaleY` on the bars, a percentage-width volume meter, and band heights \u2014 and the bar row is a symmetric equalizer with no start or end meaning. The three composer-wrapped stories (`InSendActions`, `AsSendButton`, `Interactive`) add only slot layout whose inline spacing is logical, and the send glyph they surface is `arrowUp`, which does not mirror."
   },
   {
     "component": "core/ChatDictationButton",
@@ -57,7 +57,7 @@
   },
   {
     "component": "core/ChatLayoutScrollButton",
-    "reason": "The scroll-to-bottom control is a horizontally centred pill holding one ghost button with a downward chevron, and it grows from 32px to 200px along the inline axis when given a label. The chevron points down the block axis, so it means the same thing in either reading direction, and the extra breathing room for label text is `paddingInlineEnd`, which already follows the reading direction. The component owns no positioned element and no side prop — the dock it sits in belongs to ChatLayout."
+    "reason": "The scroll-to-bottom control is a horizontally centred pill holding one ghost button with a downward chevron, and it grows from 32px to 200px along the inline axis when given a label. The chevron points down the block axis, so it means the same thing in either reading direction, and the extra breathing room for label text is `paddingInlineEnd`, which already follows the reading direction. The component owns no positioned element and no side prop \u2014 the dock it sits in belongs to ChatLayout."
   },
   {
     "component": "core/ChatMessage",
@@ -65,15 +65,15 @@
   },
   {
     "component": "core/ChatMessageBubble",
-    "reason": "ChatMessageBubble is a padded text container with an optional name row above and metadata row below. Its one sender-dependent visual, the tightened \"tail\" corner, is written entirely with logical corner radii (`borderEndStartRadius`, `borderStartEndRadius`, …) and its name/metadata alignment uses `textAlign: 'end'`, so the whole bubble mirrors through CSS with nothing left for the audit to compare. It draws no icon, no positioned decoration, and no glyph separators."
+    "reason": "ChatMessageBubble is a padded text container with an optional name row above and metadata row below. Its one sender-dependent visual, the tightened \"tail\" corner, is written entirely with logical corner radii (`borderEndStartRadius`, `borderStartEndRadius`, \u2026) and its name/metadata alignment uses `textAlign: 'end'`, so the whole bubble mirrors through CSS with nothing left for the audit to compare. It draws no icon, no positioned decoration, and no glyph separators."
   },
   {
     "component": "core/ChatMessageList",
-    "reason": "ChatMessageList is a `role=\"log\"` column (`flexDirection: 'column'`) that stacks message children with a density-derived gap and an optional flex spacer. Its two `aria-hidden` nodes are an empty scroll sentinel and an empty spacer, and its only scroll behaviour is the vertical load-older-messages observer. It renders no icon, positions nothing, and has no start/end affordance of its own — all inline padding is logical."
+    "reason": "ChatMessageList is a `role=\"log\"` column (`flexDirection: 'column'`) that stacks message children with a density-derived gap and an optional flex spacer. Its two `aria-hidden` nodes are an empty scroll sentinel and an empty spacer, and its only scroll behaviour is the vertical load-older-messages observer. It renders no icon, positions nothing, and has no start/end affordance of its own \u2014 all inline padding is logical."
   },
   {
     "component": "core/ChatMessageMetadata",
-    "reason": "ChatMessageMetadata is a one-line flex row of timestamp · footer · status, where the status is a clock/check/double-check/error glyph plus its text label. Nothing in it points sideways: the row's sender-dependent `row-reverse` already follows the writing direction, the \"·\" separators are plain text rather than aria-hidden directional decoration, and the file declares no position, transform, or physical inset."
+    "reason": "ChatMessageMetadata is a one-line flex row of timestamp \u00b7 footer \u00b7 status, where the status is a clock/check/double-check/error glyph plus its text label. Nothing in it points sideways: the row's sender-dependent `row-reverse` already follows the writing direction, the \"\u00b7\" separators are plain text rather than aria-hidden directional decoration, and the file declares no position, transform, or physical inset."
   },
   {
     "component": "core/ChatSendButton",
@@ -81,19 +81,19 @@
   },
   {
     "component": "core/ChatSystemMessage",
-    "reason": "ChatSystemMessage renders one centred `role=\"status\"` line — a nowrap inline-flex run holding an optional icon slot and the message text — or, in the divider variant, delegates entirely to `<Divider label>`. Both are horizontally centred and symmetric about the inline axis, so the LTR and RTL renders are the same layout. The grep hit for a placement side is the phrase \"horizontal lines on each side\" in the `variant` doc comment, not a prop or a style."
+    "reason": "ChatSystemMessage renders one centred `role=\"status\"` line \u2014 a nowrap inline-flex run holding an optional icon slot and the message text \u2014 or, in the divider variant, delegates entirely to `<Divider label>`. Both are horizontally centred and symmetric about the inline axis, so the LTR and RTL renders are the same layout. The grep hit for a placement side is the phrase \"horizontal lines on each side\" in the `variant` doc comment, not a prop or a style."
   },
   {
     "component": "core/ChatTokenizedText",
-    "reason": "ChatTokenizedText splits a message string on token values and rebuilds it as inline text runs interleaved with `Badge` pills — a `display: inline` span containing `inline-flex` token spans, nothing more. It renders no icon, no separator, no positioned element and no transform, so there is no glyph to mirror, no absolutely-positioned box to land on the wrong side, and no aria-hidden directional decoration; the badge pill is a rounded box whose padding and radius are side-symmetric. The bubble side and text alignment that surround it in the stories belong to `ChatMessage`/`ChatMessageBubble` and are expressed as flex direction and logical `textAlign: 'end'` / logical border radii, which the browser flips from `dir` with nothing left for the audit to assert."
+    "reason": "ChatTokenizedText splits a message string on token values and rebuilds it as inline text runs interleaved with `Badge` pills \u2014 a `display: inline` span containing `inline-flex` token spans, nothing more. It renders no icon, no separator, no positioned element and no transform, so there is no glyph to mirror, no absolutely-positioned box to land on the wrong side, and no aria-hidden directional decoration; the badge pill is a rounded box whose padding and radius are side-symmetric. The bubble side and text alignment that surround it in the stories belong to `ChatMessage`/`ChatMessageBubble` and are expressed as flex direction and logical `textAlign: 'end'` / logical border radii, which the browser flips from `dir` with nothing left for the audit to assert."
   },
   {
     "component": "core/CheckboxInput",
-    "reason": "CheckboxInput renders a visually-hidden native `<input type=\"checkbox\">` stacked on a themeable indicator, with the label and description in a column beside it. The row is a `flex` line with `gap` that CSS reverses under RTL on its own. The one positioned element — the transparent input — is centred over its own 20/24px wrapper on touch pointers, so it mirrors onto itself; there is no icon, glyph separator, control pair, overlay side, or directional key handling."
+    "reason": "CheckboxInput renders a visually-hidden native `<input type=\"checkbox\">` stacked on a themeable indicator, with the label and description in a column beside it. The row is a `flex` line with `gap` that CSS reverses under RTL on its own. The one positioned element \u2014 the transparent input \u2014 is centred over its own 20/24px wrapper on touch pointers, so it mirrors onto itself; there is no icon, glyph separator, control pair, overlay side, or directional key handling."
   },
   {
     "component": "core/Citation",
-    "reason": "Citation renders one inline chip — an optional round favicon/icon, then the source title — or a numbered superscript badge, as an `inline-flex` run inside prose. Its spacing is entirely `paddingInline`/`marginInlineStart`, so the chip's leading gap follows the reading direction automatically. The single `aria-hidden` node wraps an image or icon rather than text, so there is no decoration glyph, and the component has no positioned element, control pair or overlay."
+    "reason": "Citation renders one inline chip \u2014 an optional round favicon/icon, then the source title \u2014 or a numbered superscript badge, as an `inline-flex` run inside prose. Its spacing is entirely `paddingInline`/`marginInlineStart`, so the chip's leading gap follows the reading direction automatically. The single `aria-hidden` node wraps an image or icon rather than text, so there is no decoration glyph, and the component has no positioned element, control pair or overlay."
   },
   {
     "component": "core/ClickableCard",
@@ -105,27 +105,27 @@
   },
   {
     "component": "core/CollapsibleGroup",
-    "reason": "CollapsibleGroup is a coordination provider: by default it renders no DOM at all and returns `{children}` unchanged, and with `hasDividers` it renders one `display: flex; flex-direction: column` wrapper. Its whole API is open/close bookkeeping — `type`, `value`, `onChange` — plus two presentational flags it passes down by context; it draws no line, glyph, or control itself. The hairlines its items draw are `border-block-start` on the block axis, which is unaffected by writing direction."
+    "reason": "CollapsibleGroup is a coordination provider: by default it renders no DOM at all and returns `{children}` unchanged, and with `hasDividers` it renders one `display: flex; flex-direction: column` wrapper. Its whole API is open/close bookkeeping \u2014 `type`, `value`, `onChange` \u2014 plus two presentational flags it passes down by context; it draws no line, glyph, or control itself. The hairlines its items draw are `border-block-start` on the block axis, which is unaffected by writing direction."
   },
   {
     "component": "core/CommandPalette",
-    "reason": "CommandPalette is a centred modal holding a search input, a vertically scrolling `role=\"listbox\"`, and a footer of keyboard hints. Its one icon is a magnifier, its hint keys are `↑`/`↓`, its navigation is ArrowUp/ArrowDown/Home/End/Enter/Escape, and every inline offset is written with `paddingInline` or `textAlign: 'start'`, so the whole surface reflows with the writing direction without any glyph, positioned affordance, or axis for the audit to compare."
+    "reason": "CommandPalette is a centred modal holding a search input, a vertically scrolling `role=\"listbox\"`, and a footer of keyboard hints. Its one icon is a magnifier, its hint keys are `\u2191`/`\u2193`, its navigation is ArrowUp/ArrowDown/Home/End/Enter/Escape, and every inline offset is written with `paddingInline` or `textAlign: 'start'`, so the whole surface reflows with the writing direction without any glyph, positioned affordance, or axis for the audit to compare."
   },
   {
     "component": "core/CommandPaletteEmpty",
-    "reason": "CommandPaletteEmpty renders a single centred `<div>` of secondary text — \"No results\" or \"Type to search\" — with `paddingBlock`/`paddingInline` and `textAlign: 'center'`. It has no icon, no positioned element, no control, and no state; centred text occupies both halves of its box and reads identically in either direction."
+    "reason": "CommandPaletteEmpty renders a single centred `<div>` of secondary text \u2014 \"No results\" or \"Type to search\" \u2014 with `paddingBlock`/`paddingInline` and `textAlign: 'center'`. It has no icon, no positioned element, no control, and no state; centred text occupies both halves of its box and reads identically in either direction."
   },
   {
     "component": "core/CommandPaletteFooter",
-    "reason": "CommandPaletteFooter is a static hint bar: a flex row of three `Kbd`-plus-text groups for arrow navigation, Enter, and Escape. The only key glyphs it renders are up, down, Enter and Escape — none of them horizontal — and it draws no icon, no positioned element, and no control. Its spacing is entirely `gap` plus logical inline/block padding, so the row's order reverses with the writing direction on its own."
+    "reason": "CommandPaletteFooter is a static hint bar: a flex row of three `Kbd`-plus-text groups for arrow navigation, Enter, and Escape. The only key glyphs it renders are up, down, Enter and Escape \u2014 none of them horizontal \u2014 and it draws no icon, no positioned element, and no control. Its spacing is entirely `gap` plus logical inline/block padding, so the row's order reverses with the writing direction on its own."
   },
   {
     "component": "core/CommandPaletteGroup",
-    "reason": "CommandPaletteGroup is a `role=\"group\"` wrapper that stacks a text heading above its items in a flex column. It declares five properties in total — flex layout, a gap, and logical block/inline padding — draws no icon or separator, and attaches no handlers. The heading is marked `aria-hidden` only because the group already carries it as `aria-label`; it is prose, not a directional mark."
+    "reason": "CommandPaletteGroup is a `role=\"group\"` wrapper that stacks a text heading above its items in a flex column. It declares five properties in total \u2014 flex layout, a gap, and logical block/inline padding \u2014 draws no icon or separator, and attaches no handlers. The heading is marked `aria-hidden` only because the group already carries it as `aria-label`; it is prose, not a directional mark."
   },
   {
     "component": "core/CommandPaletteInput",
-    "reason": "CommandPaletteInput renders three things: a magnifier `search` icon, a single-line `<input role=\"combobox\">`, and an optional trailing group holding a rotation-only Spinner plus consumer `endContent`. The magnifier is not a left/right glyph, nothing in the component is absolutely positioned or transformed, and its spacing is entirely logical (`paddingInline`, `paddingBlock`, `gap`), so the row's order and padding flip with `dir` on their own. Its keyboard handling forwards to `useCombobox`, which acts only on vertical arrows, Enter/Space, Escape, Tab, Home/End, PageUp/PageDown and Delete/Backspace — it never binds ArrowLeft or ArrowRight, so there is no directional behaviour to invert."
+    "reason": "CommandPaletteInput renders three things: a magnifier `search` icon, a single-line `<input role=\"combobox\">`, and an optional trailing group holding a rotation-only Spinner plus consumer `endContent`. The magnifier is not a left/right glyph, nothing in the component is absolutely positioned or transformed, and its spacing is entirely logical (`paddingInline`, `paddingBlock`, `gap`), so the row's order and padding flip with `dir` on their own. Its keyboard handling forwards to `useCombobox`, which acts only on vertical arrows, Enter/Space, Escape, Tab, Home/End, PageUp/PageDown and Delete/Backspace \u2014 it never binds ArrowLeft or ArrowRight, so there is no directional behaviour to invert."
   },
   {
     "component": "core/CommandPaletteItem",
@@ -133,7 +133,7 @@
   },
   {
     "component": "core/CommandPaletteList",
-    "reason": "CommandPaletteList is a scroll container: one `<div role=\"listbox\">` that stacks its children in a `flex` column with uniform padding and a `gap`, and scrolls on the block axis only (`overflowY: 'auto'`). It paints no icon or text of its own, declares no `position`, and holds no keyboard or pointer handler — every result row it contains is a separate component with its own coverage."
+    "reason": "CommandPaletteList is a scroll container: one `<div role=\"listbox\">` that stacks its children in a `flex` column with uniform padding and a `gap`, and scrolls on the block axis only (`overflowY: 'auto'`). It paints no icon or text of its own, declares no `position`, and holds no keyboard or pointer handler \u2014 every result row it contains is a separate component with its own coverage."
   },
   {
     "component": "core/DialogHeader",
@@ -141,7 +141,7 @@
   },
   {
     "component": "core/Divider",
-    "reason": "A Divider is one or two hairline `<div>`s that grow to fill a flex line, plus an optional centred label between them. Horizontally the line is `height: var(--border-width); flex-grow: 1`, vertically it is `width: var(--border-width)` in a column — neither has a start or end that means anything, and the label sits between the two segments by flex order, which CSS reverses on its own. `isFullBleed` escapes container padding with `margin-inline-start`/`margin-inline-end`, so it bleeds to the correct edges in either direction without any component-side branch."
+    "reason": "A Divider is one or two hairline `<div>`s that grow to fill a flex line, plus an optional centred label between them. Horizontally the line is `height: var(--border-width); flex-grow: 1`, vertically it is `width: var(--border-width)` in a column \u2014 neither has a start or end that means anything, and the label sits between the two segments by flex order, which CSS reverses on its own. `isFullBleed` escapes container padding with `margin-inline-start`/`margin-inline-end`, so it bleeds to the correct edges in either direction without any component-side branch."
   },
   {
     "component": "core/DropdownMenuCheckboxItem",
@@ -149,11 +149,11 @@
   },
   {
     "component": "core/DropdownMenuDivider",
-    "reason": "DropdownMenuDivider is a horizontal rule between groups of menu rows: it forwards a ref, a class and a style to `Divider` and adds one declaration, `marginBlock`, on the block axis. There is no glyph, no positioned element and no interaction — a full-width rule spans both halves of its container, so it has no side to land on."
+    "reason": "DropdownMenuDivider is a horizontal rule between groups of menu rows: it forwards a ref, a class and a style to `Divider` and adds one declaration, `marginBlock`, on the block axis. There is no glyph, no positioned element and no interaction \u2014 a full-width rule spans both halves of its container, so it has no side to land on."
   },
   {
     "component": "core/DropdownMenuItem",
-    "reason": "DropdownMenuItem is one menu row — start icon slot, label, description, end slot — with no glyph of its own, no positioned child, and no keyboard handling (arrow navigation lives on the parent `useListFocus`, per the file header). Its inline-axis styling is entirely logical: `paddingInline` and `textAlign: 'start'`, both of which reverse with the writing direction on their own. Any directional icon in a real menu comes from the consumer's `icon`/`endContent` props, not from this file."
+    "reason": "DropdownMenuItem is one menu row \u2014 start icon slot, label, description, end slot \u2014 with no glyph of its own, no positioned child, and no keyboard handling (arrow navigation lives on the parent `useListFocus`, per the file header). Its inline-axis styling is entirely logical: `paddingInline` and `textAlign: 'start'`, both of which reverse with the writing direction on their own. Any directional icon in a real menu comes from the consumer's `icon`/`endContent` props, not from this file."
   },
   {
     "component": "core/DropdownMenuRadioGroup",
@@ -161,11 +161,11 @@
   },
   {
     "component": "core/DropdownMenuRadioItem",
-    "reason": "DropdownMenuRadioItem renders one menu row: a decorative circular radio indicator in the marker slot, an optional caller-supplied start icon, a label, a description, and an optional endContent — no chevron, arrow or caret of its own. Its placement rules are `order` plus `marginInlineStart`, and the row primitive it composes uses `paddingInline`, `textAlign: 'start'` and `marginInlineStart: 'auto'`, so the marker's move to the row's inline end on touch, and the whole row's order, follow the inline axis in CSS with no physical value to correct. Nothing in it is positioned or transformed, and it binds no arrow keys — Enter/Space activation and vertical roving focus are the parent menu's."
+    "reason": "DropdownMenuRadioItem renders one menu row: a decorative circular radio indicator in the marker slot, an optional caller-supplied start icon, a label, a description, and an optional endContent \u2014 no chevron, arrow or caret of its own. Its placement rules are `order` plus `marginInlineStart`, and the row primitive it composes uses `paddingInline`, `textAlign: 'start'` and `marginInlineStart: 'auto'`, so the marker's move to the row's inline end on touch, and the whole row's order, follow the inline axis in CSS with no physical value to correct. Nothing in it is positioned or transformed, and it binds no arrow keys \u2014 Enter/Space activation and vertical roving focus are the parent menu's."
   },
   {
     "component": "core/EmptyState",
-    "reason": "EmptyState stacks an optional decorative icon, a heading, a description and an actions row in one `flex-direction: column; align-items: center; text-align: center` container, so every child is centred on the inline axis and has no side. The actions row is a plain flex row with a gap, which CSS reverses under RTL with nothing for the audit to assert — and the two buttons it holds are alternative actions, not an ordered prev/next pair. All of its spacing is written in `padding-block`/`padding-inline` and `margin-top`, so nothing physical survives to be mirrored."
+    "reason": "EmptyState stacks an optional decorative icon, a heading, a description and an actions row in one `flex-direction: column; align-items: center; text-align: center` container, so every child is centred on the inline axis and has no side. The actions row is a plain flex row with a gap, which CSS reverses under RTL with nothing for the audit to assert \u2014 and the two buttons it holds are alternative actions, not an ordered prev/next pair. All of its spacing is written in `padding-block`/`padding-inline` and `margin-top`, so nothing physical survives to be mirrored."
   },
   {
     "component": "core/Field",
@@ -173,11 +173,11 @@
   },
   {
     "component": "core/FieldLabel",
-    "reason": "FieldLabel is a flex row of optional icon, label text, an \"∙ Optional/Required\" suffix and an info tooltip, with a description span below it. Its only positioned element is the screen-reader clip box, which is anchored with `insetInlineStart` and carries no transform, and its only placement prop puts the tooltip `above`. The \"∙\" suffix separator is a bullet, not a directional mark, and everything else is logical spacing."
+    "reason": "FieldLabel is a flex row of optional icon, label text, an \"\u2219 Optional/Required\" suffix and an info tooltip, with a description span below it. Its only positioned element is the screen-reader clip box, which is anchored with `insetInlineStart` and carries no transform, and its only placement prop puts the tooltip `above`. The \"\u2219\" suffix separator is a bullet, not a directional mark, and everything else is logical spacing."
   },
   {
     "component": "core/FieldStatus",
-    "reason": "FieldStatus renders one message box under a form control — the attached variant is bare text, the detached variant a leading warning/error/success glyph beside the message. Its two variants differ only on the block axis (an overlap above versus a gap below), and its rounded corners are already expressed as `border-end-start-radius`/`border-end-end-radius`, so they follow the writing direction. Nothing it draws has an inline-axis side, order, or motion that could differ between LTR and RTL."
+    "reason": "FieldStatus renders one message box under a form control \u2014 the attached variant is bare text, the detached variant a leading warning/error/success glyph beside the message. Its two variants differ only on the block axis (an overlap above versus a gap below), and its rounded corners are already expressed as `border-end-start-radius`/`border-end-end-radius`, so they follow the writing direction. Nothing it draws has an inline-axis side, order, or motion that could differ between LTR and RTL."
   },
   {
     "component": "core/FileInput",
@@ -185,11 +185,11 @@
   },
   {
     "component": "core/Grid",
-    "reason": "Grid emits one `display: grid` box and sets track counts, gaps and item alignment on it; GridSpan sets `grid-column` / `grid-row` on a child. CSS Grid resolves all of that against the writing direction on its own, so a three-column grid fills right-to-left under RTL, `justify=\"end\"` lands on the left edge, and `1 / -1` still spans the row. It paints nothing itself — no icon, no positioned element, no separator glyph — and holds no scroll, drag or keyboard behaviour."
+    "reason": "Grid emits one `display: grid` box and sets track counts, gaps and item alignment on it; GridSpan sets `grid-column` / `grid-row` on a child. CSS Grid resolves all of that against the writing direction on its own, so a three-column grid fills right-to-left under RTL, `justify=\"end\"` lands on the left edge, and `1 / -1` still spans the row. It paints nothing itself \u2014 no icon, no positioned element, no separator glyph \u2014 and holds no scroll, drag or keyboard behaviour."
   },
   {
     "component": "core/GridSpan",
-    "reason": "GridSpan is a layout-only `<div>` whose entire job is to write `grid-column: span N` (or `1 / -1`) and `grid-row: span N` onto a grid item. Grid column indices are resolved against the container's writing mode, so column 1 is the inline-start column in both directions and the span mirrors with the grid itself. It paints nothing — no icon, no positioned child, no border or padding of its own."
+    "reason": "GridSpan is a layout-only `<div>` whose entire job is to write `grid-column: span N` (or `1 / -1`) and `grid-row: span N` onto a grid item. Grid column indices are resolved against the container's writing mode, so column 1 is the inline-start column in both directions and the span mirrors with the grid itself. It paints nothing \u2014 no icon, no positioned child, no border or padding of its own."
   },
   {
     "component": "core/heading",
@@ -197,7 +197,7 @@
   },
   {
     "component": "core/hooks-useclipboard",
-    "reason": "The useClipboard stories exercise a hook that renders nothing of its own — it returns a `copy` promise and a transient `isCopied` boolean — through two thin controls: a ghost icon-only Button whose glyph toggles between the `copy` clipboard mark and the `check` tick, and a labelled Button doing the same. Neither glyph has a left/right sense, so there is nothing for icon-mirroring to assert, and the confirmation is a glyph swap plus a polite live-region announcement rather than any positional change. Nothing in the rendered tree is absolutely positioned with a transform: Button's only absolute element is a full-bleed loading overlay anchored with `insetInlineStart`/`insetInlineEnd` and no transform, which these stories never mount, and its attached tooltip is fixed to the block axis. The story layout is a flex row and a VStack with a `gap`, which CSS reverses on its own."
+    "reason": "The useClipboard stories exercise a hook that renders nothing of its own \u2014 it returns a `copy` promise and a transient `isCopied` boolean \u2014 through two thin controls: a ghost icon-only Button whose glyph toggles between the `copy` clipboard mark and the `check` tick, and a labelled Button doing the same. Neither glyph has a left/right sense, so there is nothing for icon-mirroring to assert, and the confirmation is a glyph swap plus a polite live-region announcement rather than any positional change. Nothing in the rendered tree is absolutely positioned with a transform: Button's only absolute element is a full-bleed loading overlay anchored with `insetInlineStart`/`insetInlineEnd` and no transform, which these stories never mount, and its attached tooltip is fixed to the block axis. The story layout is a flex row and a VStack with a `gap`, which CSS reverses on its own."
   },
   {
     "component": "core/hooks-usecontainerreveal",
@@ -209,19 +209,19 @@
   },
   {
     "component": "core/hooks-usestreamingtext",
-    "reason": "These five stories type a fixed English code sample into a `<Text>` at different chunk sizes and speeds, above a Start button and a character counter. The hook returns a string; the story renders it in a plain padded box with `white-space: pre-wrap`. There is no glyph, no positioned element, no separator and no directional interaction — the text simply flows in whichever direction the document sets."
+    "reason": "These five stories type a fixed English code sample into a `<Text>` at different chunk sizes and speeds, above a Start button and a character counter. The hook returns a string; the story renders it in a plain padded box with `white-space: pre-wrap`. There is no glyph, no positioned element, no separator and no directional interaction \u2014 the text simply flows in whichever direction the document sets."
   },
   {
     "component": "core/IconButton",
-    "reason": "IconButton is a 53-line wrapper that renders `<Button {...props} icon={icon} isIconOnly />` and nothing else — it declares no styles and no DOM of its own. The square button it produces holds one centred consumer icon with no label, so there is no row order to reverse, and every icon its stories pass (gear, trash, plus, X, pencil, heart, bell, rocket emoji) is rotationally neutral rather than pointing left or right."
+    "reason": "IconButton is a 53-line wrapper that renders `<Button {...props} icon={icon} isIconOnly />` and nothing else \u2014 it declares no styles and no DOM of its own. The square button it produces holds one centred consumer icon with no label, so there is no row order to reverse, and every icon its stories pass (gear, trash, plus, X, pencil, heart, bell, rocket emoji) is rotationally neutral rather than pointing left or right."
   },
   {
     "component": "core/indicator",
-    "reason": "The Indicator stories render CheckIndicator, CheckboxIndicator and RadioIndicator directly, in every state and both sizes, plus the `children` spinner slot. Each is a square or circular box with its mark centred by flexbox — a check path, a horizontal bar, or a dot — and each is `aria-hidden` with no text content. A centred mark in a square box is its own mirror image, so there is no side, order, or glyph orientation that the writing direction can change."
+    "reason": "The Indicator stories render CheckIndicator, CheckboxIndicator and RadioIndicator directly, in every state and both sizes, plus the `children` spinner slot. Each is a square or circular box with its mark centred by flexbox \u2014 a check path, a horizontal bar, or a dot \u2014 and each is `aria-hidden` with no text content. A centred mark in a square box is its own mirror image, so there is no side, order, or glyph orientation that the writing direction can change."
   },
   {
     "component": "core/InputGroup",
-    "reason": "InputGroup is a connected `inline-flex` row of an input plus text addons, wrapped in a Field for the group label, description and status. Which addon reads as prefix and which as suffix is DOM order, and the flex row resolves that against the document direction. The one detail that could have pinned a side — the rounded outer corners and the negative border overlap that fuses the seam — is written with logical corner and margin properties keyed off `:first-child` / `:last-child`, so the caps follow the reading direction rather than the left and right edges."
+    "reason": "InputGroup is a connected `inline-flex` row of an input plus text addons, wrapped in a Field for the group label, description and status. Which addon reads as prefix and which as suffix is DOM order, and the flex row resolves that against the document direction. The one detail that could have pinned a side \u2014 the rounded outer corners and the negative border overlap that fuses the seam \u2014 is written with logical corner and margin properties keyed off `:first-child` / `:last-child`, so the caps follow the reading direction rather than the left and right edges."
   },
   {
     "component": "core/InputGroupText",
@@ -229,23 +229,23 @@
   },
   {
     "component": "core/InternationalizationProvider",
-    "reason": "InternationalizationProvider emits no DOM at all — it computes a locale/direction/translator value and renders a context provider around `children`. It does carry direction logic (`getLocaleDirection`), but that value is only published on context and deliberately does not set the DOM `dir` attribute, so this component has no icon, geometry, order, or behaviour of its own for LTR/RTL renders to differ on."
+    "reason": "InternationalizationProvider emits no DOM at all \u2014 it computes a locale/direction/translator value and renders a context provider around `children`. It does carry direction logic (`getLocaleDirection`), but that value is only published on context and deliberately does not set the DOM `dir` attribute, so this component has no icon, geometry, order, or behaviour of its own for LTR/RTL renders to differ on."
   },
   {
     "component": "core/Item",
-    "reason": "Item is the shared \"start content + label + description + end content\" row: one `flex` line with `gap` and `paddingInline`, whose trailing slot is pushed out by `marginInlineStart: 'auto'` and whose text is `textAlign: 'start'` — all four flip with the writing mode on their own. It renders no icon or glyph itself, declares `position: relative` with no positioned descendant, and adds no scroll, drag or arrow-key behavior; the slots' contents are separate components with their own coverage."
+    "reason": "Item is the shared \"start content + label + description + end content\" row: one `flex` line with `gap` and `paddingInline`, whose trailing slot is pushed out by `marginInlineStart: 'auto'` and whose text is `textAlign: 'start'` \u2014 all four flip with the writing mode on their own. It renders no icon or glyph itself, declares `position: relative` with no positioned descendant, and adds no scroll, drag or arrow-key behavior; the slots' contents are separate components with their own coverage."
   },
   {
     "component": "core/LayoutContent",
-    "reason": "LayoutContent is the scrolling body slot of Layout: it reads which sibling slots exist from LayoutSlotsContext and picks inner or outer padding per edge accordingly, then republishes those values as container-padding variables so bleed children such as Table and Divider can cancel them. Every one of those edges — its own padding and the four variables — is expressed with inline/block logical properties, so a missing start panel widens the reading-start edge in either direction. It renders no glyph, positions nothing, and adds no interaction beyond `overflow: auto`."
+    "reason": "LayoutContent is the scrolling body slot of Layout: it reads which sibling slots exist from LayoutSlotsContext and picks inner or outer padding per edge accordingly, then republishes those values as container-padding variables so bleed children such as Table and Divider can cancel them. Every one of those edges \u2014 its own padding and the four variables \u2014 is expressed with inline/block logical properties, so a missing start panel widens the reading-start edge in either direction. It renders no glyph, positions nothing, and adds no interaction beyond `overflow: auto`."
   },
   {
     "component": "core/LayoutFooter",
-    "reason": "LayoutFooter is a bottom slot: a flex-shrink-0 shell that optionally draws a block-start divider, wrapping an inner box that centres itself with `marginInline: auto` up to `--layout-content-width` and applies the layout's padding. Every padding, margin and border it sets is a logical property, and the one border it draws runs along the block axis at the top edge, which is the same edge in RTL. It contributes no glyph, no positioned element and no ordering of its own — the children it hosts own whatever direction sensitivity exists."
+    "reason": "LayoutFooter is a bottom slot: a flex-shrink-0 shell that optionally draws a block-start divider, wrapping an inner box that centres itself with `marginInline: auto` up to `--layout-content-width` and applies the layout's padding. Every padding, margin and border it sets is a logical property, and the one border it draws runs along the block axis at the top edge, which is the same edge in RTL. It contributes no glyph, no positioned element and no ordering of its own \u2014 the children it hosts own whatever direction sensitivity exists."
   },
   {
     "component": "core/LayoutHeader",
-    "reason": "LayoutHeader is a two-element shell — an outer box that owns an optional block-end hairline and the header height, and an inner box that owns the content-width clamp and the padding. Every edge it sets is already logical (`padding-inline-start/end`, `margin-inline: auto`, `border-block-end`), including the container padding variables it publishes for descendants. It draws no glyph, positions nothing, and exposes no side, so its LTR and RTL renders are mirror-identical by construction."
+    "reason": "LayoutHeader is a two-element shell \u2014 an outer box that owns an optional block-end hairline and the header height, and an inner box that owns the content-width clamp and the padding. Every edge it sets is already logical (`padding-inline-start/end`, `margin-inline: auto`, `border-block-end`), including the container padding variables it publishes for descendants. It draws no glyph, positions nothing, and exposes no side, so its LTR and RTL renders are mirror-identical by construction."
   },
   {
     "component": "core/LinkProvider",
@@ -253,11 +253,11 @@
   },
   {
     "component": "core/ListItem",
-    "reason": "ListItem renders one `<li>` through the shared `Item` layout — an optional bullet/circle/number marker, a label, a description, and consumer-supplied start/end slots. Its markers are radially symmetric shapes or a CSS counter ending in \".\", never an arrow or chevron, and its own CSS is logical throughout (`borderBlockEnd*`, and `marginInlineStart: 'auto'` in Item). The `endContent` slot documents a chevron as a possible consumer payload, but this component ships none, and with no story file there is no rendered instance that supplies one."
+    "reason": "ListItem renders one `<li>` through the shared `Item` layout \u2014 an optional bullet/circle/number marker, a label, a description, and consumer-supplied start/end slots. Its markers are radially symmetric shapes or a CSS counter ending in \".\", never an arrow or chevron, and its own CSS is logical throughout (`borderBlockEnd*`, and `marginInlineStart: 'auto'` in Item). The `endContent` slot documents a chevron as a possible consumer payload, but this component ships none, and with no story file there is no rendered instance that supplies one."
   },
   {
     "component": "core/markdowncitations",
-    "reason": "The four stories render a `Markdown` document — headings, paragraphs, `-` bullets, one inline link — whose citation markers become `Citation` chips laid out in normal inline flow: `Citation.tsx` `label: { display: 'inline-flex', alignItems: 'center', gap: spacingVars['--spacing-1'],`, spaced from the preceding word by the logical `marginInlineStart`, with the favicon simply preceding the title in DOM order, so CSS mirrors the chip and its icon under RTL with nothing for a relationship assertion to compare. The chip is never positioned or transformed, so D5 has no candidate, and its only aria-hidden node wraps an `<img>` rather than a directional glyph, so D6 has none either. The Streaming story reveals text by slicing the source string and fading it with opacity-only spans; there is no caret element and no positional affordance to land on a side."
+    "reason": "The four stories render a `Markdown` document \u2014 headings, paragraphs, `-` bullets, one inline link \u2014 whose citation markers become `Citation` chips laid out in normal inline flow: `Citation.tsx` `label: { display: 'inline-flex', alignItems: 'center', gap: spacingVars['--spacing-1'],`, spaced from the preceding word by the logical `marginInlineStart`, with the favicon simply preceding the title in DOM order, so CSS mirrors the chip and its icon under RTL with nothing for a relationship assertion to compare. The chip is never positioned or transformed, so D5 has no candidate, and its only aria-hidden node wraps an `<img>` rather than a directional glyph, so D6 has none either. The Streaming story reveals text by slicing the source string and fading it with opacity-only spans; there is no caret element and no positional affordance to land on a side."
   },
   {
     "component": "core/MediaTheme",
@@ -265,31 +265,31 @@
   },
   {
     "component": "core/MetadataList",
-    "reason": "MetadataList renders a `<dl>` grid of `<dt>`/`<dd>` label-value pairs plus an optional show-more `<button>`; MetadataListItem renders one pair with an optional leading icon slot. Its side-label mode is a grid track order (`gridTemplateColumns: 'auto 1fr'`, MetadataList.tsx), not a physical placement, so the label column moves to the correct edge under RTL by itself, and `label.position` is already the logical keyword `'start'`. No story supplies a directional icon — the three used are info, calendar, and tag glyphs — and nothing in either file positions, transforms, scrolls, or reads direction."
+    "reason": "MetadataList renders a `<dl>` grid of `<dt>`/`<dd>` label-value pairs plus an optional show-more `<button>`; MetadataListItem renders one pair with an optional leading icon slot. Its side-label mode is a grid track order (`gridTemplateColumns: 'auto 1fr'`, MetadataList.tsx), not a physical placement, so the label column moves to the correct edge under RTL by itself, and `label.position` is already the logical keyword `'start'`. No story supplies a directional icon \u2014 the three used are info, calendar, and tag glyphs \u2014 and nothing in either file positions, transforms, scrolls, or reads direction."
   },
   {
     "component": "core/MetadataListItem",
-    "reason": "MetadataListItem renders one label/value pair as `<dt>` and `<dd>` — either as two grid children on one line, or stacked in a column when the list asks for a top label. Its only spacing is `gap` between an optional icon slot and the label text, and its only positional input resolves to `start` or `top`, so the inline arrangement is plain flex/grid flow that CSS reverses automatically. It draws no glyph, positions nothing, and reads no direction."
+    "reason": "MetadataListItem renders one label/value pair as `<dt>` and `<dd>` \u2014 either as two grid children on one line, or stacked in a column when the list asks for a top label. Its only spacing is `gap` between an optional icon slot and the label text, and its only positional input resolves to `start` or `top`, so the inline arrangement is plain flex/grid flow that CSS reverses automatically. It draws no glyph, positions nothing, and reads no direction."
   },
   {
     "component": "core/NumberInput",
-    "reason": "NumberInput is a text field that holds a number, with optional start icon, units text, clear button and a two-button stepper column. Everything that has a side is written logically: the stepper column is pinned to the field's inline-end by `paddingInlineEnd: 0`, `borderInlineStart*` and the `borderStartEndRadius`/`borderEndEndRadius` corners, so it moves to the other edge under RTL on its own. Its stepping affordances are all block-axis — ArrowUp/ArrowDown, `deltaY`, and one caret glyph used twice with a 180° rotation between them — and no element is positioned with a horizontal translate."
+    "reason": "NumberInput is a text field that holds a number, with optional start icon, units text, clear button and a two-button stepper column. Everything that has a side is written logically: the stepper column is pinned to the field's inline-end by `paddingInlineEnd: 0`, `borderInlineStart*` and the `borderStartEndRadius`/`borderEndEndRadius` corners, so it moves to the other edge under RTL on its own. Its stepping affordances are all block-axis \u2014 ArrowUp/ArrowDown, `deltaY`, and one caret glyph used twice with a 180\u00b0 rotation between them \u2014 and no element is positioned with a horizontal translate."
   },
   {
     "component": "core/SegmentedControlItem",
-    "reason": "SegmentedControlItem renders one segment — a `role=\"radio\"` button holding an optional icon slot and a label, centred with `justify-content: center` inside a pill whose radius is computed concentrically from the group's own radius. Its padding is `padding-inline`, its selected state is a background fill plus a shadow, and it is `position: relative` only to host that fill. Nothing it draws has a leading or trailing side, and its own keyboard surface is a click handler."
+    "reason": "SegmentedControlItem renders one segment \u2014 a `role=\"radio\"` button holding an optional icon slot and a label, centred with `justify-content: center` inside a pill whose radius is computed concentrically from the group's own radius. Its padding is `padding-inline`, its selected state is a background fill plus a shadow, and it is `position: relative` only to host that fill. Nothing it draws has a leading or trailing side, and its own keyboard surface is a click handler."
   },
   {
     "component": "core/SelectableCard",
-    "reason": "SelectableCard is a Card wrapper whose only visual states are a uniform 2 px inset ring (`inset 0 0 0 2px`), a full-bleed `::after` hover/press overlay pinned with `inset: 0`, and a 1×1 visually-hidden checkbox. None of the three has a side: the ring surrounds all four edges, the overlay spans the whole card, and the hidden input is clipped to a point. Selection is a toggle, not an ordered pair, and the stories arrange cards in a plain `HStack` that CSS reverses without help."
+    "reason": "SelectableCard is a Card wrapper whose only visual states are a uniform 2 px inset ring (`inset 0 0 0 2px`), a full-bleed `::after` hover/press overlay pinned with `inset: 0`, and a 1\u00d71 visually-hidden checkbox. None of the three has a side: the ring surrounds all four edges, the overlay spans the whole card, and the hidden input is clipped to a point. Selection is a toggle, not an ordered pair, and the stories arrange cards in a plain `HStack` that CSS reverses without help."
   },
   {
     "component": "core/SelectorOption",
-    "reason": "SelectorOption is a thin adapter: it forwards `icon`, `label`, `description`, `layout` and `endContent` straight to Item and zeroes Item's padding and radius so the row sits flush inside a Selector. Every piece of geometry it inherits is written logically — the row is a flex line with `padding-inline`, `text-align: start`, and an end slot pushed over by `margin-inline-start: auto` — so the leading and trailing slots swap by themselves under RTL with nothing for the audit to assert. The one glyph the row can show is passed in by the caller through `renderOption`, so mirroring it is that caller's icon's concern, not this wrapper's."
+    "reason": "SelectorOption is a thin adapter: it forwards `icon`, `label`, `description`, `layout` and `endContent` straight to Item and zeroes Item's padding and radius so the row sits flush inside a Selector. Every piece of geometry it inherits is written logically \u2014 the row is a flex line with `padding-inline`, `text-align: start`, and an end slot pushed over by `margin-inline-start: auto` \u2014 so the leading and trailing slots swap by themselves under RTL with nothing for the audit to assert. The one glyph the row can show is passed in by the caller through `renderOption`, so mirroring it is that caller's icon's concern, not this wrapper's."
   },
   {
     "component": "core/SideNavSection",
-    "reason": "SideNavSection is a `role=\"group\"` that stacks a header row above a column of nav items. The header is a flex row whose title container takes `flex: 1` and pushes the optional `endContent` to the far end — a layout CSS mirrors by itself, notwithstanding the prop doc's \"right-side\" wording. It renders no icon, no separator glyph and no positioned element, uses logical inline/block padding throughout, and attaches no handlers; collapsing merely swaps the header for a `VisuallyHidden` copy."
+    "reason": "SideNavSection is a `role=\"group\"` that stacks a header row above a column of nav items. The header is a flex row whose title container takes `flex: 1` and pushes the optional `endContent` to the far end \u2014 a layout CSS mirrors by itself, notwithstanding the prop doc's \"right-side\" wording. It renders no icon, no separator glyph and no positioned element, uses logical inline/block padding throughout, and attaches no handlers; collapsing merely swaps the header for a `VisuallyHidden` copy."
   },
   {
     "component": "core/Skeleton",
@@ -297,19 +297,23 @@
   },
   {
     "component": "core/Spinner",
-    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG — two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
+    "reason": "No direction-sensitive visual, layout, or behavior. The ring is a concentric SVG \u2014 two <circle> elements sharing one center, sized by diameter and stroke, with no physical inset, offset, or asymmetry to mirror. Its only layout is the optional label wrapper, which is flexDirection: column + alignItems: center, so the label stacks below the ring on both axes' terms rather than beside it. The rotation keyframe (0deg to 360deg) is deliberately absolute: a loading spinner turns the same way in every locale, and mirroring it would be a bug, not RTL support."
   },
   {
     "component": "core/Stack",
-    "reason": "Stack is a flex box plus tokens: a direction, a gap, main- and cross-axis alignment, per-edge logical padding, and an optional `overflow: auto`. Its horizontal variant is `flex-direction: row` with `flex-start`/`flex-end` alignment, all of which are flow-relative — the browser resolves them against the document direction, so `hAlign=\"start\"` sits at the reading start in both LTR and RTL with nothing for the audit to compare. StackItem adds only `flex` sizing and `align-self`. Neither renders a glyph, positions anything, or handles a key."
+    "reason": "Stack is a flex box plus tokens: a direction, a gap, main- and cross-axis alignment, per-edge logical padding, and an optional `overflow: auto`. Its horizontal variant is `flex-direction: row` with `flex-start`/`flex-end` alignment, all of which are flow-relative \u2014 the browser resolves them against the document direction, so `hAlign=\"start\"` sits at the reading start in both LTR and RTL with nothing for the audit to compare. StackItem adds only `flex` sizing and `align-self`. Neither renders a glyph, positions anything, or handles a key."
   },
   {
     "component": "core/StatusDot",
     "reason": "StatusDot renders one fixed 8px inline-flex span that paints a coloured circle, optionally pulsing via an opacity keyframe, with an optional caller-supplied mark centred inside it. It is not positioned, carries no inline-axis spacing, and its optional tooltip takes the default placement above the dot, centre-aligned. There is no glyph, side, order, or scroll for direction to change."
   },
   {
+    "component": "core/Table",
+    "reason": "The Core/Table stories render native table rows and cells inside an overflow-x scroll wrapper. Column order, start/end alignment, column dividers and container bleed use table flow, text-align start/end, border-inline-end and logical inline margins, all resolved by CSS for the document direction. Horizontal overflow is native scrolling with no component-owned next/previous control or directional drag behavior, and these stories render no directional glyph or positioned element with a horizontal transform."
+  },
+  {
     "component": "core/TableBody",
-    "reason": "TableBody is a 38-line pass-through that renders a `<tbody>` with a theme target and whatever `xstyle`, `className`, and `style` the caller supplies. It declares no styles of its own — there is no `stylex.create` call in the file — so it contributes no glyph, no box, and no spacing. Row and cell appearance is owned by TableRow and TableCell; this element only supplies the table section HTML that grouping requires."
+    "reason": "TableBody is a 38-line pass-through that renders a `<tbody>` with a theme target and whatever `xstyle`, `className`, and `style` the caller supplies. It declares no styles of its own \u2014 there is no `stylex.create` call in the file \u2014 so it contributes no glyph, no box, and no spacing. Row and cell appearance is owned by TableRow and TableCell; this element only supplies the table section HTML that grouping requires."
   },
   {
     "component": "core/TableCell",
@@ -325,23 +329,23 @@
   },
   {
     "component": "core/TableRow",
-    "reason": "TableRow is a `<tr>` that reads the table context and picks one of three background rules — striped, hover, or both — then republishes the resulting colour as `--table-row-overlay` so pinned cells can repaint it. All of that is colour and vertical row parity; the row draws no glyph, sets no inset and owns no interaction. Cell order inside it is the table's inline axis, which the browser mirrors on its own, and the sticky-column offsets that do have a side live in the sticky-columns plugin, not here."
+    "reason": "TableRow is a `<tr>` that reads the table context and picks one of three background rules \u2014 striped, hover, or both \u2014 then republishes the resulting colour as `--table-row-overlay` so pinned cells can repaint it. All of that is colour and vertical row parity; the row draws no glyph, sets no inset and owns no interaction. Cell order inside it is the table's inline axis, which the browser mirrors on its own, and the sticky-column offsets that do have a side live in the sticky-columns plugin, not here."
   },
   {
     "component": "core/Text",
-    "reason": "Text sets typography — size, weight, colour, line-height, wrapping, truncation — and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
+    "reason": "Text sets typography \u2014 size, weight, colour, line-height, wrapping, truncation \u2014 and nothing else. Its one alignment prop is `justify`, which compiles to the logical `text-align: start | center | end` and defaults to `start`, so text hangs off the correct edge in either direction without a component-side branch. Truncation is `text-overflow: ellipsis` and `-webkit-line-clamp`, both of which put the ellipsis at the reading end on their own, and the tooltip that accompanies a clamped string is placed with the logical `above`/`below`/`start`/`end` vocabulary. Nothing is positioned, nothing is transformed, and the component renders no glyph, separator, or control."
   },
   {
     "component": "core/TextInput",
-    "reason": "TextInput renders a Field-wrapped row: an optional leading icon slot, the `<input>`, and trailing clear/spinner/status affordances in plain DOM order. Its two placement-shaped props are vertical — the status message sits below the input (`'attached'`/`'detached'`) and the disabled-reason tooltip is `placement: 'above'` — so neither can land on a physical side. The icons the stories use are a magnifier, an envelope, and a person, none directional, and the component writes no physical CSS: it resets padding and border to `0` and takes its inline spacing from the shared input wrapper."
+    "reason": "TextInput renders a Field-wrapped row: an optional leading icon slot, the `<input>`, and trailing clear/spinner/status affordances in plain DOM order. Its two placement-shaped props are vertical \u2014 the status message sits below the input (`'attached'`/`'detached'`) and the disabled-reason tooltip is `placement: 'above'` \u2014 so neither can land on a physical side. The icons the stories use are a magnifier, an envelope, and a person, none directional, and the component writes no physical CSS: it resets padding and border to `0` and takes its inline spacing from the shared input wrapper."
   },
   {
     "component": "core/Theme",
-    "reason": "Theme is a provider, not a visual: it registers the theme, injects the generated token and component CSS into `<head>`, and syncs `data-theme` and `data-astryx-theme` so `@scope`d rules reach portals. Its single rendered element is `display: contents`, so it produces no box, no glyph, and no layout of its own — the children lay out exactly as they would without it. The only styles it sets are colour, font family, and `color-scheme`."
+    "reason": "Theme is a provider, not a visual: it registers the theme, injects the generated token and component CSS into `<head>`, and syncs `data-theme` and `data-astryx-theme` so `@scope`d rules reach portals. Its single rendered element is `display: contents`, so it produces no box, no glyph, and no layout of its own \u2014 the children lay out exactly as they would without it. The only styles it sets are colour, font family, and `color-scheme`."
   },
   {
     "component": "core/themes-mediatheme-auto",
-    "reason": "These stories exist to compare a hardcoded MediaTheme mode against `mode=\"auto\"`, which measures the painted surface and decides whether an inverted context is warranted at all. Everything they vary is colour: a theme whose \"inverted\" background is barely inverted, a saturated error surface, a photo the sampler declines to read, and a colour picker driving the decision live. The toasts are rendered as bare cards with no viewport, so the one part of Toast that does take a side — the fixed viewport's start/end placement — never mounts here, and nothing else in the stories has an inline-axis position, glyph or gesture."
+    "reason": "These stories exist to compare a hardcoded MediaTheme mode against `mode=\"auto\"`, which measures the painted surface and decides whether an inverted context is warranted at all. Everything they vary is colour: a theme whose \"inverted\" background is barely inverted, a saturated error surface, a photo the sampler declines to read, and a colour picker driving the decision live. The toasts are rendered as bare cards with no viewport, so the one part of Toast that does take a side \u2014 the fixed viewport's start/end placement \u2014 never mounts here, and nothing else in the stories has an inline-axis position, glyph or gesture."
   },
   {
     "component": "core/TimeInput",
@@ -349,19 +353,19 @@
   },
   {
     "component": "core/Timestamp",
-    "reason": "Timestamp renders one `<time>` element containing formatted text — \"2 hours ago\", \"Mar 21, 2025\", \"2025-03-21 14:51:53\" — and nothing else. Its optional hover card is a `<dl>` grid of label/value/copy-button rows placed `above` the anchor, so even when open it has no left/right side, and its column order is a grid template that reverses on its own. Across all 19 stories the rendered output is text plus one copy/check icon; there is no glyph, positioned element, ordered pair, or scroll behaviour for RTL to change."
+    "reason": "Timestamp renders one `<time>` element containing formatted text \u2014 \"2 hours ago\", \"Mar 21, 2025\", \"2025-03-21 14:51:53\" \u2014 and nothing else. Its optional hover card is a `<dl>` grid of label/value/copy-button rows placed `above` the anchor, so even when open it has no left/right side, and its column order is a grid template that reverses on its own. Across all 19 stories the rendered output is text plus one copy/check icon; there is no glyph, positioned element, ordered pair, or scroll behaviour for RTL to change."
   },
   {
     "component": "core/ToggleButton",
-    "reason": "ToggleButton is a ghost Button with `aria-pressed`, an optional outline→solid icon swap, and a pressed-weight label; ToggleButtonGroup is an `inline-flex` row (or column) that owns which values are selected. None of its glyphs is directional — the stories use formatting and reaction icons (bold, italic, star, bell) — and its one `aria-hidden` node is a zero-height duplicate of the label that reserves width against layout shift, not a decoration. Grouped buttons are independent toggles in DOM order with no roving arrow-key navigation, so there is no order, side, or behaviour for RTL to invert."
+    "reason": "ToggleButton is a ghost Button with `aria-pressed`, an optional outline\u2192solid icon swap, and a pressed-weight label; ToggleButtonGroup is an `inline-flex` row (or column) that owns which values are selected. None of its glyphs is directional \u2014 the stories use formatting and reaction icons (bold, italic, star, bell) \u2014 and its one `aria-hidden` node is a zero-height duplicate of the label that reserves width against layout shift, not a decoration. Grouped buttons are independent toggles in DOM order with no roving arrow-key navigation, so there is no order, side, or behaviour for RTL to invert."
   },
   {
     "component": "core/ToggleButtonGroup",
-    "reason": "ToggleButtonGroup is a context provider wrapped around an `inline-flex` row (or a column when `orientation=\"vertical\"`) with a single gap between children. It owns selection state and nothing else — it renders no glyph, positions nothing, declares no inset or margin that could take a side, and attaches no keyboard handler, so the row order it produces is mirrored by CSS with nothing left to assert."
+    "reason": "ToggleButtonGroup is a context provider wrapped around an `inline-flex` row (or a column when `orientation=\"vertical\"`) with a single gap between children. It owns selection state and nothing else \u2014 it renders no glyph, positions nothing, declares no inset or margin that could take a side, and attaches no keyboard handler, so the row order it produces is mirrored by CSS with nothing left to assert."
   },
   {
     "component": "core/Token",
-    "reason": "Token is an inline-flex chip: optional icon, an ellipsis-truncated label, optional end content, and an optional close-X remove button. Its two absolutely-positioned rules are a 1×1 visually-hidden label and the remove button's symmetric `inset: -14px` hit area — neither carries a transform or has a side. Content order inside the chip is plain DOM order in an `inline-flex` row, and the negative pull on the trailing button is written logically (`marginInlineEnd`, 183), so the whole chip reverses under RTL with no code."
+    "reason": "Token is an inline-flex chip: optional icon, an ellipsis-truncated label, optional end content, and an optional close-X remove button. Its two absolutely-positioned rules are a 1\u00d71 visually-hidden label and the remove button's symmetric `inset: -14px` hit area \u2014 neither carries a transform or has a side. Content order inside the chip is plain DOM order in an `inline-flex` row, and the negative pull on the trailing button is written logically (`marginInlineEnd`, 183), so the whole chip reverses under RTL with no code."
   },
   {
     "component": "core/TopNavItem",
@@ -369,31 +373,31 @@
   },
   {
     "component": "core/TopNavMegaMenuItem",
-    "reason": "TopNavMegaMenuItem renders one link or button as a flex row: an optional 40px (or 32px in the drawer) icon box, then a stacked title and description. Its spacing is written with logical padding and margin properties, its text alignment is `start`, and it declares no positioned element, no glyph of its own, and no interaction beyond navigation — so the row's left-to-right order is ordinary flex reflow, which the browser mirrors without help."
+    "reason": "TopNavMegaMenuItem renders one link or button as a flex row: an optional 40px (or 32px in the drawer) icon box, then a stacked title and description. Its spacing is written with logical padding and margin properties, its text alignment is `start`, and it declares no positioned element, no glyph of its own, and no interaction beyond navigation \u2014 so the row's left-to-right order is ordinary flex reflow, which the browser mirrors without help."
   },
   {
     "component": "core/TypeaheadItem",
-    "reason": "TypeaheadItem is the default dropdown row: an optional consumer icon followed by a label and an optional description in a `flex` line spaced with `gap`. It declares no `position`, no transform, no event handler and no text beyond the item's own label — the row simply reverses with the writing mode. When `item.element` is set it returns that node untouched, so even then it contributes no direction-sensitive markup of its own."
+    "reason": "TypeaheadItem is the default dropdown row: an optional consumer icon followed by a label and an optional description in a `flex` line spaced with `gap`. It declares no `position`, no transform, no event handler and no text beyond the item's own label \u2014 the row simply reverses with the writing mode. When `item.element` is set it returns that node untouched, so even then it contributes no direction-sensitive markup of its own."
   },
   {
     "component": "core/VisuallyHidden",
-    "reason": "VisuallyHidden exists to render nothing visible: it pins a 1×1 px box with `clip: rect(0, 0, 0, 0)`, `overflow: hidden`, `pointer-events: none` and `user-select: none`, so there is no rendered geometry to mirror in either direction. Its anchor is already logical (`inset-block-start: 0; inset-inline-start: 0`), which puts the invisible box at the reading-start corner rather than a physical one. The component deliberately omits `xstyle`, `className` and `style`, so a consumer cannot introduce direction-sensitive styling through it either."
+    "reason": "VisuallyHidden exists to render nothing visible: it pins a 1\u00d71 px box with `clip: rect(0, 0, 0, 0)`, `overflow: hidden`, `pointer-events: none` and `user-select: none`, so there is no rendered geometry to mirror in either direction. Its anchor is already logical (`inset-block-start: 0; inset-inline-start: 0`), which puts the invisible box at the reading-start corner rather than a physical one. The component deliberately omits `xstyle`, `className` and `style`, so a consumer cannot introduce direction-sensitive styling through it either."
   },
   {
     "component": "lab/ChatReasoning",
-    "reason": "ChatReasoning renders one collapsible row — a dashed-circle \"thinking\" glyph, a text label, an optional duration, an ellipsized single-line preview, and a disclosure chevron — above a grid-height-animated content region. Its only icons are radially symmetric circles and a down chevron whose open state is `transform: rotate(180deg)`, a vertical flip that reads identically in both directions; the audit excludes vertical glyphs from icon-mirroring by contract. Nothing in the component is absolutely positioned, so there is no anchor-plus-translate pair to land on the wrong side, and its `·` and `—` separators are plain, non-aria-hidden text rather than directional decorations. Layout is a logical-property flex row (`paddingInlineStart`, `marginBlockStart`, `paddingBlock`) with a single Enter/Space disclosure toggle — no ordered control pair, no horizontal scroll, drag or arrow-key behaviour, no placement prop, and no code that reads direction — so CSS flips the row on its own and there is no LTR↔RTL relationship left to assert."
+    "reason": "ChatReasoning renders one collapsible row \u2014 a dashed-circle \"thinking\" glyph, a text label, an optional duration, an ellipsized single-line preview, and a disclosure chevron \u2014 above a grid-height-animated content region. Its only icons are radially symmetric circles and a down chevron whose open state is `transform: rotate(180deg)`, a vertical flip that reads identically in both directions; the audit excludes vertical glyphs from icon-mirroring by contract. Nothing in the component is absolutely positioned, so there is no anchor-plus-translate pair to land on the wrong side, and its `\u00b7` and `\u2014` separators are plain, non-aria-hidden text rather than directional decorations. Layout is a logical-property flex row (`paddingInlineStart`, `marginBlockStart`, `paddingBlock`) with a single Enter/Space disclosure toggle \u2014 no ordered control pair, no horizontal scroll, drag or arrow-key behaviour, no placement prop, and no code that reads direction \u2014 so CSS flips the row on its own and there is no LTR\u2194RTL relationship left to assert."
   },
   {
     "component": "lab/ChatTypingIndicator",
-    "reason": "ChatTypingIndicator renders a `role=\"status\"` flex row holding three bouncing dots and, when names are supplied, a \"… is typing…\" label. The dots are empty spans with a border-radius and a vertical-only bounce keyframe, the row is spaced with `gap`, and the label is plain text. Nothing is positioned, no glyph points anywhere, and the dot-then-label order is ordinary flex reflow that the browser mirrors on its own."
+    "reason": "ChatTypingIndicator renders a `role=\"status\"` flex row holding three bouncing dots and, when names are supplied, a \"\u2026 is typing\u2026\" label. The dots are empty spans with a border-radius and a vertical-only bounce keyframe, the row is spaced with `gap`, and the label is plain text. Nothing is positioned, no glyph points anywhere, and the dot-then-label order is ordinary flex reflow that the browser mirrors on its own."
   },
   {
     "component": "lab/ChatUnreadDivider",
-    "reason": "ChatUnreadDivider is a flex row holding a one-pixel error-coloured rule that grows to fill, followed by a short bold label. Which end the label sits at is DOM order in a `flex-direction: row` box with a logical gap, so it rides at the reading end in either direction and the rule fills the rest — the same layout, mirrored, with nothing pinned to a physical edge. It draws no glyph, positions nothing, and has no interaction; its only prop is the label text."
+    "reason": "ChatUnreadDivider is a flex row holding a one-pixel error-coloured rule that grows to fill, followed by a short bold label. Which end the label sits at is DOM order in a `flex-direction: row` box with a logical gap, so it rides at the reading end in either direction and the rule fills the rest \u2014 the same layout, mirrored, with nothing pinned to a physical edge. It draws no glyph, positions nothing, and has no interaction; its only prop is the label text."
   },
   {
     "component": "lab/CircularProgress",
-    "reason": "CircularProgress draws a radial indicator: a track circle and a fill circle sharing one centre, with completion expressed as `stroke-dasharray`/`stroke-dashoffset` on the fill and the whole svg rotated −90° so the arc starts at twelve o'clock. A ring is radially symmetric about the vertical axis and its sweep is clockwise in every locale, so there is no leading or trailing edge to mirror. The centre slot is an `inset: 0` overlay that centres its content on both axes, and the label sits above or below the ring on the block axis."
+    "reason": "CircularProgress draws a radial indicator: a track circle and a fill circle sharing one centre, with completion expressed as `stroke-dasharray`/`stroke-dashoffset` on the fill and the whole svg rotated \u221290\u00b0 so the arc starts at twelve o'clock. A ring is radially symmetric about the vertical axis and its sweep is clockwise in every locale, so there is no leading or trailing edge to mirror. The centre slot is an `inset: 0` overlay that centres its content on both axes, and the label sits above or below the ring on the block axis."
   },
   {
     "component": "lab/InfoTip",

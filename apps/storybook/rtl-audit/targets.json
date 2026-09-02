@@ -22,28 +22,6 @@
     }
   },
   {
-    "component": "CheckboxList",
-    "storyId": "core-checkboxlist--rich-descriptions",
-    "dims": [
-      "D2"
-    ],
-    "selectors": {
-      "prev": ".astryx-checkbox-input",
-      "next": "[data-testid=\"checkbox-end-content\"]"
-    }
-  },
-  {
-    "component": "RadioList",
-    "storyId": "core-radiolist--rich-content",
-    "dims": [
-      "D2"
-    ],
-    "selectors": {
-      "prev": "input[aria-label=\"Pro\"]",
-      "next": "[data-testid=\"radio-end-content\"]"
-    }
-  },
-  {
     "component": "Calendar",
     "storyId": "core-calendar--default",
     "dims": [
@@ -66,6 +44,28 @@
     }
   },
   {
+    "component": "Chat",
+    "storyId": "core-chat--mixed-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
+      "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
+    }
+  },
+  {
+    "component": "CheckboxList",
+    "storyId": "core-checkboxlist--rich-descriptions",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-checkbox-input",
+      "next": "[data-testid=\"checkbox-end-content\"]"
+    }
+  },
+  {
     "component": "Drawer",
     "storyId": "lab-drawer--showcase",
     "dims": [
@@ -80,17 +80,6 @@
     }
   },
   {
-    "component": "Chat",
-    "storyId": "core-chat--mixed-content",
-    "dims": [
-      "D2"
-    ],
-    "selectors": {
-      "prev": ".astryx-chat-message-bubble[data-sender=\"assistant\"]",
-      "next": ".astryx-chat-message-bubble[data-sender=\"user\"]"
-    }
-  },
-  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [
@@ -102,6 +91,17 @@
     "selectors": {
       "prev": "button[aria-label=\"Previous\"]",
       "next": "button[aria-label=\"Next\"]"
+    }
+  },
+  {
+    "component": "RadioList",
+    "storyId": "core-radiolist--rich-content",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": "input[aria-label=\"Pro\"]",
+      "next": "[data-testid=\"radio-end-content\"]"
     }
   },
   {
@@ -127,6 +127,31 @@
     }
   },
   {
+    "component": "Toast",
+    "storyId": "core-toast--logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Show toast\")"
+    },
+    "selectors": {
+      "overlay": "[data-toast-id]",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--logical-order",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-token",
+      "next": ".astryx-input-clear-button"
+    }
+  },
+  {
     "component": "TransferList",
     "storyId": "lab-transferlist--default",
     "dims": [
@@ -140,17 +165,6 @@
   {
     "component": "Typeahead",
     "storyId": "core-typeahead--logical-order",
-    "dims": [
-      "D2"
-    ],
-    "selectors": {
-      "prev": ".astryx-token",
-      "next": ".astryx-input-clear-button"
-    }
-  },
-  {
-    "component": "Tokenizer",
-    "storyId": "core-tokenizer--logical-order",
     "dims": [
       "D2"
     ],
