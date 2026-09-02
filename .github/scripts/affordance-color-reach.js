@@ -31,6 +31,12 @@
  * It also pins the resting contrast, because the reason these two grew a
  * `color` of their own is that the dimming they used instead (`opacity: 0.35`)
  * put them below the 3:1 WCAG 1.4.11 asks of a UI component.
+ *
+ * The probe stylesheet is not hand-written. It is what `defineTheme` emits for
+ * a theme that sets `color` on the target — the same path a theme author takes
+ * — so the derived-var expansion behind `table-sort-button` is exercised rather
+ * than assumed. Writing the private var directly would pass whether or not that
+ * expansion exists, which is the hole this closes.
  */
 
 const {chromium} = require('playwright');
@@ -58,28 +64,63 @@ const CASES = [
     name: 'Table sort affordance',
     story: 'core-tablefiltering--with-sorting',
     target: 'astryx-table-sort-button',
-    // Not `color`. This button holds the column name as well as the glyph,
-    // and the name belongs to the header cell — it follows
-    // `astryx-table-header-cell`, so an inherited `color` here would drag it
-    // along. The documented way to paint this affordance's glyph is the var,
-    // so the var is what gets asserted.
-    themeProperty: '--_table-sort-glyph-color',
+    // The theme key `defineTheme` takes for this target.
+    themeComponent: 'table-sort-button',
     // The header label shares the button with the glyph, so it has to keep the
-    // cell's colour rather than follow the affordance's.
+    // cell's colour rather than follow the affordance's. `color` reaches the
+    // glyph through the derived-var expansion, which drops the source property
+    // so nothing lands on the button for the label to inherit.
     unchanged: 'the header label',
-    unchangedSelector: '.astryx-table-sort-button > span:first-child',
+    unchangedSelector: '.astryx-table-sort-button span > span:first-child',
+    // Activating this control moves it into a reflected state that restyles
+    // the glyph (`direction`), which is where a component rule can quietly
+    // take the theme's colour back.
+    activates: true,
   },
   {
     name: 'Table filter affordance',
     story: 'core-tablefiltering--with-sorting',
     target: 'astryx-table-filter-button',
-    // This button holds the glyph and nothing else, so plain `color` is the
-    // whole contract and there is nothing for it to over-reach.
-    themeProperty: 'color',
+    themeComponent: 'table-filter-button',
+    activates: false,
+    // This button holds the glyph and nothing else, so plain `color` lands on
+    // the button and there is nothing for it to over-reach.
     unchanged: null,
     unchangedSelector: null,
   },
 ];
+
+/**
+ * The CSS a theme author's `color` on one target actually produces.
+ *
+ * Goes through `defineTheme` + `generateThemeCSS` from the built core, so a
+ * target whose `color` is expanded into a private var by the derived-var
+ * registry is exercised through that expansion. The result is wrapped the way
+ * `<Theme>` wraps it (`@layer astryx-theme`), and the scope attribute is put on
+ * <html> in the page so the emitted `@scope` matches.
+ */
+const PROBE_THEME_NAME = 'affordance-reach-probe';
+
+const CORE_ENTRY = path.resolve(__dirname, '../../packages/core/dist/index.js');
+
+async function probeStylesheet(themeComponent, value) {
+  if (!fs.existsSync(CORE_ENTRY)) {
+    throw new Error(
+      `Built core not found at ${CORE_ENTRY}. This guard generates its probe ` +
+        `stylesheet with the real defineTheme, so core must be built first ` +
+        `(the Storybook build in this job already requires it).`,
+    );
+  }
+  const {defineTheme, generateThemeCSS} = await import(
+    require('node:url').pathToFileURL(CORE_ENTRY).href
+  );
+  const theme = defineTheme({
+    name: PROBE_THEME_NAME,
+    components: {[themeComponent]: {base: {color: value}}},
+  });
+  const {component} = generateThemeCSS(theme);
+  return component;
+}
 
 const CONTENT_TYPES = {
   '.html': 'text/html',
@@ -183,6 +224,9 @@ function readInPage([target, unchangedSelector]) {
 
   return {
     status: 'ok',
+    // The button's OWN colour: what every descendant, including the column
+    // name, inherits unless it sets its own.
+    buttonColor: getComputedStyle(button).color,
     color: getComputedStyle(glyph).color,
     paints: [...new Set(paints)],
     opacity: Number(opacity.toFixed(3)),
@@ -248,26 +292,46 @@ async function checkCase(context, testCase) {
     }
 
     // 2 — a themed colour reaches the glyph.
-    await page.evaluate(css => {
-      const style = document.createElement('style');
-      style.id = 'reach-probe';
-      style.textContent = css;
-      document.head.appendChild(style);
-    },
-      // The probe stylesheet, plus a blanket transition kill.
-      //
-      // These affordances transition `color` between their rest and hover
-      // states, so a read taken right after the sentinel lands returns an
-      // interpolated value and the case fails for a reason that has nothing
-      // to do with reachability — measured mid-flight at rgb(61, 62, 62)
-      // between the old colour and the new. What is being asserted is the
-      // settled paint, so the animation is removed rather than waited on:
-      // a sleep long enough for one theme's duration is a race in another.
-      `@layer astryx-theme { .${testCase.target} { ${testCase.themeProperty}: ${SENTINEL}; } }
-       *, *::before, *::after {
-         transition-duration: 0s !important;
-         animation-duration: 0s !important;
-       }`);
+    //
+    // The stylesheet is what `defineTheme` emits, plus a blanket transition
+    // kill. These affordances transition `color` between their rest and hover
+    // states, so a read taken right after the sentinel lands returns an
+    // interpolated value and the case fails for a reason that has nothing to
+    // do with reachability — measured mid-flight at rgb(61, 62, 62) between
+    // the old colour and the new. What is being asserted is the settled paint,
+    // so the animation is removed rather than waited on: a sleep long enough
+    // for one theme's duration is a race in another.
+    const themeCss = await probeStylesheet(testCase.themeComponent, SENTINEL);
+    await page.evaluate(
+      ([css, themeName, target]) => {
+        // The emitted rules are `@scope (…theme=name…) to ([data-astryx-theme])`
+        // — bounded so a nested theme does not inherit its parent's component
+        // overrides. Storybook already mounts a theme, so naming <html> as the
+        // scope root puts that mounted theme's element on the scope LIMIT and
+        // the story falls outside: the rules parse, match nothing, and the case
+        // fails for a reason that is not reachability. Rename the innermost
+        // themed ancestor instead, which is where a real theme sits.
+        const button = document.querySelector(`.${target}`);
+        let host = document.documentElement;
+        for (let el = button; el; el = el.parentElement) {
+          if (el.hasAttribute('data-astryx-theme')) {
+            host = el;
+            break;
+          }
+        }
+        host.setAttribute('data-astryx-theme', themeName);
+        const style = document.createElement('style');
+        style.id = 'reach-probe';
+        style.textContent =
+          `@layer astryx-theme {\n${css}\n}\n` +
+          `*, *::before, *::after {
+             transition-duration: 0s !important;
+             animation-duration: 0s !important;
+           }`;
+        document.head.appendChild(style);
+      },
+      [themeCss, PROBE_THEME_NAME, testCase.target],
+    );
 
     const themed = await page.evaluate(readInPage, args);
     const unmoved = themed.paints.filter(p => p !== SENTINEL);
@@ -303,8 +367,45 @@ async function checkCase(context, testCase) {
       notes.push(`hovered → painted ${hovered.paints.join(', ')}`);
     }
 
+    // 3b — and still reaches it in the state the control reflects. A rule
+    // keyed on that state sits on the same element as the theme's, so a
+    // component that re-states the colour there wins back everything the
+    // theme set, in the one state a theme author is least likely to check.
+    if (testCase.activates) {
+      await page.locator(`.${testCase.target}`).first().click();
+      await page.waitForSelector(`.${testCase.target}[data-direction]`, {
+        state: 'attached',
+        timeout: 5000,
+      });
+      const activated = await page.evaluate(readInPage, args);
+      const unmovedActive = activated.paints.filter(p => p !== SENTINEL);
+      const state = await page.evaluate(
+        target =>
+          document
+            .querySelector(`.${target}`)
+            .getAttribute('data-direction'),
+        testCase.target,
+      );
+      if (unmovedActive.length > 0) {
+        failures.push(
+          `the themed colour is lost once the control reflects a state — ` +
+            `painted stroke/fill went to ${unmovedActive.join(', ')} at ` +
+            `data-direction="${state}".`,
+        );
+      } else {
+        notes.push(`data-direction="${state}" → painted ${activated.paints.join(', ')}`);
+      }
+    }
+
     // 4 — what the target must not repaint kept its own colour.
     if (testCase.unchangedSelector) {
+      if (themed.buttonColor === SENTINEL) {
+        failures.push(
+          `the themed colour landed on .${testCase.target} itself, so every ` +
+            `descendant inherits it. This target routes colour to its glyph ` +
+            `through a derived var precisely so the column name does not move.`,
+        );
+      }
       if (themed.unchanged === SENTINEL) {
         failures.push(
           `${testCase.unchanged} followed the target's colour. It shares the ` +

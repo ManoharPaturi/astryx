@@ -7,11 +7,6 @@ export const docs = {
   subComponentOf: 'Table',
   displayName: 'useTableSortable',
   description: 'Headless multi-sort plugin for Table. Call with a config object: `useTableSortable({ sort, onSortChange })`. Returns a TablePlugin to pass to `<Table plugins={{ sort: sortPlugin }} />`.',
-  theming: {
-    targets: [
-      {className: 'astryx-table-sort-button', visualProps: ['direction']},
-    ],
-  },
   usage: {
     description: 'Call useTableSortable with a config object containing sort state and callback. Pass the returned plugin to Table via the plugins prop.',
   },
@@ -47,11 +42,6 @@ export const docsZh = {
   name: 'useTableSortable',
   displayName: 'useTableSortable',
   description: '无头多列排序插件。用户拥有排序状态并提供回调。Shift+点击启用二级排序列。排序指示器自动渲染在表头单元格中。',
-  theming: {
-    targets: [
-      {className: 'astryx-table-sort-button', visualProps: ['direction']},
-    ],
-  },
   props: [
     {
       name: 'sort',

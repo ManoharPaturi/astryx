@@ -26,16 +26,10 @@ import {
   type ReactNode,
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {
-  spacingVars,
-  radiusVars,
-  colorVars,
-  durationVars,
-  easeVars,
-} from '../../../theme/tokens.stylex';
-import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
+import {spacingVars, colorVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {Button} from '../../../Button';
+import {IconButton} from '../../../IconButton';
 import {Popover} from '../../../Popover';
 import {TextInput} from '../../../TextInput';
 import {NumberInput} from '../../../NumberInput';
@@ -57,7 +51,6 @@ import type {
 } from '../../types';
 import {proportional} from '../../columnUtils';
 import {useLocale, useTranslator} from '../../../i18n';
-import {mergeProps} from '../../../utils';
 import {themeProps} from '../../../utils/themeProps';
 import type {
   PowerSearchConfig,
@@ -376,47 +369,29 @@ const filterStyles = stylex.create({
     minWidth: 0,
   },
   triggerButton: {
-    background: 'none',
-    border: 'none',
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 0,
-    borderRadius: radiusVars['--radius-element'],
     flexShrink: 0,
     // Minimum 44px touch target on coarse pointer devices (iOS guideline).
+    // WCAG 2.2 2.5.8 asks 24px; this coarse-pointer accommodation predates the
+    // change and is kept. On a fine pointer Button's own `sm` box governs.
     '@media (pointer: coarse)': {
       minWidth: '44px',
       minHeight: '44px',
     },
-    // The funnel reads this through `color="inherit"`, so a theme setting a
-    // colour on `astryx-table-filter-button` reaches it. The button holds only
-    // the glyph, so there is nothing else here for the colour to reach.
-    color: colorVars['--color-icon-secondary'],
-    // Rest -> hover -> pressed, matching the sort affordance beside it.
-    backgroundColor: {
-      default: 'transparent',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))':
-        colorVars['--color-overlay-pressed'],
-    },
-    transitionProperty: 'background-color, color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
-  },
-  triggerHoverOnPointer: {
-    '@media (hover: hover)': {
-      backgroundColor: {
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-overlay-hover'],
-      },
-      color: {
+    // This button holds the glyph and nothing else, so its `color` IS the
+    // glyph's colour: the funnel reads it through `color="inherit"`, and a
+    // theme setting `color` on `astryx-table-filter-button` reaches it with
+    // nothing else here for it to over-reach. Without this, `ghost` paints
+    // `--color-text-primary`.
+    //
+    // On hover the glyph darkens a step alongside Button's own overlay, so the
+    // feedback survives a forced-colors mode that drops backgrounds. Guarded
+    // on `hover: hover` so a touch device does not stick in the hovered colour
+    // after a tap. The tint, the pressed state and the focus ring are
+    // Button's, not restated here.
+    color: {
+      default: colorVars['--color-icon-secondary'],
+      '@media (hover: hover)': {
+        default: null,
         ':hover:where(:not(:disabled,[aria-disabled="true"]))':
           colorVars['--color-text-primary'],
       },
@@ -1039,24 +1014,20 @@ function PopoverFilterTrigger({
           </div>
         </FilterStoreContext>
       }>
-      <button
-        type="button"
-        aria-label={t('@astryx.tableFiltering.filterByColumn', {header})}
+      <IconButton
+        variant="ghost"
+        size="sm"
+        label={t('@astryx.tableFiltering.filterByColumn', {header})}
         aria-haspopup="dialog"
-        {...mergeProps(
-          themeProps('table-filter-button', {
-            active: hasValue ? 'active' : null,
-          }),
-          // The ring was missing here entirely: this button is keyboard
-          // reachable and drew nothing on focus.
-          focusOutlineProps.focusVisible(
-            filterStyles.triggerButton,
-            filterStyles.triggerHoverOnPointer,
-            hasValue && filterStyles.triggerActive,
-          ),
-        )}>
-        <Icon icon="funnel" size="xsm" color="inherit" />
-      </button>
+        icon={<Icon icon="funnel" size="xsm" color="inherit" />}
+        {...themeProps('table-filter-button', {
+          active: hasValue ? 'active' : null,
+        })}
+        xstyle={[
+          filterStyles.triggerButton,
+          ...(hasValue ? [filterStyles.triggerActive] : []),
+        ]}
+      />
     </Popover>
   );
 }

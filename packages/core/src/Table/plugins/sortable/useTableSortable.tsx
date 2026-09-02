@@ -18,13 +18,12 @@ import * as stylex from '@stylexjs/stylex';
 import {
   colorVars,
   spacingVars,
-  radiusVars,
   durationVars,
   easeVars,
 } from '../../../theme/tokens.stylex';
-import {focusOutlineProps} from '../../../utils/focusOutline.stylex';
-import {mergeProps} from '../../../utils';
+import {isRenderable} from '../../../utils';
 import {themeProps} from '../../../utils/themeProps';
+import {Button} from '../../../Button';
 import {Icon} from '../../../Icon';
 import {resolveContextActions} from '../../tableContextMenu';
 import {useTranslator, type TranslatorFn} from '../../../i18n';
@@ -125,74 +124,54 @@ export interface UseTableSortableConfig<TSortKey extends string = string> {
 // =============================================================================
 
 const sortStyles = stylex.create({
+  // Table geometry on top of Button. Everything the control does as a control
+  // — the hover and pressed overlay, the focus ring, the press transform, the
+  // reduced-motion guard — is Button's, so none of it is restated here.
   button: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacingVars['--spacing-1'],
-    background: 'transparent',
-    border: 'none',
-    padding: 0,
-    margin: 0,
-    cursor: {
-      default: 'pointer',
-      ':is(:disabled,[aria-disabled="true"])': 'default',
-    },
-    font: 'inherit',
-    // The glyph's colour travels as a custom property rather than as `color`
-    // on this button.
-    //
-    // `color` here would be inherited by BOTH children, and only one of them
-    // wants it. The label is the column name: it belongs to the header cell,
-    // whose own `astryx-table-header-cell` target already paints it. A `color`
-    // on this button overrode that — so a theme that recoloured its header
-    // cells left every sortable heading behind, still painting the raw token
-    // this file used to restate. The glyph, meanwhile, does want the
-    // affordance's colour.
-    //
-    // Declaring the var here keeps BOTH true and keeps the single target: the
-    // label inherits the header cell (nothing interrupts it now), and the
-    // glyph reads the var (see `iconWrapper`).
-    //
-    // Underscored, so internal. A public var is a promise
-    // `theme-var-reachability.js` has to be able to check, and it finds a
-    // component's stories by matching the doc name against story titles — a
-    // plugin has none of its own (its behaviour is exercised through
-    // `Core/TableFiltering`), so the promise would be undocumentable by
-    // construction. Themes reach this affordance through the target itself.
-    '--_table-sort-glyph-color': colorVars['--color-icon-secondary'],
+    // The control fills the cell so the whole heading is the click target.
     width: '100%',
     height: '100%',
+    justifyContent: 'flex-start',
     textAlign: 'inherit',
-    borderRadius: radiusVars['--radius-inner'],
-    // Rest -> hover -> pressed, the treatment every other borderless control
-    // in the system draws. The resting state carries no tint: the affordance
-    // is legible on its colour alone (`--color-icon-secondary`, 4.74:1)
-    // rather than on the dimming that put it at 1.57:1.
-    backgroundColor: {
-      default: 'transparent',
-      ':active:where(:not(:disabled,[aria-disabled="true"]))':
-        colorVars['--color-overlay-pressed'],
-    },
-    transitionProperty: 'background-color',
-    transitionDuration: {
-      default: durationVars['--duration-fast'],
-      '@media (prefers-reduced-motion: reduce)': '0s',
-    },
-    transitionTimingFunction: easeVars['--ease-standard'],
+    paddingBlock: 0,
+    paddingInline: 0,
+    gap: spacingVars['--spacing-1'],
+    // The column name is the header cell's text, not a button label: it keeps
+    // the cell's type and colour. `ghost` paints `--color-text-primary`, which
+    // would override what `TableHeaderCell` paints on the `<th>` and leave
+    // every sortable heading behind a theme that recoloured
+    // `astryx-table-header-cell`.
+    color: 'inherit',
+    fontFamily: 'inherit',
+    fontSize: 'inherit',
+    fontWeight: 'inherit',
+    lineHeight: 'inherit',
+    whiteSpace: 'inherit',
   },
-  // Guarded on `hover: hover` so a touch device does not stick in the hover
-  // tint after a tap (Component Audit Rubric A8).
-  buttonHoverOnPointer: {
-    '@media (hover: hover)': {
-      backgroundColor: {
-        ':hover:where(:not(:disabled,[aria-disabled="true"]))':
-          colorVars['--color-overlay-hover'],
-      },
-      // The glyph darkens a step as well, so the feedback survives a
-      // forced-colors mode that drops the background tint. On the var, not on
-      // `color`: the column name is not part of the affordance and must not
-      // move when the pointer is over the heading.
-      '--_table-sort-glyph-color': {
+  // The glyph's colour travels as a private custom property rather than as
+  // `color` on the button, because `color` is inherited by BOTH children and
+  // only one of them wants it (see above).
+  //
+  // A theme still writes the ordinary property: `color` on
+  // `astryx-table-sort-button` is expanded to this var by the derived-var
+  // registry (`replaces: true`, so no `color` lands on the button itself and
+  // the column name never moves). The var is the routing, not the API — INV11
+  // in `architecture:component-theming-surface`.
+  //
+  // Declared through `className` rather than `xstyle`: `BaseProps['xstyle']`
+  // is typed to standard CSS properties, so a custom property cannot travel
+  // that way.
+  //
+  // On hover the glyph darkens a step alongside Button's own overlay, so the
+  // feedback survives a forced-colors mode that drops backgrounds. On the var,
+  // not on `color`: the column name is not part of the affordance and must not
+  // move when the pointer is over the heading. Guarded on `hover: hover` so a
+  // touch device does not stick in the hovered colour after a tap.
+  glyphColor: {
+    '--_table-sort-glyph-color': {
+      default: colorVars['--color-icon-secondary'],
+      '@media (hover: hover)': {
+        default: null,
         ':hover:where(:not(:disabled,[aria-disabled="true"]))':
           colorVars['--color-text-primary'],
       },
@@ -200,15 +179,9 @@ const sortStyles = stylex.create({
   },
   // Accent is the SORTED state and nothing else, so "this column is sorted"
   // never reads as "the pointer is here".
-  buttonSorted: {
+  glyphColorSorted: {
     '--_table-sort-glyph-color': colorVars['--color-accent'],
   },
-  // No `color`. The header text belongs to the cell, so it inherits the
-  // colour `TableHeaderCell` paints on the `<th>` — which is what the
-  // `astryx-table-header-cell` target themes. Restating the token here read
-  // as identical until someone themed that target, and then the heading
-  // stopped following it.
-  label: {},
   iconWrapper: {
     display: 'inline-flex',
     color: 'var(--_table-sort-glyph-color)',
@@ -218,6 +191,11 @@ const sortStyles = stylex.create({
       '@media (prefers-reduced-motion: reduce)': '0s',
     },
     transitionTimingFunction: easeVars['--ease-standard'],
+  },
+  endContent: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacingVars['--spacing-1'],
   },
   rank: {
     fontSize: 10,
@@ -375,29 +353,35 @@ function SortHeaderButton<T extends Record<string, unknown>>({
     }
   };
 
+  const target = themeProps('table-sort-button', {direction});
+  const glyphColor = stylex.props(
+    sortStyles.glyphColor,
+    direction != null && sortStyles.glyphColorSorted,
+  );
+
   return (
-    <button
-      type="button"
-      {...mergeProps(
-        themeProps('table-sort-button', {direction}),
-        focusOutlineProps.focusVisible(
-          sortStyles.button,
-          sortStyles.buttonHoverOnPointer,
-          direction != null && sortStyles.buttonSorted,
-        ),
-      )}
-      aria-label={ariaLabel}
-      onClick={handleClick}>
-      <span {...stylex.props(sortStyles.label)}>{children}</span>
-      <span {...stylex.props(sortStyles.iconWrapper)}>
-        <Icon icon={iconName} size="xsm" color="inherit" />
-      </span>
-      {rank != null && (
-        <span {...stylex.props(sortStyles.rank)} aria-hidden="true">
-          {rank}
+    <Button
+      variant="ghost"
+      size="sm"
+      label={ariaLabel}
+      {...target}
+      className={`${target.className} ${glyphColor.className ?? ''}`.trim()}
+      xstyle={sortStyles.button}
+      onClick={handleClick}
+      endContent={
+        <span {...stylex.props(sortStyles.endContent)}>
+          <span {...stylex.props(sortStyles.iconWrapper)}>
+            <Icon icon={iconName} size="xsm" color="inherit" />
+          </span>
+          {isRenderable(rank) && (
+            <span {...stylex.props(sortStyles.rank)} aria-hidden="true">
+              {rank}
+            </span>
+          )}
         </span>
-      )}
-    </button>
+      }>
+      {children}
+    </Button>
   );
 }
 

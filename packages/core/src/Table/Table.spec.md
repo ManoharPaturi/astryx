@@ -230,7 +230,7 @@ pipeline does not confer correctness on module output.
   "Scroll region": {"target": "table-scroll-wrapper"},
   "Header section": {"target": "table-header"},
   "Column header cell": {"target": "table-header-cell"},
-  "Sort control": {"inherits": "table-header-cell"},
+  "Sort control": {"target": "table-sort-button"},
   "Sort indicator glyph": {
     "delegatesTo": {"owner": "component:Icon", "target": "icon"}
   },
@@ -238,6 +238,10 @@ pipeline does not confer correctness on module output.
     "none": {
       "reason": "unsettled: The multi-sort rank has no direct public target and uses a component-owned accent style; future exposure still needs an owner decision"
     }
+  },
+  "Filter control": {"target": "table-filter-button"},
+  "Filter indicator glyph": {
+    "delegatesTo": {"owner": "component:Icon", "target": "icon"}
   },
   "Selection control": {
     "delegatesTo": {
@@ -268,11 +272,23 @@ pipeline does not confer correctness on module output.
 }
 ```
 
-The exact map records all eight current non-deprecated Table targets once. The
+The exact map records all ten current non-deprecated Table targets once. The
 legacy `base-table` alias is compatibility, not anatomy. TableHeader, TableBody,
 TableFooter, TableRow, TableCell, and TableHeaderCell retain direct docs linked by
 `subComponentOf: 'Table'`; they do not need independent component specs for this
 aggregate ownership.
+
+The Sort control and the Filter control are rendered by Button and IconButton, so
+INV5 would make them delegate to `button`. They hold their own targets instead
+because each guarantees a public visual contract `button` cannot express: a
+colour on `table-sort-button` paints the sort glyph and leaves the column name on
+the header cell (routed by the `color` derived-var entry in
+`theming.derived`, INV11), where the same colour on `button` paints label and end
+content together by Button's own contract; and a colour on `table-filter-button`
+reaches one column's funnel rather than every button in the table. Both targets
+sit on the painting element that Button renders — the control itself, not a
+wrapper — so INV4 holds, and the interaction model stays Button's. The precedent
+is `toggle-button`, which carries its own target on the Button it renders.
 
 ## Family and system relationships
 

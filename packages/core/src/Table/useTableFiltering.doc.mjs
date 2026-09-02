@@ -8,11 +8,6 @@ export const docs = {
   displayName: 'useTableFiltering',
   isHiddenFromOverview: true,
   description: 'Table plugin that adds inline column filters with popover or inline controls. Pairs with useTableFilterState for managed state. Supports text, select, multi-select, date, and number filter types via PowerSearch field definitions.',
-  theming: {
-    targets: [
-      {className: 'astryx-table-filter-button', states: ['active']},
-    ],
-  },
   props: [
     {
       name: 'filters',
@@ -40,11 +35,6 @@ export const docsZh = {
   isHiddenFromOverview: true,
   displayName: 'useTableFiltering',
   description: '表格筛选插件，添加内联列过滤器（弹出式或内联控件）。与 useTableFilterState 配合使用管理状态。',
-  theming: {
-    targets: [
-      {className: 'astryx-table-filter-button', states: ['active']},
-    ],
-  },
   props: [
     {
       name: 'filters',
