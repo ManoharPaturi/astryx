@@ -501,6 +501,7 @@
     "evidence": {
       "apps/storybook/stories/NumberInput.stories.tsx": "sha256:d19316f489055e0d9f05f33484deb1947166a2d4038b277a7fd91bf4605855ca",
       "apps/storybook/stories/Pagination.stories.tsx": "sha256:2dcf6ef8566c6e67190f0cce4e454daaeed3fcc7db9943d38bd8b4e093b44d28",
+      "apps/storybook/stories/Timestamp.stories.tsx": "sha256:0134a69a58902d4334aedf1d5c9a21ce5374d60e867db0c3a5d5cacb59ac37d4",
       "packages/core/src/i18n/InternationalizationContext.ts": "sha256:010be9384912141678c6583f60bb0f7a371401d8201c438ea0c0e23e0859f279",
       "packages/core/src/i18n/InternationalizationProvider.tsx": "sha256:edee4432422c780022de1d59614248879a9b3cb81f1d8b3487cc99bcbb8d93fb",
       "packages/core/src/i18n/getLocaleDirection.ts": "sha256:c50e97a1566ebc646e5517f262c8912d3cbae6ffe33a72fec68e7bb68eb4605d",
@@ -757,12 +758,12 @@
   },
   {
     "component": "core/Theme",
-    "reason": "Theme is a provider, not a visual: it registers the theme, injects the generated token and component CSS into `<head>`, and syncs `data-theme` and `data-astryx-theme` so `@scope`d rules reach portals. Its single rendered element is `display: contents`, so it produces no box, no glyph, and no layout of its own \u2014 the children lay out exactly as they would without it. The only styles it sets are colour, font family, and `color-scheme`.",
+    "reason": "Theme's wrapper is `display: contents`, so it creates no box, glyph, order, scroll, drag, or directional keyboard behavior of its own. It registers the theme, injects generated token/custom-property and component CSS into `<head>`, and syncs theme attributes so those rules reach portals; the newly supported theme-local tokens are CSS custom-property declarations and do not create geometry until a child component consumes them. The wrapper's authored styles remain color, font family, and `color-scheme`, none of which has an inline-axis side to measure.",
     "evidence": {
       "apps/storybook/stories/Theme.stories.tsx": "sha256:c99d6b59bc5eb0c24a6d980bc721080f46d3aa092fba58adb9b68e4c7e026b33",
       "packages/core/src/theme/Theme.tsx": "sha256:2ba41ca2b798b86cee18661ca3bbb94b55d95391f5e92ff7998542ad7c1dbbb8",
-      "packages/core/src/theme/defineTheme.ts": "sha256:71650b967b5e32e43e242f96beaa4903a96b4ec077e4526b8f874ef9f822f2bf",
-      "packages/core/src/theme/generateThemeRules.ts": "sha256:84ef6bab96a0cd6e61027bf94cb6a328f311886aae59ecd339be201538842b56",
+      "packages/core/src/theme/defineTheme.ts": "sha256:35d1269b1756aa44f155c18ee6c2c4c05f7611536453c4925abca18a8c0bd77c",
+      "packages/core/src/theme/generateThemeRules.ts": "sha256:5691ce195a495e508c231721680d1253c74fe3d74d0f4e29b39d670856f41f20",
       "packages/core/src/theme/themeRegistry.ts": "sha256:8ff366f81cc1ed75a59f9012052a24aadad086e699928d19694f4d8cabe1e49e",
       "packages/core/src/theme/tokens.stylex.ts": "sha256:7d5b5321220e0924213d9b37cf4acf9ba5bb16f3de1485710dd543f964676f81",
       "packages/core/src/theme/types.ts": "sha256:686f81ce38f5d5e7751fe95f1ef62d181bb714a18bd003fa21ece1a9779475c6",
@@ -788,10 +789,11 @@
     "component": "core/Timestamp",
     "reason": "Timestamp renders locale-formatted text and a direction-neutral hover card; it has no directional icons, contextual decorations, side-specific layout, order, scroll, drag, or directional keyboard behavior.",
     "evidence": {
-      "apps/storybook/stories/Timestamp.stories.tsx": "sha256:d84ac3e9ff2315e3556b3e7fcbd40fff598d17f7175d746117955e0de7691d86",
-      "packages/core/src/Timestamp/Timestamp.tsx": "sha256:2dedb2731bf23ae04c4cfb6842f59d3e65f5b78dd646853c573c7febcf08fd57",
+      "apps/storybook/stories/Timestamp.stories.tsx": "sha256:0134a69a58902d4334aedf1d5c9a21ce5374d60e867db0c3a5d5cacb59ac37d4",
+      "packages/core/src/Timestamp/Timestamp.tsx": "sha256:110adf6e059472a5f27bab157c6fefb07517b42a48f230cb00a9485bfb4134ac",
       "packages/core/src/Timestamp/TimestampHoverCard.tsx": "sha256:b1b942b441b7ba2edea8030794d1df85e19defb0fa830e349294739f0e7aea45",
       "packages/core/src/Timestamp/formatInstant.ts": "sha256:0ad1751027e467000eb69c2df9506d970865e6a35ca18d96765302e8e8752ecf",
+      "packages/core/src/Timestamp/formatRelativeTime.ts": "sha256:b57348ab84677c904df61c191edcb694154b95c15c0abbb200bac751ee50cd68",
       "packages/core/src/Timestamp/tooltipEntries.ts": "sha256:8b8ab1cc6257b7b3955e93a7a32c4d64ff2752aacb1dc9b4f6a5976d673b3ba3"
     }
   },
