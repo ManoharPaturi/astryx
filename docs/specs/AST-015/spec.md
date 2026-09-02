@@ -387,6 +387,23 @@ This example should make the ownership boundary visible: page structure can
 become tighter on mobile, while the product controls still feel like the same
 Astryx components.
 
+### Product Detail model comparison
+
+The same Product Detail layout should be used to compare possible mobile spacing
+models before accepting the contract.
+
+| Model                                       | Product Detail behavior                                                              | What changes                                                                                 | What stays stable                                                           | Risk                                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Primitive spacing override                  | Every `--spacing-*` value used by the template becomes smaller on mobile.            | Page padding, section gaps, card insets, controls, thumbnails, and component internals.      | Nothing is guaranteed to stay stable unless each component protects itself. | Too broad; mobile theme can accidentally change component geometry.                |
+| Large semantic token set                    | The template maps many page and component areas to public semantic tokens.           | Precise areas can be tuned independently.                                                    | Component internals can stay stable if they are excluded.                   | Token sprawl; easy to create hyper-specific tokens that are hard to reason about.  |
+| Component-owned adaptation                  | Each component decides whether its own defaults should change at mobile breakpoints. | Component defaults for components that implement mobile behavior.                            | Other components and explicit props.                                        | Page rhythm can become inconsistent because each component makes a local decision. |
+| Shared mobile profile + component overrides | Layout/container defaults receive coordinated mobile values through the theme.       | Page padding, section gap, card/panel inset, overlay inset, and owned container-region gaps. | Primitive spacing, control internals, image geometry, and explicit props.   | Best balance for v1; needs clear rules for which components are included.          |
+
+This comparison is why the proposed direction is a shared mobile profile applied
+through component theme overrides. It gives Product Detail the structural mobile
+adjustments it needs without redefining primitives or creating a global token for
+every local spacing decision.
+
 ## Alternatives considered
 
 ### A. Change the primitive spacing scale on mobile
