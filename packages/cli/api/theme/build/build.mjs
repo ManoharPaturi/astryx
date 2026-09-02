@@ -881,6 +881,21 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
   // back. A field missing here is silently lost by the extending theme.
   // SYNC: packages/core/src/theme/defineTheme.ts (DefinedTheme)
   const inheritableFields =
+    (themeDef.__localTokenLineage !== undefined
+      ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenOwners: ${JSON.stringify(
+          themeDef.__localTokenOwners ?? {},
+          null,
+          2,
+        )
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
+      : '') +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight) +
@@ -1208,9 +1223,9 @@ export async function themeBuild(
       'desktop',
       'wide',
     ];
-    const needsResolution = INPUT_ONLY_FIELDS.some(
-      field => themeDef[field] !== undefined,
-    );
+    const needsResolution =
+      INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
+      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
     if (needsResolution) {
       resolvedTheme = _defineTheme({...themeDef});
     } else {
@@ -1244,12 +1259,11 @@ export async function themeBuild(
 
     // #3658: also emit attribute-specific rules so <Theme mode> can override
     // color-scheme. Decide from the theme's own resolved values, including its
-    // width tiers — NOT the generated CSS, which also carries theme-independent
-    // data-token defaults containing light-dark() pairs. A tuple declared only
-    // inside a tier still needs color-scheme, while those defaults must not force
-    // it onto every theme.
+    // local tokens and width tiers — NOT the generated CSS, which also carries
+    // theme-independent data-token defaults containing light-dark() pairs.
     const themeOwnValues = JSON.stringify([
       resolvedTheme.tokens ?? {},
+      resolvedTheme.localTokens ?? {},
       resolvedTheme.components ?? {},
       ...(resolvedTheme.__tiers ?? []).flatMap(
         (
@@ -1329,9 +1343,9 @@ export async function themeBuild(
   }
 
   const displayTheme = resolvedTheme || themeDef;
-  const tokenCount = displayTheme.tokens
-    ? Object.keys(displayTheme.tokens).length
-    : 0;
+  const tokenCount =
+    Object.keys(displayTheme.tokens ?? {}).length +
+    Object.keys(displayTheme.localTokens ?? {}).length;
   const componentCount = displayTheme.components
     ? Object.keys(displayTheme.components).length
     : 0;
