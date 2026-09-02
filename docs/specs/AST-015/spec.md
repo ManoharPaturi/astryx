@@ -2,7 +2,7 @@
 schema_version: 1
 template_version: 1
 kind: system-spec
-id: spec:AST-012
+id: spec:AST-015
 authority: draft
 archive_reason: null
 superseded_by: null
@@ -231,7 +231,7 @@ the formula or the primitive-token derivation table.
 
 ### DEC-1 — Mobile spacing uses semantic roles rather than global primitive replacement
 
-**Reference:** `spec:AST-012/DEC-1`
+**Reference:** `spec:AST-015/DEC-1`
 **Decider:** `<pending>`, `<pending>`
 
 Changing primitive spacing globally makes the mobile theme easy to implement but
@@ -245,7 +245,7 @@ internals.
 
 ### DEC-2 — Published mobile values are explicit
 
-**Reference:** `spec:AST-012/DEC-2`
+**Reference:** `spec:AST-015/DEC-2`
 **Decider:** `<pending>`, `<pending>`
 
 A proportional or exponential curve can guide exploration, but shipped mobile
@@ -259,7 +259,7 @@ need to infer which semantic roles exist and how to override individual values.
 
 ### DEC-3 — Existing theme properties keep their meaning
 
-**Reference:** `spec:AST-012/DEC-3`
+**Reference:** `spec:AST-015/DEC-3`
 **Decider:** `<pending>`, `<pending>`
 
 Mobile spacing should be additive. Existing theme properties should not be
