@@ -97,6 +97,30 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * @default 'separated'
    */
   indicatorPosition?: StepperIndicatorPosition;
+  /**
+   * Whether a collapsed stepper shows Previous/Next controls beneath the
+   * track. They only ever appear when `onStepClick` is set; this turns them
+   * off for a flow that already has its own Back/Continue, so the two pairs
+   * do not compete.
+   *
+   * Turning them off in the `separated` layout leaves the collapsed stepper
+   * with nothing to press — its step targets go with its labels — so
+   * `onStepClick` becomes unreachable until the stepper is wide again. That is
+   * the point when the flow has its own controls, but it does mean the
+   * stepper is then purely a progress indicator. `on-track` keeps its nodes on
+   * the rail either way, so there it costs nothing.
+   * @default true
+   */
+  hasCollapsedControls?: boolean;
+  /**
+   * Whether a collapsed stepper names the current step beneath the track. Turn
+   * it off when the page already heads the step itself.
+   *
+   * Only the visible copy goes. Every step keeps its name in the accessible
+   * sequence at any width, so this cannot shorten what a screen reader hears.
+   * @default true
+   */
+  hasCollapsedLabel?: boolean;
 }
 
 const styles = stylex.create({
@@ -193,6 +217,8 @@ export function Stepper({
   label: labelFromProps,
   density = 'balanced',
   indicatorPosition = 'separated',
+  hasCollapsedControls = true,
+  hasCollapsedLabel = true,
   xstyle,
   className,
   style,
@@ -369,16 +395,25 @@ export function Stepper({
     return <StepperContext value={ctxValue}>{list}</StepperContext>;
   }
 
-  // Controls, and only where there is something for them to do. A linear
-  // stepper is driven by the form's own Back and Continue, and a second pair
-  // pointed at a step the flow will not honour is worse than none.
+  // Controls, and only where there is something for them to do. `onStepClick`
+  // answers whether the steps are navigable at all; `hasCollapsedControls`
+  // answers the separate question of whether this stepper should be the thing
+  // that navigates them once collapsed. They come apart in the common wizard —
+  // clickable steps at full width, the form's own Back and Continue on a phone
+  // — which is why the handler alone cannot decide it.
   //
   // Unlike TabList's scroll arrows — decorative, aria-hidden, skipped by the
   // keyboard because every tab can still be reached by arrowing the strip —
-  // these are the only way through a collapsed stepper. So they are real
-  // controls with real names, and they take focus.
+  // these are the way through a collapsed stepper wherever they appear. So
+  // they are real controls with real names, and they take focus.
+  const showsControls = hasCollapsedControls && onStepClick != null;
+
+  // With neither half asked for there is nothing to put in the row, and an
+  // empty one would still spend the frame's gap under the track.
+  const showsSummary = isCompact && (showsControls || hasCollapsedLabel);
+
   const control = (delta: -1 | 1) => {
-    if (onStepClick == null) {
+    if (!showsControls || onStepClick == null) {
       return null;
     }
     const name =
@@ -413,7 +448,7 @@ export function Stepper({
           stylex.props(styles.frame),
         )}>
         {list}
-        {isCompact && (
+        {showsSummary && (
           <div
             {...mergeProps(
               themeProps('stepper-summary'),
@@ -423,12 +458,19 @@ export function Stepper({
             {/* The list above still carries every step's name and status, so
                 this row repeats one of them for the eye only. Hiding it keeps
                 a screen reader from hearing the current step named twice,
-                while leaving the controls either side of it reachable. */}
-            <div
-              ref={setSummarySlot}
-              aria-hidden="true"
-              {...stylex.props(styles.summaryBody)}
-            />
+                while leaving the controls either side of it reachable — and it
+                is what makes `hasCollapsedLabel` a purely visual switch.
+
+                Withholding the slot is the whole implementation of that
+                switch: the active step portals into it and renders nothing
+                when it is absent, so no Step has to be told about the prop. */}
+            {hasCollapsedLabel && (
+              <div
+                ref={setSummarySlot}
+                aria-hidden="true"
+                {...stylex.props(styles.summaryBody)}
+              />
+            )}
             {control(1)}
           </div>
         )}
