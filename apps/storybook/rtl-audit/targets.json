@@ -80,6 +80,37 @@
     }
   },
   {
+    "component": "DropdownMenu",
+    "storyId": "core-dropdownmenu--alignment-end",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": "button:has-text(\"Row actions\")"
+    },
+    "selectors": {
+      "overlay": ".astryx-dropdown-menu",
+      "overlayRoot": "body"
+    }
+  },
+  {
+    "component": "Layer",
+    "storyId": "core-layer--placements",
+    "dims": [
+      "D4"
+    ],
+    "setup": {
+      "click": [
+        "button:has-text(\"end\")",
+        "button:has-text(\"Trigger\")"
+      ]
+    },
+    "selectors": {
+      "overlay": "[popover]:popover-open",
+      "overlayRoot": "body"
+    }
+  },
+  {
     "component": "Lightbox",
     "storyId": "core-lightbox--gallery",
     "dims": [
@@ -102,6 +133,17 @@
     "selectors": {
       "prev": "input[aria-label=\"Pro\"]",
       "next": "[data-testid=\"radio-end-content\"]"
+    }
+  },
+  {
+    "component": "Stepper",
+    "storyId": "core-stepper--default-horizontal",
+    "dims": [
+      "D2"
+    ],
+    "selectors": {
+      "prev": ".astryx-stepper > li:first-child",
+      "next": ".astryx-stepper > li:last-child"
     }
   },
   {
