@@ -22,20 +22,49 @@ affects_contributing: []
 affects_consumer_docs: [Theme, Layout, Section, Card, Dialog]
 ---
 
-# Mobile semantic spacing theme
+# Mobile spacing theme profile
 
 ## Intent
 
 Astryx's mobile theme should make structural spacing feel appropriate on small
-viewports without changing the geometry of every component that happens to use a
-spacing token. The theme needs a clear spacing contract that separates primitive
-spacing values from semantic spacing roles such as page padding, section gaps,
-container insets, and overlay insets.
+viewports without changing the internal geometry of every component that happens
+to use a spacing token.
 
-The accepted direction is to keep primitive spacing stable and add mobile
-semantic spacing values for layout and container roles. This lets maintained
-themes provide recommended mobile behavior while allowing product teams to
-override or add semantic roles for product-specific surfaces.
+The proposed direction is:
+
+1. Keep the primitive spacing scale stable.
+2. Define a small mobile spacing profile from the selected spacing preset.
+3. Apply that profile through targeted component theme overrides for layout and
+   container components.
+4. Let products tune the profile intensity or override specific component
+   defaults when needed.
+
+This gives teams a mobile spacing solution without creating an endless set of
+global semantic spacing tokens.
+
+## Problem
+
+The current Astryx spacing preset changes primitive spacing values. That is
+useful for broad theme density, but it is too broad for mobile spacing.
+
+Primitive spacing is used by many different kinds of UI:
+
+- page padding;
+- section gaps;
+- card or panel insets;
+- button and input internals;
+- segmented control geometry;
+- badge, chip, and icon alignment;
+- table row density; and
+- arbitrary `Stack`, `HStack`, `VStack`, `Grid`, or `Center` gaps authored by a
+  product.
+
+If the mobile theme globally compresses primitive spacing, all of those areas
+change together. That makes mobile layouts more compact, but it can also
+accidentally shrink controls and component internals that should remain stable.
+
+The mobile spacing problem is narrower: change the spacing that defines page
+structure and containers, while leaving most component internals alone.
 
 ## Non-goals
 
@@ -47,246 +76,447 @@ override or add semantic roles for product-specific surfaces.
   user is using touch, mouse, keyboard, or trackpad.
 - Making arbitrary `Stack`, `HStack`, `VStack`, `Grid`, or `Center` gaps
   automatically responsive. A generic `gap={4}` should continue to mean
-  "use spacing-4"; it should not secretly become smaller on mobile unless the
-  author opts into a semantic mobile spacing role.
-- Changing desktop or tablet spacing behavior when the mobile theme is not
-  active.
-- Reinterpreting existing component theme properties in a way that changes
-  already-authored themes.
-- Defining one permanent value for every possible product-specific layout area.
+  "use spacing-4" unless the author intentionally opts into a mobile layout
+  role.
+- Changing desktop or tablet spacing behavior as part of this mobile proposal.
+- Defining a global semantic token for every possible product-specific spacing
+  need.
 
 ## Requirements
 
-- **FR1 — Primitive spacing remains primitive.** The mobile spacing contract
-  MUST NOT require theme authors to redefine the portable `--spacing-*` scale in
-  order to get mobile layout spacing. Components that consume primitive spacing
-  for their own internal geometry MUST keep their existing behavior unless that
-  component is explicitly themed.
-- **FR2 — Mobile spacing is semantic and role-based.** Shared mobile spacing
-  MUST be expressed through semantic roles whose names describe layout intent,
-  not raw scale position. Initial roles SHOULD cover page padding, page or
-  section gaps, container/card/panel insets, container-owned region gaps, and
-  overlay/dialog/drawer/bottom-sheet insets.
-- **FR3 — Mobile overrides are scoped to the active mobile theme.** Mobile
-  spacing values MUST apply only inside a mobile theme boundary or equivalent
-  supported screen-size based theme-application mechanism. The trigger MUST be
-  based on viewport/layout size, not touch capability, pointer type, or input
-  modality. Desktop and tablet themes MUST retain their existing spacing unless
-  they opt into the same semantic values.
-- **FR4 — Component internals do not opt in automatically.** Buttons, inputs,
-  badges, icons, segmented controls, menus, thumbnails, and other control
-  internals MUST NOT consume mobile semantic spacing by default. Any
-  mobile-only change to a component internal MUST be an explicit component theme
-  override.
-- **FR5 — Layout and container components may consume semantic spacing.** Layout
-  regions, Section, Card, Panel-like surfaces, Dialog, Drawer, and Bottom Sheet
-  MAY consume mobile semantic spacing for omitted default insets and owned region
-  gaps. Explicit spacing props on those components MUST continue to win.
-- **FR6 — Product-specific roles remain possible.** A product or maintained theme
-  MAY define additional semantic custom properties for spacing roles not covered
-  by Core. Such roles are owned by that theme or product surface unless promoted
-  into the shared Astryx contract through a later spec.
-- **FR7 — Published values are explicit tokens, not an implementation formula.**
-  A proportional or exponential formula MAY be used to explore candidate mobile
-  values, but the shipped theme MUST publish explicit semantic values so authors
-  can inspect, override, and reason about the contract without reverse
-  engineering an algorithm.
-- **FR8 — Ordered spacing steps remain distinct.** If Astryx publishes an
-  ordered mobile semantic spacing scale, adjacent steps in that scale MUST NOT
-  resolve to the same pixel value. Formula-generated duplicates MUST be removed,
-  merged, or hand-tuned before publication. Different semantic roles MAY share a
-  value intentionally, but duplicated values MUST NOT be presented as separate
-  size steps in the same ordered scale.
-- **IR1 — Compatibility is additive.** Existing theme properties MUST keep their
-  previous meaning. If a legacy component theme property previously emitted raw
-  CSS, adopting mobile semantic spacing MUST NOT silently convert that property
-  into a derived or internal variable path.
-- **IR2 — Override priority is documented and testable.** Implementations MUST
-  preserve the priority order: explicit component prop, then component-specific
-  theme override, then semantic mobile spacing value, then default primitive
-  token fallback.
+- **FR1 — Mobile-only behavior.** The mobile spacing profile MUST apply only in
+  the mobile viewport range. Desktop and tablet MUST continue to use current
+  Astryx spacing unless a separate responsive contract explicitly changes them.
+- **FR2 — Primitive spacing remains stable.** The mobile spacing profile MUST
+  NOT redefine the portable primitive spacing scale. Components that use
+  primitive spacing for their internal geometry MUST keep their existing spacing
+  unless that component is explicitly included in the mobile profile.
+- **FR3 — Apply through component theme overrides.** The recommended mobile
+  spacing values SHOULD be applied through targeted component theme overrides,
+  not through a broad primitive-token replacement.
+- **FR4 — Component defaults only.** Mobile spacing applies to component
+  defaults. If a consumer passes an explicit spacing prop such as `padding`,
+  `gap`, `paddingInline`, or `space`, that authored value MUST remain
+  authoritative.
+- **FR5 — Initial component scope is small.** The v1 profile SHOULD focus on
+  layout and container components: Layout/page shell, Section, Card/Panel, and
+  Dialog/Drawer/Bottom Sheet.
+- **FR6 — Presets provide recommended defaults.** The S/M/L/XL spacing presets
+  MUST provide recommended mobile values so teams can adopt the mobile profile
+  without designing a new scale from scratch.
+- **FR7 — Intensity is adjustable.** Consumers SHOULD be able to choose a mobile
+  spacing intensity that changes how strongly the included component defaults
+  compress.
+- **FR8 — Specific overrides are allowed.** Consumers MUST be able to override
+  individual mobile component spacing values when a product needs to diverge
+  from the recommended profile.
+- **FR9 — Global semantic tokens are exceptional.** A new shared semantic
+  spacing token SHOULD be added only when the spacing relationship needs to be
+  reused across multiple component families or exposed as its own theme-level
+  decision.
 
-### Platform support
+## Proposed model
 
-- Supported feature/engine floor: every browser supported by Astryx Core's theme
-  runtime.
-- Unsupported behavior: a mobile semantic spacing value MUST NOT leak outside
-  its theme scope or apply to desktop/tablet layouts that do not activate the
-  mobile theme.
-- Browser evidence: visual verification SHOULD include at least one small
-  viewport and one non-mobile viewport for every template used as release
-  evidence.
+The mobile spacing profile is a coordinated set of recommended values. The
+profile is not a replacement primitive scale.
 
-## Current-state impact
+Conceptually:
 
-The current Astryx spacing preset changes the primitive spacing scale. That is
-useful for broad theme density, but it is too blunt for the mobile theme because
-component internals and layout containers may share the same primitives.
+```ts
+const mobileSpacing = createMobileSpacingProfile({
+  spacingBase: 4,
+  intensity: 0.5,
+});
+```
 
-Some generated templates also hardcode layout-region spacing through component
-props. Those props correctly win at runtime, but they prevent a mobile theme from
-changing the template's structural spacing. Templates intended to demonstrate or
-consume theme-level layout spacing should omit hardcoded default insets or use
-semantic spacing roles.
+The profile can then feed component theme overrides:
 
-This spec affects:
+```ts
+const mobileTheme = {
+  components: {
+    Layout: {
+      content: {
+        paddingInline: mobileSpacing.pagePaddingInline,
+        paddingBlock: mobileSpacing.pagePaddingBlock,
+      },
+    },
+    Section: {
+      padding: mobileSpacing.sectionInset,
+      gap: mobileSpacing.sectionGap,
+    },
+    Card: {
+      padding: mobileSpacing.containerInset,
+    },
+    Dialog: {
+      padding: mobileSpacing.overlayInset,
+    },
+  },
+};
+```
 
-- theme authoring, because mobile spacing needs a scoped semantic authoring path;
-- theme application, because mobile values must only apply in the mobile theme
-  scope;
-- theme tokens, because the recommended published values are semantic spacing
-  roles rather than primitive scale replacements;
-- container padding, because layout/container components may need edge
-  compensation and owned-region gap behavior; and
-- layout-region and layout-primitive families, because structural regions may
-  consume semantic spacing while arbitrary child arrangement remains explicit.
+The exact API names are illustrative. The important contract is that the mobile
+theme updates selected component defaults instead of globally changing
+`--spacing-*`.
 
-## Candidate mobile spacing derivation
+## Override precedence
 
-The current exploration uses a proportional compression formula to generate
-candidate values for semantic mobile spacing roles:
+Mobile spacing should never make explicit author intent mysterious.
 
-```txt
-mobileCandidate(space) = roundTo2px(space / √2)
+Precedence:
+
+```text
+explicit component prop
+→ mobile-scoped component theme override
+→ regular component theme override
+→ normal component default
+```
+
+Example:
+
+```tsx
+// Uses the mobile theme's Section default on mobile.
+<Section>...</Section>
+
+// Does not use the mobile theme's Section padding default,
+// because the product intentionally authored a value.
+<Section padding={6}>...</Section>
+```
+
+The same principle applies to `Card padding={...}`, `Dialog padding={...}`,
+`LayoutContent paddingInline={...}`, and authored layout gaps such as
+`<VStack gap={...}>`.
+
+## Recommended formula
+
+The current recommendation uses a gentle linear adjustment:
+
+```text
+mobileValue = currentValue - (spacingBase × intensity)
 ```
 
 Where:
 
-- `space` is the current desktop/default value for a semantic spacing role, in
-  pixels.
-- In the Astryx playground, the spacing control sets a base value and builds the
-  primitive scale as `--spacing-N = round(base × N)`. The current default bases
-  are S = 2px, M = 4px, L = 6px, and XL = 8px.
-- `√2` is the compression ratio. Dividing by `√2` makes the mobile value about
-  70.7% of the default value.
-- `roundTo2px(...)` snaps the result to the nearest 2px so adjacent values remain
-  visually usable and do not collapse into the same number too often.
+- `currentValue` is the component's normal desktop/tablet spacing default.
+- `spacingBase` is the selected Astryx spacing preset unit:
+  - S / Compact = 2px
+  - M / Default = 4px
+  - L / Comfortable = 6px
+  - XL / Gigantic = 8px
+- `intensity` is the mobile compression strength.
 
-This formula is a design tool, not the public theme API. The shipped mobile
-theme should publish explicit semantic token values derived from the formula and
-then hand-reviewed for awkward values, duplicate values, and real-template fit.
-If two adjacent candidate steps produce the same value, the final ordered scale
-should either merge those steps or tune one of them so each published step keeps
-a distinct purpose.
+Recommended preset intensities:
 
-The main design constraint is that Astryx's existing desktop/default spacing
-scale is linear, while the mobile candidate compression is proportional. That
-means mobile values will not always preserve a clean step-for-step relationship
-with the desktop primitive scale. The mobile theme should therefore avoid
-presenting the formula output as a mirrored primitive scale; it should use the
-formula to inform explicit semantic values that are reviewed in real layouts.
+| Preset          | Base | Recommended intensity | Meaning                                                    |
+| --------------- | ---: | --------------------: | ---------------------------------------------------------- |
+| S / Compact     |  2px |                     0 | Already compact; do not compress further.                  |
+| M / Default     |  4px |                   0.5 | Slightly tighter without making default feel like compact. |
+| L / Comfortable |  6px |                     1 | Reduce by one source step.                                 |
+| XL / Gigantic   |  8px |                     1 | Reduce by one source step.                                 |
 
-Using a semantic role whose default value is `--spacing-4`, the candidate values
-across the playground spacing defaults are:
+Optional intensity landmarks:
 
-| Source spacing preset | Default semantic value | Formula candidate |
-| --------------------- | ---------------------- | ----------------- |
-| S / 2px base          | 8px                    | 6px               |
-| M / 4px base          | 16px                   | 12px              |
-| L / 6px base          | 24px                   | 16px              |
-| XL / 8px base         | 32px                   | 22px              |
+| Intensity | Value | Example with 8px base |
+| --------- | ----: | --------------------: |
+| None      |     0 |         0px reduction |
+| Gentle    |   0.5 |         4px reduction |
+| Standard  |     1 |         8px reduction |
+| Dense     |   1.5 |        12px reduction |
 
-The table below shows the formula across the full playground spacing ramp. This
-is intentionally a derivation table, not a proposal to replace every primitive
-token or publish repeated numeric steps. Small primitive values can round down
-aggressively, which is another reason the formula should not be applied globally
-to component internals.
+The formula is a design and authoring helper. Shipped themes should still output
+explicit component override values so authors can inspect, diff, and customize
+the final result.
 
-| Primitive token | S / 2px base | M / 4px base | L / 6px base | XL / 8px base |
-| --------------- | ------------ | ------------ | ------------ | ------------- |
-| `--spacing-0`   | 0px → 0px    | 0px → 0px    | 0px → 0px    | 0px → 0px     |
-| `--spacing-0-5` | 1px → 0px    | 2px → 2px    | 3px → 2px    | 4px → 2px     |
-| `--spacing-1`   | 2px → 2px    | 4px → 2px    | 6px → 4px    | 8px → 6px     |
-| `--spacing-1-5` | 3px → 2px    | 6px → 4px    | 9px → 6px    | 12px → 8px    |
-| `--spacing-2`   | 4px → 2px    | 8px → 6px    | 12px → 8px   | 16px → 12px   |
-| `--spacing-3`   | 6px → 4px    | 12px → 8px   | 18px → 12px  | 24px → 16px   |
-| `--spacing-4`   | 8px → 6px    | 16px → 12px  | 24px → 16px  | 32px → 22px   |
-| `--spacing-5`   | 10px → 8px   | 20px → 14px  | 30px → 22px  | 40px → 28px   |
-| `--spacing-6`   | 12px → 8px   | 24px → 16px  | 36px → 26px  | 48px → 34px   |
-| `--spacing-7`   | 14px → 10px  | 28px → 20px  | 42px → 30px  | 56px → 40px   |
-| `--spacing-8`   | 16px → 12px  | 32px → 22px  | 48px → 34px  | 64px → 46px   |
-| `--spacing-9`   | 18px → 12px  | 36px → 26px  | 54px → 38px  | 72px → 50px   |
-| `--spacing-10`  | 20px → 14px  | 40px → 28px  | 60px → 42px  | 80px → 56px   |
-| `--spacing-11`  | 22px → 16px  | 44px → 32px  | 66px → 46px  | 88px → 62px   |
-| `--spacing-12`  | 24px → 16px  | 48px → 34px  | 72px → 50px  | 96px → 68px   |
+## Recommended default values
 
-The final mobile theme may tune individual semantic values after reviewing real
-templates; the published contract remains the explicit semantic token value, not
-the formula or the primitive-token derivation table.
+These values show the current recommendation if the profile is applied to common
+layout/container defaults.
+
+| Role                 | Component scope                 | S / 2px base | M / 4px base | L / 6px base | XL / 8px base |
+| -------------------- | ------------------------------- | -----------: | -----------: | -----------: | ------------: |
+| Page inline padding  | Layout/page shell               |    8px → 8px |  16px → 14px |  24px → 18px |   32px → 24px |
+| Page block padding   | Layout/page shell               |    8px → 8px |  16px → 14px |  24px → 18px |   32px → 24px |
+| Major section gap    | Layout/Section regions          |  12px → 12px |  24px → 22px |  36px → 30px |   48px → 40px |
+| Section inset        | Section                         |    8px → 8px |  16px → 14px |  24px → 18px |   32px → 24px |
+| Container inset      | Card/Panel-like surfaces        |    8px → 8px |  16px → 14px |  24px → 18px |   32px → 24px |
+| Container region gap | Owned regions inside containers |    6px → 6px |  12px → 10px |  18px → 12px |   24px → 16px |
+| Overlay inset        | Dialog/Drawer/Bottom Sheet      |    8px → 8px |  16px → 14px |  24px → 18px |   32px → 24px |
+| Overlay region gap   | Owned regions inside overlays   |    6px → 6px |  12px → 10px |  18px → 12px |   24px → 16px |
+
+These are not proposed as new primitive spacing tokens. They are recommended
+mobile defaults for selected component theme properties.
+
+## How customization works
+
+### Use the recommended profile
+
+Most teams should be able to opt into the default mobile profile:
+
+```ts
+const mobileTheme = createTheme({
+  mobileSpacing: {
+    preset: 'M',
+    intensity: 'recommended',
+  },
+});
+```
+
+For the M preset, this would apply a gentle half-step reduction to included
+layout/container component defaults.
+
+### Adjust the overall intensity
+
+If the whole mobile layout should feel more or less compact, adjust the
+intensity:
+
+```ts
+const mobileTheme = createTheme({
+  mobileSpacing: {
+    preset: 'M',
+    intensity: 1,
+  },
+});
+```
+
+With a 4px base, intensity `1` reduces included component defaults by 4px.
+
+### Override one component default
+
+If the recommended profile mostly works but one component needs to diverge,
+override that component's mobile default:
+
+```ts
+const mobileTheme = createTheme({
+  mobileSpacing: {
+    preset: 'M',
+    intensity: 'recommended',
+    components: {
+      Card: {
+        padding: '16px',
+      },
+    },
+  },
+});
+```
+
+This keeps the coordinated profile for the rest of the mobile theme while making
+Card intentionally roomier.
+
+### Avoid changing primitive spacing globally
+
+This is the path the spec should avoid:
+
+```ts
+const mobileTheme = createTheme({
+  spacing: {
+    4: '12px',
+    5: '16px',
+    6: '20px',
+  },
+});
+```
+
+That would affect every component that uses those primitive spacing steps,
+including controls and internals that should not become smaller just because the
+viewport is mobile.
+
+## Guidance for theme authors
+
+Mobile spacing overrides are intended to move related layout spacing together so
+the page keeps a consistent rhythm on smaller screens.
+
+For most mobile spacing adjustments, prefer tuning the coordinated mobile
+spacing profile before adding new global spacing tokens. Add a new semantic
+token only when a spacing relationship needs to be shared across multiple
+component families or exposed as its own theme-level decision.
+
+Suggested comment near implementation:
+
+```ts
+// Mobile spacing intentionally adjusts selected layout/container defaults
+// together. Prefer changing the shared mobile spacing profile or intensity
+// before adding new global spacing tokens. Component-specific overrides are
+// still available when a surface needs to intentionally diverge.
+```
+
+## Token admission criteria
+
+A spacing value should become a shared global semantic token only if all of
+these are true:
+
+1. It describes a reusable layout relationship, not one component's private
+   implementation detail.
+2. It applies across multiple component families, templates, or product
+   surfaces.
+3. Theme authors need to tune it independently from the rest of the mobile
+   spacing profile.
+4. It cannot be handled clearly by an existing component prop or component theme
+   override.
+5. It has a clear scope boundary so it does not become a catch-all spacing
+   token.
+
+If those criteria are not met, prefer a component theme override or a
+product-owned custom value.
+
+## Representative layout example
+
+Use a Product Detail template as the first validation example because it has a
+mix of structural layout, container surfaces, and component internals.
+
+The mobile profile may affect:
+
+- outer page/content padding;
+- major gaps between product media, product information, and supporting
+  sections;
+- default card or panel inset values when the component does not receive an
+  explicit padding prop; and
+- owned region gaps inside container-like surfaces when those regions are part
+  of the component default.
+
+The mobile profile should not affect:
+
+- button padding;
+- input height or inset;
+- segmented control geometry;
+- badge/chip/icon spacing;
+- image aspect ratios;
+- product-authored `Stack`, `Grid`, or `VStack` gaps unless the template
+  intentionally opts that area into the mobile spacing profile; or
+- any explicit spacing prop passed by the product.
+
+This example should make the ownership boundary visible: page structure can
+become tighter on mobile, while the product controls still feel like the same
+Astryx components.
+
+## Alternatives considered
+
+### A. Change the primitive spacing scale on mobile
+
+This is the simplest implementation, but it is too broad. It changes layout
+spacing and component internals at the same time.
+
+Status: rejected for this proposal.
+
+### B. Publish a large global semantic spacing token set
+
+This gives theme authors many hooks, but it risks creating a hard-to-reason-about
+taxonomy of hyper-specific tokens.
+
+Status: not recommended as the default path. Semantic tokens should be reserved
+for shared relationships that meet the token admission criteria.
+
+### C. Let each component independently adapt on mobile
+
+This preserves component ownership, but it can make the page rhythm inconsistent
+because every component makes a local decision.
+
+Status: useful for component internals; incomplete for coordinated layout
+spacing.
+
+### D. Use a shared mobile spacing profile applied through component theme overrides
+
+This keeps primitives stable, avoids semantic token sprawl, and gives Astryx a
+coordinated default for the components that should participate.
+
+Status: proposed direction.
+
+## Implementation guidance
+
+- Start with the smallest supported component list: Layout/page shell, Section,
+  Card/Panel-like surfaces, Dialog, Drawer, and Bottom Sheet.
+- Apply mobile spacing only to default values. Explicit consumer-authored props
+  continue to win.
+- Use the profile helper to generate coordinated values, then emit explicit
+  component theme overrides.
+- Keep primitive spacing tokens unchanged in the mobile theme.
+- Do not make arbitrary Stack/Grid gaps responsive by default.
+- If a product-specific template needs a mobile spacing role, prefer a
+  product-owned theme value or component override before proposing a new shared
+  global token.
+
+## Current-state impact
+
+This spec changes the direction of the mobile spacing work from "publish a broad
+semantic spacing token set" to "apply a coordinated mobile spacing profile
+through targeted component theme overrides."
+
+Expected impact:
+
+- The existing primitive spacing scale remains unchanged.
+- Existing desktop and tablet spacing remains unchanged.
+- Component internals remain unchanged unless a component is explicitly included
+  in the mobile profile.
+- Explicit spacing props passed by consumers remain authoritative.
+- The mobile theme gains a clearer path for structural spacing without requiring
+  every product-specific spacing need to become a shared global token.
+
+Compatibility risk is concentrated in components whose default structural
+spacing is currently hardcoded or only configurable through explicit props. Those
+components may need an additive theme-default entry point so mobile can adjust
+the omitted default value while preserving existing explicit prop behavior.
 
 ## Verification
 
-| Contract | Verification                                                                                                         | Representative states                                                                    | Mutation or failure expectation                                                      |
-| -------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| FR1, FR4 | Component visual or unit tests showing controls keep internal spacing when only mobile semantic layout values change | Button, Input, segmented control, badge/icon-like components                             | A mobile layout value changes a control's internal padding, gap, or geometry         |
-| FR2, FR5 | Layout/container tests showing omitted default insets consume semantic spacing                                       | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel, Section, Card or overlay surface | A layout/container region with no explicit spacing ignores the semantic mobile value |
-| FR3      | Theme-scope test or browser evidence comparing mobile and non-mobile theme boundaries                                | Mobile, tablet, desktop widths or equivalent scoped theme containers                     | Mobile semantic spacing appears outside the mobile theme boundary                    |
-| FR6      | Theme build/runtime test accepting an additional custom semantic property in a maintained theme or product surface   | Product-specific gallery or sidebar spacing role                                         | Custom semantic spacing cannot be authored or is treated as a Core portable token    |
-| FR7      | Theme package snapshot or CSS artifact check listing explicit semantic values                                        | Default mobile theme output                                                              | Published output depends on an opaque formula instead of explicit values             |
-| FR8      | Token table or artifact check showing adjacent ordered mobile spacing steps remain distinct                          | Published mobile semantic spacing scale                                                  | Two adjacent published scale steps resolve to the same pixel value                   |
-| IR1      | Theme-generation test for existing component theme properties                                                        | Existing `layout.base.padding` or comparable compatibility-sensitive property            | A pre-existing theme property changes emitted CSS meaning                            |
-| IR2      | Component tests covering explicit prop, component theme, semantic value, and fallback                                | Layout/container region with and without `padding` prop                                  | Override order changes or an explicit prop no longer wins                            |
+| Contract | Verification                                 | Representative states                                   | Failure signal                                                            |
+| -------- | -------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| FR1      | Compare mobile, tablet, and desktop previews | Mobile, tablet, desktop widths                          | Mobile proposal changes tablet or desktop spacing.                        |
+| FR2      | Component visual checks                      | Button, Input, Badge, SegmentedControl                  | Component internals shrink when only mobile layout spacing should change. |
+| FR3, FR5 | Component theme snapshot or visual checks    | Layout, Section, Card/Panel, Dialog/Drawer/Bottom Sheet | Included components do not pick up mobile defaults.                       |
+| FR4      | Explicit prop precedence test                | `<Section padding={6}>`, `<Card padding={6}>`           | Mobile theme overrides an explicit authored prop.                         |
+| FR6, FR7 | Generated values table                       | S/M/L/XL presets and custom intensity                   | Preset values are missing or intensity does not update included defaults. |
+| FR8      | Component override test                      | Card or Section override                                | Per-component override fails to win over the profile value.               |
+| FR9      | Spec review for new spacing hooks            | Proposed new global token                               | Token is component-specific or lacks cross-component reuse.               |
 
 ## Decision log
 
-### DEC-1 — Mobile spacing uses semantic roles rather than global primitive replacement
+### DEC-1 — Do not globally compress primitive spacing
 
 **Reference:** `spec:AST-015/DEC-1`
-**Decider:** `<pending>`, `<pending>`
+**Status:** proposed
 
-Changing primitive spacing globally makes the mobile theme easy to implement but
-too broad: it changes component internals, not just layout. Semantic roles let
-the mobile theme compact the spaces that define page structure while preserving
-component geometry.
+The mobile theme should keep the primitive spacing scale stable. Global
+primitive compression would affect controls and internals that are not part of
+the mobile layout problem.
 
-Rejected: globally compressing the full `--spacing-*` scale for mobile because
-the same primitives are used by both structural containers and component
-internals.
-
-### DEC-2 — Published mobile values are explicit
+### DEC-2 — Use component theme overrides as the primary mobile spacing mechanism
 
 **Reference:** `spec:AST-015/DEC-2`
-**Decider:** `<pending>`, `<pending>`
+**Status:** proposed
 
-A proportional or exponential curve can guide exploration, but shipped mobile
-theme values should be concrete semantic token values. Astryx's desktop spacing
-scale is linear, so a proportional mobile compression will not always align with
-desktop token steps. Explicit values are easier to review, document, override,
-and keep compatible across themes.
+Targeted component theme overrides provide a clear mobile implementation path
+without requiring a large public semantic token set. Layout/container components
+can participate, while buttons, inputs, badges, segmented controls, and arbitrary
+author-authored gaps remain stable.
 
-Rejected: shipping only a formula as the public contract because authors would
-need to infer which semantic roles exist and how to override individual values.
-
-### DEC-3 — Existing theme properties keep their meaning
+### DEC-3 — Use a shared profile helper to keep overrides coordinated
 
 **Reference:** `spec:AST-015/DEC-3`
-**Decider:** `<pending>`, `<pending>`
+**Status:** proposed
 
-Mobile spacing should be additive. Existing theme properties should not be
-repurposed into new derived-variable behavior when doing so could change current
-theme output.
+The profile helper gives Astryx one place to define the recommended spacing
+formula and preset defaults. Components consume the resulting values through
+their theme overrides, which avoids duplicating unexplained numbers across the
+mobile theme file.
 
-Rejected: converting compatibility-sensitive existing properties into semantic
-mobile spacing entry points because that can make existing themes behave
-differently without an explicit opt-in.
+### DEC-4 — Semantic tokens are reserved for shared spacing relationships
+
+**Reference:** `spec:AST-015/DEC-4`
+**Status:** proposed
+
+Semantic tokens remain available, but they should not be the default answer for
+every mobile spacing need. A semantic token should be added only when the
+relationship is shared, reusable, and worth exposing as an independent
+theme-level decision.
 
 ## Open questions
 
-- **OQ1 — Which semantic spacing roles belong in v1?** (`human-api`) Candidate
-  roles are page padding, section gap, container inset, container region gap,
-  overlay inset, and overlay region gap.
-- **OQ2 — Which components consume v1 roles?** (`human-api`) Layout regions,
-  Section, Card, Dialog, Drawer, and Bottom Sheet are likely; Banner may depend
-  on whether it is acting as content or as a container.
-- **OQ3 — How is the mobile theme activated?** (`human-api`) The contract needs
-  to name whether values are applied through a viewport-scoped theme, a mobile
-  theme package, responsive screen-size conditions, or another existing
-  theme-application mechanism. The activation model should not be tied to touch
-  or pointer modality.
-- **OQ4 — What candidate scale should seed the explicit values?**
-  (`human-design`) Current exploration favors a proportional/exponential
-  candidate scale rounded to the Astryx grid, then hand-tuned to avoid duplicate
-  or awkward values.
-- **OQ5 — Should any arbitrary Stack/Grid usage be able to opt into semantic
-  spacing?** (`human-api`) The default should remain explicit gaps, but a later
-  API could allow authors to assign a semantic spacing role intentionally.
+- **OQ1 — Exact API shape.** Should the profile be authored as
+  `mobileSpacing`, `responsiveSpacing`, component theme overrides, or a helper
+  that generates component theme values?
+- **OQ2 — First component list.** Which components are included in v1:
+  Layout/page shell, Section, Card/Panel, Dialog, Drawer, and Bottom Sheet are
+  likely candidates.
+- **OQ3 — Activation mechanism.** Should mobile spacing be activated by a
+  viewport-scoped theme, responsive theme condition, or mobile theme package?
+- **OQ4 — Default value acceptance.** Are the proposed S/M/L/XL values gentle
+  enough in real templates, or should the recommended intensities be adjusted
+  before acceptance?
