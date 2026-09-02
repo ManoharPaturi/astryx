@@ -152,6 +152,17 @@
     }
   },
   {
+    "component": "Tokenizer",
+    "storyId": "core-tokenizer--rtl-end-lane",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "button[aria-label=\"Clear all\"]",
+      "overlayRoot": ".astryx-tokenizer"
+    }
+  },
+  {
     "component": "TransferList",
     "storyId": "lab-transferlist--default",
     "dims": [
@@ -171,6 +182,17 @@
     "selectors": {
       "prev": ".astryx-token",
       "next": ".astryx-input-clear-button"
+    }
+  },
+  {
+    "component": "Typeahead",
+    "storyId": "core-typeahead--rtl-end-lane",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": "button[aria-label=\"Clear selection\"]",
+      "overlayRoot": ".astryx-typeahead"
     }
   }
 ]
