@@ -816,7 +816,7 @@ jobs:
       - name: Run RTL audit
         id: rtl
         run: |
-          COMPONENTS=$(jq -r '(.newComponents + .modifiedComponents) | join(",")' analysis.json)
+          COMPONENTS=$(jq -r '(.rtlComponents // (.newComponents + .modifiedComponents)) | join(",")' analysis.json)
           if [ -z "$COMPONENTS" ]; then
             echo "No component changes resolved from analysis.json — skipping RTL audit."
             echo "ran=false" >> "$GITHUB_OUTPUT"

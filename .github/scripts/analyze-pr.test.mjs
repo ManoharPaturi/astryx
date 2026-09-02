@@ -45,7 +45,8 @@ function gitTry(dir, args) {
 /**
  * Build the synthetic repo and return the shallow clone dir:
  *   upstream/: branch point, 60 churn commits on main, feature off the point
- *             touching only packages/core/src/Card/.
+ *             modifying Card and adding a lowercase intl source group whose
+ *             renderable public component is IntlProvider.
  *   clone/   : --depth=5 --single-branch of feature (no merge base with main).
  */
 function buildFixture() {
@@ -88,14 +89,28 @@ function buildFixture() {
     git(upstream, ['commit', '-qm', `churn ${i}`]);
   }
 
-  // Feature branch off the branch point, touching only Card.
+  // Feature branch off the branch point. It modifies a conventional component
+  // and adds a lowercase source group containing one renderable component.
   git(upstream, ['branch', 'feature', branchPoint]);
   git(upstream, ['checkout', '-q', 'feature']);
   fs.appendFileSync(path.join(upstream, 'packages/core/src/Card/index.ts'), 'export const Card = {}\n');
+  fs.mkdirSync(path.join(upstream, 'packages/core/src/intl'), {recursive: true});
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/intl/index.ts'),
+    "export {IntlProvider} from './IntlProvider';\n",
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/intl/IntlProvider.tsx'),
+    'export function IntlProvider() { return null; }\n',
+  );
+  fs.writeFileSync(
+    path.join(upstream, 'packages/core/src/intl/IntlContext.tsx'),
+    'export const IntlContext = {};\n',
+  );
   fs.appendFileSync(path.join(upstream, 'packages/themes/neutral/src/theme.ts'), 'export const changed = true\n');
   fs.appendFileSync(path.join(upstream, 'packages/themes/probe/src/theme.ts'), 'export const changed = true\n');
   git(upstream, ['add', '-A']);
-  git(upstream, ['commit', '-qm', 'touch Card only']);
+  git(upstream, ['commit', '-qm', 'touch Card and add IntlProvider']);
 
   // Shallow single-branch clone of the feature branch.
   git(null, [
@@ -107,7 +122,7 @@ function buildFixture() {
 }
 
 describe('analyze-pr shallow-clone recovery', () => {
-  it('recovers the three-dot diff by deepening and reports the exact component', () => {
+  it('recovers the diff and resolves lowercase source groups for RTL', () => {
     const {base, clone} = buildFixture();
     try {
       // Precondition: the clone really has no merge base (the CI failure).
@@ -127,6 +142,8 @@ describe('analyze-pr shallow-clone recovery', () => {
       expect(stdout).toContain('diff mode: three-dot');
       expect(analysis.diffMode).toBe('three-dot');
       expect(analysis.modifiedComponents).toEqual(['Card']);
+      expect(analysis.newComponents).toEqual(['intl']);
+      expect(analysis.rtlComponents).toEqual(['Card', 'IntlProvider']);
       expect(analysis.changedPackages).toEqual(['@astryxdesign/core']);
       expect(analysis.changedStableThemes).toEqual(['neutral']);
     } finally {

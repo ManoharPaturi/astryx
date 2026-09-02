@@ -5,7 +5,7 @@
 /**
  * @description Analyzes PR changes to detect new/modified components and gather stats
  * @input --base <branch> --head <ref> --output <file>
- * @output JSON file with component analysis; exits non-zero if the base...head diff fails (e.g. shallow clone without a merge base)
+ * @output JSON file with component analysis and canonical RTL scope; exits non-zero if the base...head diff fails (e.g. shallow clone without a merge base)
  */
 
 const fs = require('node:fs');
@@ -72,6 +72,29 @@ function getComponentNames(pkg) {
   } catch {
     return [];
   }
+}
+
+// RTL filters name public renderable components, not source-group directories.
+// Conventional nested components use a PascalCase directory. A lowercase
+// source group can contain a public component alongside hooks and context;
+// derive that scope from its PascalCase TSX files. Preserve an unresolved group
+// so the fail-closed audit reports a coverage gap instead of silently skipping.
+function getRtlScopeNames(pkg, componentName) {
+  if (pkg.layout !== 'nested' || /^[A-Z]/.test(componentName)) {
+    return [componentName];
+  }
+
+  const names = componentSourceFiles(pkg, componentName)
+    .map((file) => file.name)
+    .filter(
+      (name) =>
+        /^[A-Z]\w+\.tsx$/.test(name) &&
+        !name.includes('.test.') &&
+        !name.endsWith('Context.tsx'),
+    )
+    .map((name) => name.replace(/\.tsx$/, ''));
+
+  return names.length > 0 ? names : [componentName];
 }
 
 // The source path of a component (dir for nested, file for flat).
@@ -529,6 +552,7 @@ function analyze() {
 
   const newComponents = [];
   const modifiedComponents = [];
+  const rtlComponents = new Set();
   const componentStats = {};
   const changedPackages = new Set();
 
@@ -566,6 +590,9 @@ function analyze() {
 
       const stats = getComponentStats(pkg, componentName);
       componentStats[key] = stats;
+      for (const rtlComponent of getRtlScopeNames(pkg, componentName)) {
+        rtlComponents.add(rtlComponent);
+      }
       if (componentExistsInBase(pkg, componentName)) {
         modifiedComponents.push(key);
       } else {
@@ -602,6 +629,7 @@ function analyze() {
   const result = {
     newComponents,
     modifiedComponents,
+    rtlComponents: [...rtlComponents],
     newExports,
     componentStats,
     changedPackages: [...changedPackages],
