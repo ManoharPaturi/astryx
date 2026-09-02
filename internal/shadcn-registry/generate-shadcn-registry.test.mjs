@@ -1,0 +1,265 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/**
+ * @file Registry serializer contract tests.
+ * @input Minimal component, block, page, and StyleX fixtures.
+ * @output Regression coverage for schema, package boundaries, names, and output.
+ * @position Node test lane for the draft shadcn compatibility experiment.
+ */
+
+import {execFile} from 'node:child_process';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {promisify} from 'node:util';
+import {describe, expect, it} from 'vitest';
+import {buildShadcnRegistry} from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
+
+const execFileAsync = promisify(execFile);
+
+const packages = [{name: '@astryxdesign/core', version: '0.5.2'}];
+
+function fixture(overrides = {}) {
+  return {
+    packages,
+    allComponents: {
+      '@astryxdesign/core': [
+        {
+          name: 'Button',
+          displayName: 'Button',
+          description: 'Runs an action.',
+          importPath: '@astryxdesign/core/Button',
+          hidden: false,
+          params: null,
+        },
+      ],
+    },
+    blocks: [
+      {
+        dirName: 'ButtonShowcase',
+        name: 'Button showcase',
+        displayName: 'Button Showcase',
+        description: 'Shows a primary button.',
+        exampleFor: 'Button',
+        isShowcase: true,
+        category: 'components/Button',
+        componentsUsed: ['Button'],
+        source:
+          "import {Button} from '@astryxdesign/core/Button';\n" +
+          'export default function ButtonShowcase() { return <Button label="Save" />; }\n',
+      },
+    ],
+    templates: [
+      {
+        slug: 'dashboard',
+        name: 'Dashboard',
+        description: 'A metrics dashboard.',
+        category: 'Dashboard',
+        isReady: true,
+        isHiddenFromOverview: false,
+        source:
+          "import {Card} from '@astryxdesign/core/Card';\n" +
+          'export default function Page() { return <Card />; }\n',
+      },
+    ],
+    externalDependencySpecs: {
+      '@stylexjs/stylex': '@stylexjs/stylex@0.19.0',
+    },
+    ...overrides,
+  };
+}
+
+describe('buildShadcnRegistry', () => {
+  it('creates standard component, showcase, and page items', () => {
+    const {registry, items, counts} = buildShadcnRegistry(fixture());
+
+    expect(counts).toEqual({
+      components: 1,
+      skippedUnpublishedComponents: 0,
+      blocks: 1,
+      skippedUnpublishedBlocks: 0,
+      pages: 1,
+      skippedUnpublishedPages: 0,
+      total: 3,
+    });
+    expect(registry.items).toHaveLength(3);
+    expect(items.map(item => item.name)).toEqual([
+      'astryx-component-button',
+      'astryx-showcase-button-showcase',
+      'astryx-page-dashboard',
+    ]);
+  });
+
+  it('keeps component implementation inside the package', () => {
+    const {items} = buildShadcnRegistry(fixture());
+    const component = items.find(
+      item => item.name === 'astryx-component-button',
+    );
+
+    expect(component.dependencies).toEqual([
+      '@astryxdesign/core@^0.5.2',
+      '@stylexjs/stylex@0.19.0',
+    ]);
+    expect(component.css).toEqual({
+      '@import "@astryxdesign/core/reset.css"': {},
+      '@import "@astryxdesign/core/astryx.css"': {},
+    });
+    expect(component.files).toEqual([
+      expect.objectContaining({
+        target: 'components/astryx/Button.ts',
+        content: "export * from '@astryxdesign/core/Button';\n",
+      }),
+    ]);
+  });
+
+  it('uses the shadcn page-file workaround without changing item semantics', () => {
+    const {items} = buildShadcnRegistry(fixture());
+    const page = items.find(item => item.name === 'astryx-page-dashboard');
+
+    expect(page.type).toBe('registry:page');
+    expect(page.files[0].type).toBe('registry:block');
+    expect(page.files[0].target).toBe('app/astryx/dashboard/page.tsx');
+  });
+
+  it('writes a page through the pinned shadcn CLI workaround', async () => {
+    const project = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-page-'));
+    try {
+      mkdirSync(path.join(project, 'src'), {recursive: true});
+      writeFileSync(
+        path.join(project, 'package.json'),
+        JSON.stringify({
+          name: 'registry-page-test',
+          private: true,
+          version: '0.0.0',
+        }),
+      );
+      writeFileSync(
+        path.join(project, 'components.json'),
+        JSON.stringify({
+          $schema: 'https://ui.shadcn.com/schema.json',
+          style: 'nova',
+          rsc: false,
+          tsx: true,
+          tailwind: {
+            config: '',
+            css: 'src/index.css',
+            baseColor: '',
+            cssVariables: true,
+            prefix: '',
+          },
+          aliases: {
+            components: '@/components',
+            utils: '@/lib/utils',
+            ui: '@/components/ui',
+            lib: '@/lib',
+            hooks: '@/hooks',
+          },
+          iconLibrary: 'lucide',
+        }),
+      );
+      writeFileSync(
+        path.join(project, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            baseUrl: '.',
+            paths: {'@/*': ['./src/*']},
+          },
+        }),
+      );
+      writeFileSync(path.join(project, 'src', 'index.css'), '');
+
+      const page = {
+        $schema: 'https://ui.shadcn.com/schema/registry-item.json',
+        name: 'astryx-page-test',
+        type: 'registry:page',
+        files: [
+          {
+            path: 'registry/astryx-page-test/page.tsx',
+            type: 'registry:block',
+            target: 'app/astryx/test/page.tsx',
+            content: 'export default function Page() { return null; }\n',
+          },
+        ],
+      };
+      const itemPath = path.join(project, 'page.json');
+      writeFileSync(itemPath, JSON.stringify(page));
+      await execFileAsync(
+        path.resolve('node_modules/.bin/shadcn'),
+        ['add', itemPath, '--yes'],
+        {cwd: project, timeout: 30_000},
+      );
+
+      expect(
+        existsSync(
+          path.join(project, 'src', 'app', 'astryx', 'test', 'page.tsx'),
+        ),
+      ).toBe(true);
+    } finally {
+      rmSync(project, {recursive: true, force: true});
+    }
+  });
+
+  it('rejects composition source that escapes through a relative import', () => {
+    const bad = fixture({
+      blocks: [
+        {
+          ...fixture().blocks[0],
+          source:
+            "import {fixture} from '../fixture';\nexport default fixture;\n",
+        },
+      ],
+    });
+
+    expect(() => buildShadcnRegistry(bad)).toThrow(/relative import/);
+  });
+
+  it('targets canary packages in preview registries', () => {
+    const {items} = buildShadcnRegistry({
+      ...fixture(),
+      dependencyTag: 'canary',
+    });
+    const component = items.find(
+      item => item.name === 'astryx-component-button',
+    );
+    expect(component.dependencies).toEqual([
+      '@astryxdesign/core@canary',
+      '@stylexjs/stylex@0.19.0',
+    ]);
+  });
+
+  it('precompiles local StyleX with runtime CSS injection', () => {
+    const styled = fixture({
+      blocks: [
+        {
+          ...fixture().blocks[0],
+          source:
+            "import * as stylex from '@stylexjs/stylex';\n" +
+            "import {Button} from '@astryxdesign/core/Button';\n" +
+            "const styles = stylex.create({root: {width: '100%'}});\n" +
+            'export default function Styled() { return <div {...stylex.props(styles.root)}><Button label="Save" /></div>; }\n',
+        },
+      ],
+    });
+
+    const {items} = buildShadcnRegistry(styled);
+    const block = items.find(item => item.name.includes('button-showcase'));
+    expect(block.files[0].content).toContain('stylex-inject');
+    expect(block.files[0].content).not.toContain('stylex.create');
+    expect(block.files[0].target).toMatch(/\.jsx$/);
+    expect(block.dependencies).toContain('@stylexjs/stylex@0.19.0');
+  });
+
+  it('keeps Astryx metadata in raw JSON while standard clients can strip it', () => {
+    const {items} = buildShadcnRegistry(fixture());
+
+    expect(items[0].astryx).toEqual(
+      expect.objectContaining({kind: 'component'}),
+    );
+  });
+});

@@ -11,13 +11,17 @@ import {CodeExampleBlock} from '../CodeExampleBlock';
 import {TabList, Tab} from '@astryxdesign/core/TabList';
 import {Spinner} from '@astryxdesign/core/Spinner';
 import {Button} from '@astryxdesign/core/Button';
-import {HStack} from '@astryxdesign/core/Layout';
+import {HStack, VStack} from '@astryxdesign/core/Layout';
 import type {ExampleEntry} from '../../generated/exampleRegistry';
 import {ComponentPreviewTheme} from './ComponentPreviewTheme';
 import {buildPlaygroundHref} from '../playgroundLink';
 import {trackOpenPlayground} from '../../lib/analytics';
 import {MarkdownText} from '../MarkdownText';
 import {preventPreviewNavigation} from './previewNavigation';
+import {
+  SHADCN_REGISTRY_IS_PREVIEW,
+  shadcnInstallCommand,
+} from '../../lib/shadcnRegistry.mjs';
 
 function LivePreview({
   entry,
@@ -101,6 +105,9 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
             <TabList value={tab} onChange={setTab} size="sm">
               <Tab value="description" label="Description" />
               <Tab value="code" label="Code" />
+              {entry.registryItemName && (
+                <Tab value="install" label="Install" />
+              )}
             </TabList>
             {entry.source && (
               <Button
@@ -123,7 +130,7 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
             <MarkdownText type="body">
               {entry.description || 'No description available.'}
             </MarkdownText>
-          ) : (
+          ) : tab === 'code' ? (
             <CodeExampleBlock
               code={entry.source}
               language="tsx"
@@ -131,7 +138,22 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
               container="section"
               width="100%"
             />
-          )}
+          ) : entry.registryItemName ? (
+            <VStack gap={2}>
+              {SHADCN_REGISTRY_IS_PREVIEW && (
+                <Text type="supporting" color="secondary">
+                  This install URL expires with the draft preview.
+                </Text>
+              )}
+              <CodeExampleBlock
+                code={shadcnInstallCommand(entry.registryItemName)}
+                language="bash"
+                hasCopyButton
+                container="section"
+                width="100%"
+              />
+            </VStack>
+          ) : null}
         </Section>
       </Card>
     </ComponentPreviewTheme>

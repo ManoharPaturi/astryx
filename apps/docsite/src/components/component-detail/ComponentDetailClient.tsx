@@ -34,9 +34,17 @@ import {PlaygroundPropsTable} from './PlaygroundPropsTable';
 import {PropsTable} from './PropsTable';
 import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
-import {showcaseRegistry} from '../../generated/showcaseRegistry';
+import {
+  showcaseRegistry,
+  showcaseRegistryItemNames,
+} from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
 import {trackNavigate} from '../../lib/analytics';
+import {
+  SHADCN_REGISTRY_IS_PREVIEW,
+  shadcnComponentItemName,
+  shadcnInstallCommand,
+} from '../../lib/shadcnRegistry.mjs';
 
 const styles = stylex.create({
   section: {
@@ -87,6 +95,7 @@ interface ComponentDetailClientProps {
 function OverviewContent({
   comp,
   pkg,
+  pkgVersion,
   showcase: _showcase,
   hasShowcase,
 }: ComponentDetailClientProps & {hasShowcase: boolean}) {
@@ -102,6 +111,46 @@ function OverviewContent({
             <ShowcasePreview name={comp.name} />
           </Card>
         </ComponentPreviewTheme>
+      )}
+
+      {CURRENT_TARGET === 'canary' && pkg && pkgVersion && (
+        <VStack gap={2}>
+          <Heading level={2} type="display-3">
+            Install with shadcn
+          </Heading>
+          <MarkdownText type="body">
+            Experimental compatibility. This installs the real Astryx package
+            and creates a local public re-export; it does not copy component
+            implementation source. [How compatibility
+            works](/docs/shadcn-compatibility).
+          </MarkdownText>
+          {SHADCN_REGISTRY_IS_PREVIEW && (
+            <Text type="supporting" color="secondary">
+              This install URL expires with the draft preview.
+            </Text>
+          )}
+          <CodeExampleBlock
+            code={shadcnInstallCommand(shadcnComponentItemName(pkg, comp.name))}
+            language="bash"
+            width="100%"
+            hasCopyButton
+          />
+          {showcaseRegistryItemNames[comp.name] && (
+            <>
+              <Text type="supporting" color="secondary">
+                Install the editable showcase composition
+              </Text>
+              <CodeExampleBlock
+                code={shadcnInstallCommand(
+                  showcaseRegistryItemNames[comp.name],
+                )}
+                language="bash"
+                width="100%"
+                hasCopyButton
+              />
+            </>
+          )}
+        </VStack>
       )}
 
       {comp.usage && (
