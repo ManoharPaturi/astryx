@@ -22,11 +22,14 @@ affects_contributing: []
 affects_consumer_docs: [Theme, Layout, Section, Card, Dialog]
 ---
 
-# Mobile spacing theme profile
+# Spacing profile for the mobile theme
 
 ## Intent
 
-Astryx's mobile theme should make structural spacing feel appropriate on small
+This spec defines the spacing portion of Astryx's mobile theme. It is not a
+separate "Mobile Spacing" theme or standalone API.
+
+The mobile theme should make structural spacing feel appropriate on small
 viewports without changing the internal geometry of every component that happens
 to use a spacing token.
 
@@ -39,8 +42,8 @@ The proposed direction is:
 4. Let products tune the profile intensity or override specific component
    defaults when needed.
 
-This gives teams a mobile spacing solution without creating an endless set of
-global semantic spacing tokens.
+This extends the mobile theme with a spacing solution without creating an
+endless set of global semantic spacing tokens.
 
 ## Problem
 
@@ -118,7 +121,7 @@ structure and containers, while leaving most component internals alone.
 ## Proposed model
 
 The mobile spacing profile is a coordinated set of recommended values. The
-profile is not a replacement primitive scale.
+profile is part of the mobile theme and is not a replacement primitive scale.
 
 Conceptually:
 
@@ -132,31 +135,34 @@ const mobileSpacing = createMobileSpacingProfile({
 The profile can then feed component theme overrides:
 
 ```ts
-const mobileTheme = {
-  components: {
-    Layout: {
-      content: {
-        paddingInline: mobileSpacing.pagePaddingInline,
-        paddingBlock: mobileSpacing.pagePaddingBlock,
+const theme = {
+  mobile: {
+    spacing: mobileSpacing,
+    components: {
+      Layout: {
+        content: {
+          paddingInline: mobileSpacing.pagePaddingInline,
+          paddingBlock: mobileSpacing.pagePaddingBlock,
+        },
       },
-    },
-    Section: {
-      padding: mobileSpacing.sectionInset,
-      gap: mobileSpacing.sectionGap,
-    },
-    Card: {
-      padding: mobileSpacing.containerInset,
-    },
-    Dialog: {
-      padding: mobileSpacing.overlayInset,
+      Section: {
+        padding: mobileSpacing.sectionInset,
+        gap: mobileSpacing.sectionGap,
+      },
+      Card: {
+        padding: mobileSpacing.containerInset,
+      },
+      Dialog: {
+        padding: mobileSpacing.overlayInset,
+      },
     },
   },
 };
 ```
 
-The exact API names are illustrative. The important contract is that the mobile
-theme updates selected component defaults instead of globally changing
-`--spacing-*`.
+The exact API names are illustrative and should align with the mobile theme API
+being implemented separately. The important contract is that the mobile theme
+updates selected component defaults instead of globally changing `--spacing-*`.
 
 ## Override precedence
 
@@ -252,10 +258,13 @@ mobile defaults for selected component theme properties.
 Most teams should be able to opt into the default mobile profile:
 
 ```ts
-const mobileTheme = createTheme({
-  mobileSpacing: {
-    preset: 'M',
-    intensity: 'recommended',
+const theme = createTheme({
+  mobile: {
+    typography: '...',
+    spacing: {
+      preset: 'M',
+      intensity: 'recommended',
+    },
   },
 });
 ```
@@ -269,10 +278,13 @@ If the whole mobile layout should feel more or less compact, adjust the
 intensity:
 
 ```ts
-const mobileTheme = createTheme({
-  mobileSpacing: {
-    preset: 'M',
-    intensity: 1,
+const theme = createTheme({
+  mobile: {
+    typography: '...',
+    spacing: {
+      preset: 'M',
+      intensity: 1,
+    },
   },
 });
 ```
@@ -285,13 +297,16 @@ If the recommended profile mostly works but one component needs to diverge,
 override that component's mobile default:
 
 ```ts
-const mobileTheme = createTheme({
-  mobileSpacing: {
-    preset: 'M',
-    intensity: 'recommended',
-    components: {
-      Card: {
-        padding: '16px',
+const theme = createTheme({
+  mobile: {
+    typography: '...',
+    spacing: {
+      preset: 'M',
+      intensity: 'recommended',
+      components: {
+        Card: {
+          padding: '16px',
+        },
       },
     },
   },
@@ -306,11 +321,16 @@ Card intentionally roomier.
 This is the path the spec should avoid:
 
 ```ts
-const mobileTheme = createTheme({
-  spacing: {
-    4: '12px',
-    5: '16px',
-    6: '20px',
+const theme = createTheme({
+  mobile: {
+    typography: '...',
+    spacing: {
+      primitives: {
+        4: '12px',
+        5: '16px',
+        6: '20px',
+      },
+    },
   },
 });
 ```
@@ -452,9 +472,9 @@ Status: proposed direction.
 
 ## Current-state impact
 
-This spec changes the direction of the mobile spacing work from "publish a broad
-semantic spacing token set" to "apply a coordinated mobile spacing profile
-through targeted component theme overrides."
+This spec changes the direction of the spacing work inside the mobile theme from
+"publish a broad semantic spacing token set" to "apply a coordinated mobile
+spacing profile through targeted component theme overrides."
 
 Expected impact:
 
