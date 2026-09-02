@@ -492,16 +492,16 @@ describe('evidenceFilesForDeclaration', () => {
 });
 
 describe('CI wiring', () => {
-  it('checks N/A evidence in the unconditional Storybook build job', () => {
-    const workflow = fs.readFileSync(
-      path.join(process.cwd(), '.github/workflows/ci.yml'),
-      'utf8',
+  it("checks N/A evidence in Storybook's required build command", () => {
+    const storybookPackage = JSON.parse(
+      fs.readFileSync(
+        path.join(process.cwd(), 'apps/storybook/package.json'),
+        'utf8',
+      ),
     );
-    const buildStorybookJob = workflow
-      .split('\n  build-storybook:')[1]
-      ?.split('\n  build-sandbox:')[0];
-    expect(buildStorybookJob).toContain('- name: Verify RTL N/A evidence');
-    expect(buildStorybookJob).toContain('run: pnpm rtl:audit:verify-na');
+    expect(storybookPackage.scripts.build).toContain(
+      'node rtl-audit/verify-na-evidence.mjs',
+    );
   });
 });
 

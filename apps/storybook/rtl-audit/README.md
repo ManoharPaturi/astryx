@@ -253,11 +253,11 @@ pnpm rtl:audit:verify-na
 The write command deliberately refuses a bulk refresh: regenerated hashes are
 proof that a person re-reviewed those files, not a way to silence drift across
 the registry. The check command names added, removed, and changed evidence files.
-The required `build-storybook` job runs that check after every Storybook build,
-including component-, story-, and registry-only pull requests; the soft-gated
-`pr-rtl` job is not the enforcement path for evidence freshness. An all-N/A
-scorecard without a current checked-in reason and evidence manifest means
-**unmeasured**, not RTL-ready.
+The required Storybook `build` command runs that check after every successful
+build, including component-, story-, and registry-only pull requests; the
+soft-gated `pr-rtl` job is not the enforcement path for evidence freshness. An
+all-N/A scorecard without a current checked-in reason and evidence manifest
+means **unmeasured**, not RTL-ready.
 
 ## Why relationship-based, not pixel baselines
 
