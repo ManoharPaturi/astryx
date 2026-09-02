@@ -1,5 +1,9 @@
 [
   {
+    "component": "core/BottomSheet",
+    "reason": "BottomSheet is a block-axis-only surface: it enters, exits, drags, snaps, and dismisses with translateY and vertical scroll. The handle is horizontally centered, both inline edges use logical properties symmetrically, and the stories render no directional icon, decoration, reordered control, horizontal drag, or side-positioned overlay. Its scrollable-tab-stop behavior reads both overflow axes without changing direction, and tabindex plus the focus outline are direction-neutral."
+  },
+  {
     "component": "core/Field",
     "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
   },
