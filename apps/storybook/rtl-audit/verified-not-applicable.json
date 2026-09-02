@@ -92,10 +92,6 @@
     "reason": "CheckboxInput renders a visually-hidden native `<input type=\"checkbox\">` stacked on a themeable indicator, with the label and description in a column beside it. The row is a `flex` line with `gap` that CSS reverses under RTL on its own. The one positioned element — the transparent input — is centred over its own 20/24px wrapper on touch pointers, so it mirrors onto itself; there is no icon, glyph separator, control pair, overlay side, or directional key handling."
   },
   {
-    "component": "core/CheckboxList",
-    "reason": "CheckboxList is ARIA and state plumbing over Field and List: it renders a labelled `role=\"group\"` wrapper around list rows and owns the value array, the optimistic `changeAction` spinner and the disabled-reason tooltip. It draws no glyph of its own, declares no `position`, and its one overlay is fixed above the group rather than to a side. Each row is a logical start/end composition — checkbox, label, `endContent` — which the flex row mirrors on its own."
-  },
-  {
     "component": "core/Citation",
     "reason": "Citation renders one inline chip — an optional round favicon/icon, then the source title — or a numbered superscript badge, as an `inline-flex` run inside prose. Its spacing is entirely `paddingInline`/`marginInlineStart`, so the chip's leading gap follows the reading direction automatically. The single `aria-hidden` node wraps an image or icon rather than text, so there is no decoration glyph, and the component has no positioned element, control pair or overlay."
   },
