@@ -299,6 +299,14 @@ jobs:
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
         run: pnpm -F @astryxdesign/storybook build
 
+      # Verified-N/A declarations are evidence snapshots, not permanent
+      # allowlist entries. Run this in the unconditional Storybook build job so
+      # component, story, and registry-only PRs all fail when reviewed evidence
+      # changes; pr-rtl itself is intentionally scoped and soft-gated.
+      - name: Verify RTL N/A evidence
+        if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true'
+        run: pnpm rtl:audit:verify-na
+
       - name: Compute PR preview path
         if: needs.check-scope.outputs.docsite_only != 'true' && needs.check-scope.outputs.spec_only != 'true' && github.event_name == 'pull_request'
         id: urls
