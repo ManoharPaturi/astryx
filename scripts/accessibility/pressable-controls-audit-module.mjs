@@ -142,7 +142,10 @@ const FOCUS_OUTLINE_COLOR = sourceToken(
   'focus outline color',
 );
 const resolve = createTokenResolver({
-  tokens: neutralTheme.tokens ?? {},
+  tokens: {
+    ...(neutralTheme.tokens ?? {}),
+    ...(neutralTheme.localTokens ?? {}),
+  },
   defaults: {'--focus-outline-color': FOCUS_OUTLINE_COLOR},
 });
 
