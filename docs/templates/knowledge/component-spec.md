@@ -1,6 +1,6 @@
 ---
 schema_version: 3
-template_version: 4
+template_version: 5
 kind: component
 id: component:<Name>
 authority: draft
@@ -21,9 +21,16 @@ system_specs: [spec:AST-000/DEC-0]
 
 # <Name> component contract
 
+<!--
+When creating or materially amending this record, follow
+`.claude/skills/writing-knowledge-records.md` and
+`architecture:knowledge-contracts/DEC-3`. Keep one independently owned semantic
+boundary. Roughly 100–150 lines is guidance, not a gate.
+-->
+
 ## Intent
 
-<!-- Why this component exists and the system-level job it owns. Consumer usage belongs in <Name>.doc.mjs. -->
+<!-- Start with who is affected, in which state, and the component's defining guarantee. Then add the six-row At a glance table defined by the writing skill, with direct answers and canonical IDs. Details remain canonical below; consumer usage belongs in <Name>.doc.mjs. -->
 
 ## Compatibility and migration
 
