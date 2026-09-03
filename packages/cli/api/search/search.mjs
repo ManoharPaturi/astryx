@@ -4,7 +4,9 @@
  * @file Programmatic API for the unified `search` command.
  *
  * Returns the same typed envelope { type, data } that `xds --json search`
- * outputs. The CLI command handler is a thin wrapper around this function.
+ * outputs. Ranked results include `matchedTerms` and `queryTerms` coverage so
+ * callers can distinguish exact concept matches from partial matches. The CLI
+ * command handler is a thin wrapper around this function.
  *
  * `search(query)` is the single "I'm looking for X" entry point across ALL
  * content domains — components, hooks, docs topics, and templates (page +
@@ -274,7 +276,12 @@ export function scoreQuery(term, tokens, candidate) {
   // of Table-related templates each match "table" and "contents" separately
   // and accumulate a higher raw score (#5239).
   if (full && full.score >= 90) {
-    return {score: full.score + 100, reason: full.reason};
+    return {
+      score: full.score + 100,
+      reason: full.reason,
+      matched: total,
+      total,
+    };
   }
 
   // Multi-word natural language: score each content token, counting only
