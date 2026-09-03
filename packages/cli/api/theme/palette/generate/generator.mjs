@@ -1,6 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-// @ts-nocheck -- parity-locked numerical recipe; public types live at the API boundary.
-
 /**
  * Production implementation of the Astryx OKLCH palette recipe. It creates
  * candidates only: it does not modify theme tokens or claim accessibility.
@@ -18,18 +16,14 @@ import {
 } from './color.mjs';
 
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
-export const FULL_21_STOPS = Object.freeze([
-  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
-  100,
+export const DEFAULT_19_STOPS = Object.freeze([
+  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
 ]);
-export const COMPACT_11_STOPS = Object.freeze([
-  0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+export const COMPACT_9_STOPS = Object.freeze([
+  10, 20, 30, 40, 50, 60, 70, 80, 90,
 ]);
 
 const DARK_CHROMA_FACTOR = 0.85;
-const DARK_TONE_LIFT = 5;
-const DARK_LIFT_TAPER_START = 80;
-const DARK_LIFT_TAPER_END = 95;
 
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -123,17 +117,6 @@ function coordinatedChroma(sourceChroma) {
   return sourceChroma * 0.35 + 0.18 * 0.65;
 }
 
-function darkTone(tone) {
-  if (tone >= DARK_LIFT_TAPER_END) return tone;
-  if (tone <= DARK_LIFT_TAPER_START) {
-    return Math.min(100, tone + DARK_TONE_LIFT);
-  }
-  const ratio =
-    (DARK_LIFT_TAPER_END - tone) /
-    (DARK_LIFT_TAPER_END - DARK_LIFT_TAPER_START);
-  return Math.min(100, tone + DARK_TONE_LIFT * ratio);
-}
-
 function colorToPolar(color) {
   const value = hexToOklch(color);
   return {lightness: value.L, chroma: value.C, hue: value.H};
@@ -177,7 +160,9 @@ function generateCandidate(
   vibrancy,
   coordinateWithOtherFamilies,
 ) {
-  const adjustedTone = mode === 'dark' ? darkTone(tone) : tone;
+  // Stop labels are literal tones in both modes. Dark-mode character comes
+  // from its chroma treatment, not from silently shifting the requested tone.
+  const adjustedTone = tone;
   const adjustedHue = toneAdjustedHue(source.hue, adjustedTone);
   const baseChroma = coordinateWithOtherFamilies
     ? coordinatedChroma(source.chroma)
@@ -540,7 +525,7 @@ export function normalizeGenerationRequest(input) {
     vibrancy: input.vibrancy ?? 50,
     neutralProfile: input.neutralProfile ?? 'neutral-v1',
     modeStrategy: input.modeStrategy ?? 'light-and-dark',
-    stops: validateStops(input.stops ?? FULL_21_STOPS),
+    stops: validateStops(input.stops ?? DEFAULT_19_STOPS),
     families: normalizedFamilies,
   };
   vibrancyMultiplier(request.vibrancy);

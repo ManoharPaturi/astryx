@@ -10,8 +10,8 @@ const candidate = {
   palette: {
     blue: {
       name: 'Blue',
-      light: {0: '#000000', 50: '#0074e2', 100: '#ffffff'},
-      dark: {0: '#00102a', 50: '#3b84de', 100: '#ffffff'},
+      light: {5: '#000f30', 50: '#0074e2', 95: '#e8f2ff'},
+      dark: {5: '#000f30', 50: '#3b84de', 95: '#e8f2ff'},
     },
   },
 };
@@ -26,11 +26,28 @@ describe('renderPalettePreview', () => {
     expect(first).toContain('Light mode');
     expect(first).toContain('Dark mode');
     expect(first).toContain('#0074e2');
+    expect(first).not.toContain('Shared endpoints');
+    expect(first).not.toContain('#000000');
+    expect(first).not.toContain('#ffffff');
     expect(first).toContain('does not certify accessibility');
     expect(first).toContain('grid-template-columns: 1fr');
     expect(first).toContain('--stop-count:3');
     expect(first).not.toMatch(/https?:\/\//);
     expect(first).not.toContain('<script');
+    expect(first).not.toContain('Neutral guidance:');
+  });
+
+  it('guides authors to the neutral family for achromatic roles', () => {
+    const html = renderPalettePreview({
+      ...candidate,
+      palette: {
+        neutral: {...candidate.palette.blue, name: 'Neutral'},
+        ...candidate.palette,
+      },
+    });
+
+    expect(html).toContain('Neutral guidance:');
+    expect(html).toContain('near-black, near-white, and grayscale roles');
   });
 
   it('escapes author-provided family names', () => {

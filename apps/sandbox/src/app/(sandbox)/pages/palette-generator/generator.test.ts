@@ -6,8 +6,8 @@ import {hexToOklch} from '../color-studio/colorUtils';
 import {THEME_REFERENCES} from './themeCorpus';
 
 import {
-  COMPACT_11_STOPS,
-  FULL_21_STOPS,
+  COMPACT_9_STOPS,
+  DEFAULT_19_STOPS,
   generatePaletteSet,
   parseStopList,
   perceptualDelta,
@@ -24,7 +24,7 @@ function request(
     vibrancy: 50,
     neutralProfile: 'neutral-v1',
     modeStrategy: 'light-and-dark',
-    stops: [...FULL_21_STOPS],
+    stops: [...DEFAULT_19_STOPS],
     families: [
       {
         id: 'blue',
@@ -58,16 +58,15 @@ describe('experimental palette generator', () => {
     }
   });
 
-  it('supports the full and compact stop presets', () => {
-    expect(validateStops([...FULL_21_STOPS])).toHaveLength(21);
-    expect(validateStops([...COMPACT_11_STOPS])).toHaveLength(11);
+  it('supports the default and compact stop presets', () => {
+    expect(validateStops([...DEFAULT_19_STOPS])).toHaveLength(19);
+    expect(validateStops([...COMPACT_9_STOPS])).toHaveLength(9);
     expect(parseStopList('0, 25, 50, 75, 100')).toEqual([0, 25, 50, 75, 100]);
   });
 
-  it('rejects incomplete, duplicate, and unordered stop layouts', () => {
-    expect(() => validateStops([10, 50, 100])).toThrow(
-      'include stops 0 and 100',
-    );
+  it('accepts specialized layouts and rejects empty, duplicate, and unordered layouts', () => {
+    expect(validateStops([10, 50, 100])).toEqual([10, 50, 100]);
+    expect(() => validateStops([])).toThrow('at least one stop');
     expect(() => validateStops([0, 50, 50, 100])).toThrow(
       'unique and strictly increasing',
     );
@@ -208,7 +207,7 @@ describe('experimental palette generator', () => {
   it('fails a family when an anchor references a missing stop', () => {
     const result = generatePaletteSet(
       request({
-        stops: [...COMPACT_11_STOPS],
+        stops: [...COMPACT_9_STOPS],
         families: [
           {
             id: 'blue',
@@ -328,7 +327,8 @@ describe('experimental palette generator', () => {
       /^#([0-9a-f]{2})\1\1$/,
     );
     expect(neutral.families[0].dark?.colors[90]).not.toBe('#ffffff');
-    expect(neutral.families[0].dark?.colors[100]).toBe('#ffffff');
+    expect(neutral.families[0].dark?.colors[95]).not.toBe('#ffffff');
+    expect(neutral.families[0].dark?.colors[100]).toBeUndefined();
   });
 
   it('reports cross-family distinction and chroma balance at a shared stop', () => {

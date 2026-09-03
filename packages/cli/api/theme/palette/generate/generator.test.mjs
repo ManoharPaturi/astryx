@@ -4,10 +4,10 @@ import {createHash} from 'node:crypto';
 import {describe, expect, it} from 'vitest';
 import {
   generatePaletteSet as generatePrototypePaletteSet,
-  FULL_21_STOPS as PROTOTYPE_FULL_21_STOPS,
+  DEFAULT_19_STOPS as PROTOTYPE_DEFAULT_19_STOPS,
 } from '../../../../../../apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts';
 import {
-  FULL_21_STOPS,
+  DEFAULT_19_STOPS,
   PALETTE_RECIPE,
   generatePaletteSet,
   generateTonalPalette,
@@ -35,7 +35,7 @@ describe('astryx-oklch-v1 palette generator', () => {
       vibrancy: 50,
       neutralProfile: 'neutral-v1',
       modeStrategy: 'light-and-dark',
-      stops: [...PROTOTYPE_FULL_21_STOPS],
+      stops: [...PROTOTYPE_DEFAULT_19_STOPS],
       families,
     });
 
@@ -63,7 +63,7 @@ describe('astryx-oklch-v1 palette generator', () => {
 
   it('locks the normative recipe fixtures independently from the Sandbox', () => {
     expect(candidateDigest({families})).toBe(
-      '27e7ebffd5dcea11985e4a814329bc6069ed6cbb1665da09f28a6f4607af17a5',
+      '72f2fca4236dfc76e3fc60444fd6268583f05a840b5e8aa7631b8da126d0cc78',
     );
     expect(
       candidateDigest({
@@ -92,13 +92,15 @@ describe('astryx-oklch-v1 palette generator', () => {
         stops: [40],
         families: [{id: 'red', name: 'Red', seed: '#d62830'}],
       }),
-    ).toBe('2bd7880a2154978c44b351e05d15ebd5094feb37ee30449a1a39c60da1513dfa');
+    ).toBe('d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b');
   });
 
-  it('defaults to 21 stops without requiring that layout', () => {
+  it('defaults to 19 family-specific stops without requiring that layout', () => {
     expect(generatePaletteSet({families: [families[1]]}).request.stops).toEqual(
-      FULL_21_STOPS,
+      DEFAULT_19_STOPS,
     );
+    expect(DEFAULT_19_STOPS).not.toContain(0);
+    expect(DEFAULT_19_STOPS).not.toContain(100);
     expect(
       generatePaletteSet({families: [families[1]], stops: [15, 40, 72]}).request
         .stops,
@@ -117,6 +119,20 @@ describe('astryx-oklch-v1 palette generator', () => {
     expect(() => validateStops([-1, 50])).toThrow('from 0 to 100');
     expect(() => validateStops([0, Number.NaN, 100])).toThrow('finite number');
     expect(validateStops([0.5, 37.25, 99.75])).toEqual([0.5, 37.25, 99.75]);
+  });
+
+  it('uses literal stop tones in dark mode', () => {
+    const candidate = generateTonalPalette({
+      modeStrategy: 'light-and-dark',
+      stops: [0, 5, 100],
+      families: [families[1]],
+    });
+
+    expect(candidate.palette.blue.light[0]).toBe('#000000');
+    expect(candidate.palette.blue.dark[0]).toBe('#000000');
+    expect(candidate.palette.blue.dark[5]).toBe('#000f30');
+    expect(candidate.palette.blue.light[100]).toBe('#ffffff');
+    expect(candidate.palette.blue.dark[100]).toBe('#ffffff');
   });
 
   it('preserves exact anchors and reports family-local failures', () => {

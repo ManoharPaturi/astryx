@@ -23,9 +23,15 @@ export const FULL_21_STOPS = [
   100,
 ] as const;
 
+export const DEFAULT_19_STOPS = [
+  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+] as const;
+
 export const COMPACT_11_STOPS = [
   0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
 ] as const;
+
+export const COMPACT_9_STOPS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
 
 export type PaletteAlgorithm = 'oklch-v1-experimental' | 'hct-v1-experimental';
 export type NeutralProfile = 'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom';
@@ -112,9 +118,6 @@ interface PolarColor {
 }
 
 const DARK_CHROMA_FACTOR = 0.85;
-const DARK_TONE_LIFT = 5;
-const DARK_LIFT_TAPER_START = 80;
-const DARK_LIFT_TAPER_END = 95;
 
 function normalizeHue(hue: number): number {
   return ((hue % 360) + 360) % 360;
@@ -147,8 +150,8 @@ function normalizedHex(input: string): string {
 }
 
 export function validateStops(stops: number[]): number[] {
-  if (stops.length < 2) {
-    throw new Error('A palette requires at least two stops.');
+  if (stops.length < 1) {
+    throw new Error('A palette requires at least one stop.');
   }
 
   const normalized = [...stops];
@@ -164,10 +167,6 @@ export function validateStops(stops: number[]): number[] {
     if (normalized[index] <= normalized[index - 1]) {
       throw new Error('Stops must be unique and strictly increasing.');
     }
-  }
-
-  if (normalized[0] !== 0 || normalized[normalized.length - 1] !== 100) {
-    throw new Error('Complete ramps must include stops 0 and 100.');
   }
 
   return normalized;
@@ -275,19 +274,6 @@ function coordinatedChroma(
   return sourceChroma * 0.35 + target * 0.65;
 }
 
-function darkTone(tone: number): number {
-  if (tone >= DARK_LIFT_TAPER_END) {
-    return tone;
-  }
-  if (tone <= DARK_LIFT_TAPER_START) {
-    return Math.min(100, tone + DARK_TONE_LIFT);
-  }
-  const ratio =
-    (DARK_LIFT_TAPER_END - tone) /
-    (DARK_LIFT_TAPER_END - DARK_LIFT_TAPER_START);
-  return Math.min(100, tone + DARK_TONE_LIFT * ratio);
-}
-
 function neutralPolar(
   algorithm: PaletteAlgorithm,
   profile: NeutralProfile,
@@ -360,7 +346,7 @@ function generateCandidate(
   vibrancy: number,
   coordinateWithOtherFamilies: boolean,
 ): {hex: string; gamutMapped: boolean} {
-  const adjustedTone = mode === 'dark' ? darkTone(tone) : tone;
+  const adjustedTone = tone;
   const adjustedHue = toneAdjustedHue(algorithm, source.hue, adjustedTone);
   const modeChroma = mode === 'dark' ? DARK_CHROMA_FACTOR : 1;
   const baseChroma = coordinateWithOtherFamilies
