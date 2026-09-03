@@ -159,6 +159,17 @@
     }
   },
   {
+    "component": "Tooltip",
+    "storyId": "core-tooltip--rtl-logical-placement",
+    "dims": [
+      "D4"
+    ],
+    "selectors": {
+      "overlay": ".astryx-tooltip",
+      "overlayRoot": "button:has-text(\"RTL placement target\")"
+    }
+  },
+  {
     "component": "Toast",
     "storyId": "core-toast--logical-placement",
     "dims": [
