@@ -11,7 +11,9 @@
  * Besides the props it is given, this component tracks the `activeStep` it
  * last rendered with and publishes it on the context. Steps need the distance
  * and direction of a change to choreograph their connector fill; see the
- * CONNECTOR FILL block in Step.tsx.
+ * CONNECTOR FILL block in Step.tsx. When a horizontal Stepper becomes compact,
+ * this component also owns the previous/next navigation controls below the
+ * presentational track.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
@@ -74,8 +76,9 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    */
   orientation?: StepperOrientation;
   /**
-   * Called when a step indicator is clicked. Enables non-linear navigation.
-   * When provided, completed and current steps become clickable.
+   * Called when a step is clicked, or when a compact summary control is used.
+   * Enables non-linear navigation. At compact horizontal widths, individual
+   * track nodes are presentational and navigation moves to the summary controls.
    */
   onStepClick?: (index: number) => void;
   /**

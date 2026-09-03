@@ -167,7 +167,7 @@ export const docs = {
           name: 'onStepClick',
           type: '(index: number) => void',
           description:
-            'Called when a step is clicked. Enables non-linear navigation. All non-disabled steps become clickable, including not-started steps.',
+            'Called when a step is clicked or a compact summary control is used. Enables non-linear navigation. All non-disabled steps become clickable until a horizontal Stepper collapses, when navigation moves to the summary controls.',
         },
         {
           name: 'label',
@@ -253,7 +253,8 @@ export const docsDense = {
         activeStep: 'zero-based active step index',
         children: 'Step elements',
         orientation: 'horizontal or vertical layout',
-        onStepClick: 'enables non-linear navigation',
+        onStepClick:
+          'enables non-linear navigation; summary controls own compact navigation',
         label: 'ordered-list aria-label',
         density: 'padding of all steps',
         xstyle: 'StyleX layout customization',
@@ -354,7 +355,8 @@ export const docsZh = {
         {
           name: 'onStepClick',
           type: '(index: number) => void',
-          description: '点击步骤时调用。启用非线性导航。',
+          description:
+            '点击步骤或紧凑摘要控件时调用。启用非线性导航；水平步骤器折叠后，导航转移到摘要控件。',
         },
         {
           name: 'label',

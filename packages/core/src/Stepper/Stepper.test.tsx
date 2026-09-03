@@ -1177,16 +1177,22 @@ describe('Stepper', () => {
       expect(stepButtons).toHaveLength(0);
     });
 
-    it('keeps on-track nodes pressable, dropping only their labels', () => {
-      // On-track puts the indicator on the line itself, so collapsing the
-      // whole target would take the track with it. The nodes stay.
+    it('keeps collapsed on-track nodes visible but non-interactive', () => {
+      // The indicator stays on the rail as progress information, while the
+      // summary controls below it own navigation in the compact presentation.
       atWidth(
         320,
         fourSteps({indicatorPosition: 'on-track', onStepClick: vi.fn()}),
       );
+      const delivery = screen.getAllByRole('listitem')[2];
       expect(
-        screen.getByRole('button', {name: /^Go to step 3: Delivery/}),
+        delivery.querySelector('.astryx-step-indicator'),
       ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', {name: /^Go to step 3: Delivery/}),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('button', {name: 'Previous step'})).toBeEnabled();
+      expect(screen.getByRole('button', {name: 'Next step'})).toBeEnabled();
     });
   });
   describe('--step-connector-gap', () => {

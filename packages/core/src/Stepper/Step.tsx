@@ -22,7 +22,9 @@
  * the one animated span reading as a single front — an on-track span is drawn
  * by two steps, three where a content slot splits it — is in the component.
  * Nothing about it is public API: Stepper hands each Step the step it came
- * from through context, and the rest is derived.
+ * from through context, and the rest is derived. In a compact horizontal
+ * Stepper, each track node is presentational rather than clickable; navigation
+ * moves to the named previous/next controls in the summary row.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs
@@ -1046,9 +1048,10 @@ export function Step({
 
   const isVertical = orientation === 'vertical';
   const isActive = progress === 'in-progress';
-  // Any non-disabled step is navigable when an onStepClick handler is provided,
-  // including not-started steps (free navigation across the flow).
-  const isClickable = !isDisabled && onStepClick != null;
+  // A compact horizontal stepper moves navigation to the named controls in its
+  // summary row. Its track — including the on-track indicators — stays purely
+  // presentational so it does not expose a second, denser set of click targets.
+  const isClickable = !isDisabled && onStepClick != null && !isCompact;
 
   const handleClick = () => {
     if (isClickable && onStepClick) {
@@ -1382,22 +1385,17 @@ export function Step({
         )
       : null;
 
-  // What a collapsed step still owes a screen reader. Dropping the label takes
-  // it out of the accessibility tree as well as off the screen, so the name
-  // goes back in hidden — the list stays a complete, ordered sequence with
-  // every status and `aria-current` intact at any width, and the row the
-  // stepper adds below the track is then free to be decoration.
-  //
-  // Not needed when an on-track step is clickable: there the collapse only
-  // takes the label out of a button still named by `stepAriaLabel`, and a
-  // second copy would have the step announced twice.
-  const compactNameNode =
-    isCompact && (indicatorPosition === 'separated' || !isClickable) ? (
-      <>
-        <VisuallyHidden>{label}</VisuallyHidden>
-        {statusTextNode}
-      </>
-    ) : null;
+  // Every compact step is presentational, including on-track indicators, so
+  // each item restores its label and status as hidden text. The list stays a
+  // complete ordered sequence with `aria-current` intact, while the summary row
+  // below it owns the compact navigation controls and remains decorative apart
+  // from those buttons.
+  const compactNameNode = isCompact ? (
+    <>
+      <VisuallyHidden>{label}</VisuallyHidden>
+      {statusTextNode}
+    </>
+  ) : null;
 
   // ======= ON-TRACK: indicator is a node on the connector =======
   if (indicatorPosition === 'on-track') {
@@ -1641,11 +1639,9 @@ export function Step({
             )}
           />
         </div>
-        {/* On-track drops the label alone, not the target around it: the
-            indicator here is a node *on* the line, so taking the whole
-            wrapper would take the track with it. What is left is a row of
-            nodes on a rail — still tappable, and a better narrow-width
-            affordance than the bare 4px bar the separated layout falls to. */}
+        {/* The on-track indicator remains visible as a node on the rail at
+            compact widths, but the wrapper becomes presentational with its
+            label. Navigation moves to the named controls in the summary row. */}
         {!isCompact && (
           <div
             {...stylex.props(
