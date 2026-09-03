@@ -43,8 +43,10 @@ theme. Structural validation does not grant design approval or certify contrast.
 - A ramp contains one or more author-defined numeric **stops**. Different
   palettes may use different stop layouts to suit UI, iconography,
   illustration, data-visualization, or brand work.
-- An **explicit theme color** is the resolved CSS color stored in a token or
-  component mapping.
+- An **explicit theme color** is either a literal CSS color or an intentional
+  reference to one exact value in the theme's committed palette file. In both
+  cases, `defineTheme()` receives the resolved CSS value rather than palette
+  metadata.
 - An **alignment check** compares an intentionally palette-backed theme color to
   the approved palette stop from which it was selected.
 
@@ -72,7 +74,7 @@ flowchart TD
   Palette -. "Optional authoring help:<br/>suggest candidate colors" .-> Suggestions["Mapping suggestions"]
   Roles["Semantic roles and existing values"] --> Suggestions
   Suggestions --> ColorReview["Author reviews intent,<br/>appearance, and contrast"]
-  ColorReview --> Hex["Approved explicit CSS colors"]
+  ColorReview --> Hex["Approved CSS color<br/>literal or committed palette reference"]
 
   Hex --> Define["defineTheme({tokens, components})"]
   Define --> Runtime["Runtime theme and CSS"]
@@ -85,7 +87,9 @@ flowchart TD
 The palette file remains available for later authoring and audits. It does not
 disappear after suggestions are generated. Mapping suggestions are optional and
 must never rewrite a theme automatically. The author reviews each selected color
-and stores the accepted CSS value explicitly in the theme.
+and either stores its CSS value directly or references that exact value from the
+committed palette file. Changing a referenced value is therefore a deliberate,
+reviewable theme change.
 
 ## Non-goals
 
@@ -108,7 +112,9 @@ and stores the accepted CSS value explicitly in the theme.
   `DefineThemeInput`, `DefinedTheme`, runtime providers, generated CSS, and the
   generic `astryx theme build` output. It MAY be colocated with its theme or
   imported from another authoring source. This contract does not require one
-  repository layout, but each maintained palette MUST have a clear owner.
+  repository layout, but each maintained palette MUST have a clear owner. A
+  theme-owned palette MUST remain private to that theme unless a separate public
+  API explicitly accepts compatibility obligations for its family and stop keys.
 - **FR3 — Declared ramps use an explicit, author-defined shape.** A palette map
   MUST contain at least one named family. Each family MUST declare a non-empty
   light ramp, a non-empty dark ramp, or both. Missing modes MUST NOT be inferred.
@@ -128,11 +134,14 @@ and stores the accepted CSS value explicitly in the theme.
   a universal stop inventory. It MUST NOT run from `defineTheme()`, a runtime
   provider, or the generic theme build. A public checker or CLI requires its own
   accepted API contract.
-- **FR5 — Theme values remain explicit.** Authors and tools MAY use a palette to
-  suggest or choose a color, but the accepted CSS color MUST be stored explicitly
-  in the theme token or component mapping. Palette edits and theme remaps remain
-  separate reviewed changes. Renaming, removing, or changing a palette stop MUST
-  NOT silently alter rendered output.
+- **FR5 — Theme choices remain explicit.** Authors and tools MAY use a palette to
+  suggest or choose a color. A theme mapping MAY store the accepted CSS color
+  literally or intentionally reference that exact value from its committed
+  palette file. A reference MUST resolve to a supported CSS value before runtime
+  output and MUST NOT make `defineTheme()` aware of palette families or stops.
+  Renaming or removing a referenced stop MUST fail type checking, validation, or
+  the theme build. Changing a referenced value is an intentional theme change
+  and MUST be reviewed with its rendered impact.
 - **FR6 — Validation and alignment are separate checks.** An adopting theme MUST
   test that its palette has no structural errors. It SHOULD separately test the
   theme mappings intentionally selected from palette stops. The alignment test
@@ -177,8 +186,8 @@ Current `main` stores explicit theme colors and has no palette field in the
 normalized theme contract. This proposal preserves that behavior.
 
 Neutral is the intended first adopter in a separate follow-up. Its palette can
-live in a dedicated theme-owned source file, while `neutralTheme.ts` continues
-to contain the explicit values used at runtime. That adoption requires its own
+live in a private theme-owned TypeScript file, while `neutralTheme.ts` explicitly
+references reviewed values that resolve to CSS colors. That adoption requires its own
 visual review, tests, theme record, and release treatment rather than receiving
 implicit approval from this contract.
 
@@ -239,18 +248,22 @@ Under `spec:AST-002/FR17` and DEC-7, a `define*` helper must construct or
 normalize a durable supported value, while validation-only authoring data does
 not belong in the Core runtime contract.
 
-### DEC-4 — Theme mappings store reviewed CSS values
+### DEC-4 — Theme mappings explicitly select reviewed CSS values
 
 **Reference:** `spec:AST-018/DEC-4`
 
 **Decider:** `rubyycheung`, `2026-09-03`
 
-Palette-based mappings are authoring decisions. Once approved, the selected CSS
-values are stored directly in the theme. A separate alignment test makes drift
-visible without coupling runtime rendering to palette names or stop counts.
+Palette-based mappings are authoring decisions. Once approved, the theme may
+store the selected CSS value literally or intentionally reference that exact
+value from its private committed palette file. The latter makes the palette the
+single source of truth: changing it is a visible theme-affecting source change,
+and missing references fail instead of falling back. Neither form adds palette
+semantics to `defineTheme()` or runtime output.
 
-Rejected: live palette references and automatic nearest-color replacement.
-Either could silently recolor a theme when a palette changes.
+Rejected: rerunning generation during ordinary theme builds and automatic
+nearest-color replacement. Either could change rendered colors without a
+reviewed edit to the committed palette or theme source.
 
 ### DEC-5 — Neutral's remap is a contrast-testing baseline
 
