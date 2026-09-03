@@ -250,9 +250,17 @@ export default function FormWizardDialogPage() {
     setStep(0);
     setAttempted(new Set());
     setName('');
+    setDataset('pipeline');
     setSections(['summary', 'charts']);
     setNote('');
+    setCadence('weekly');
+    setWeekday('mon');
+    setTime('08:00' as ISOTimeString);
+    setTimezone('pt');
+    setStartDate('2026-09-07' as ISODateString);
     setRecipients(['exec']);
+    setFormat('pdf');
+    setSkipEmpty(true);
   };
 
   return (
