@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:Divider
@@ -12,9 +12,11 @@ owners: [cixzhang]
 review_triggers: [theming]
 verified_by:
   [packages/core/src/Divider/Divider.test.tsx, scripts/check-knowledge.mjs]
+modules: []
 families: []
 design_specs: []
-architecture: [architecture:component-theming-surface]
+architecture:
+  [architecture:component-theming-surface, architecture:container-padding]
 contributing: []
 system_specs: []
 ---
@@ -46,10 +48,12 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Does not own / non-goals**
 
-- The meaning of the content regions separated by the divider — owned by the
-  product callsite.
-- Whether Rule or Label should gain public targets — unresolved by this factual
-  backfill.
+- The meaning of the content regions separated by the divider, which is owned by
+  the product callsite.
+- Container inset publication or structural page regions. Divider only reads
+  inherited container geometry when `isFullBleed` is enabled.
+- Whether Rule or Label should gain public targets, which is unresolved by this
+  factual backfill.
 
 ## Public concepts
 
@@ -121,9 +125,12 @@ public targets.
 
 ## Family and system relationships
 
-- `architecture:component-theming-surface` owns anatomy qualification, target
-  mapping, and the difference between factual reachability and intended public
-  theming API.
+`family:layout-regions` does not own Divider: separating content is not a
+structural page-region contract. `architecture:container-padding` owns the
+inherited inset geometry that Divider reads only when `isFullBleed` is enabled.
+`architecture:component-theming-surface` owns anatomy qualification, target
+mapping, and the difference between factual reachability and intended public
+theming API.
 
 ## Verification map
 

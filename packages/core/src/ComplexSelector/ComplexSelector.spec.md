@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 3
 template_version: 3
 kind: component
 id: component:ComplexSelector
@@ -17,7 +17,8 @@ verified_by:
     packages/core/src/Icon/Icon.test.tsx,
     scripts/check-knowledge.mjs,
   ]
-families: [family:overlay-dismissal]
+modules: []
+families: [family:input-fields, family:overlay-dismissal]
 design_specs: []
 architecture:
   [architecture:component-theming-surface, architecture:layer-runtime]
