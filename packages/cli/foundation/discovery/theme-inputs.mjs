@@ -58,20 +58,87 @@ const EXTENSIONS = [
 const MAX_INPUTS = 200;
 
 /**
+ * Blank the CONTENTS of template literals, preserving offsets, so a line of
+ * prose that talks about importing is not read as an import.
+ *
+ * Found by building a real app: core's `<Theme>` prints a perf hint whose text
+ * contains an example `import '@astryxdesign/theme-<name>/theme.css'`. The walk
+ * read that as two unresolvable specifiers, declared the graph incomplete, and
+ * every build then recorded `Inputs: unverifiable` — so freshness reported
+ * "cannot verify" for every theme in every real project. The feature was inert,
+ * and only an end-to-end build showed it.
+ *
+ * Plain '' and "" strings are left alone: a real specifier lives in one, and the
+ * surrounding grammar (`from`, `import(`, `require(`) is what makes it an
+ * import. A TEMPLATE literal can never be a static specifier, so its contents
+ * are only ever prose or an interpolation.
+ *
+ * @param {string} code
+ * @returns {string}
+ */
+function blankLiterals(code) {
+  let out = '';
+  let i = 0;
+  while (i < code.length) {
+    if (code[i] !== '`') {
+      out += code[i];
+      i += 1;
+      continue;
+    }
+    out += '`';
+    i += 1;
+    let depth = 0;
+    while (i < code.length) {
+      const c = code[i];
+      if (c === '\\') {
+        out += '  ';
+        i += 2;
+        continue;
+      }
+      if (depth === 0 && c === '`') {
+        out += '`';
+        i += 1;
+        break;
+      }
+      if (c === '$' && code[i + 1] === '{') {
+        depth += 1;
+        out += '  ';
+        i += 2;
+        continue;
+      }
+      if (depth > 0 && c === '}') {
+        depth -= 1;
+        out += ' ';
+        i += 1;
+        continue;
+      }
+      // Keep newlines so line offsets, and therefore the other regexes'
+      // `^`-anchored alternatives, still behave.
+      out += c === '\n' ? '\n' : ' ';
+      i += 1;
+    }
+  }
+  return out;
+}
+
+/**
  * Every static specifier in a module, plus whether anything was unfollowable.
  *
  * Comments are blanked rather than removed so a commented-out import cannot
- * contribute a phantom input. Strings are not parsed, so a specifier-shaped
- * literal inside ordinary text is over-collected — that is the safe direction:
- * it can only fail to resolve, which is reported, never silently dropped.
+ * contribute a phantom input, and template-literal CONTENTS are blanked too:
+ * over-collecting is NOT the safe direction it looks like. An import-shaped
+ * line inside a warning string resolves to nothing, which marks the graph
+ * incomplete, which suppresses the digest entirely — one line of prose in a
+ * dependency silently disabled freshness checking for every project. What
+ * cannot be a specifier must not be read as one.
  *
  * @param {string} src
  * @returns {{specifiers: string[], dynamic: boolean}}
  */
 export function readSpecifiers(src) {
-  const code = src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const code = blankLiterals(
+    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1'),
+  );
 
   /** @type {string[]} */
   const specifiers = [];

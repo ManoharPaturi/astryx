@@ -257,3 +257,45 @@ describe('themeInputsDigest — every input is accounted for, not just relative 
     expect(readSpecifiers("const x = require('./fixed');").dynamic).toBe(false);
   });
 });
+
+describe('readSpecifiers — prose about importing is not an import', () => {
+  // THE BUG THIS EXISTS FOR: core's <Theme> prints a perf hint containing an
+  // example import inside a template literal. The walk read it as two
+  // unresolvable specifiers, marked the graph incomplete, and suppressed the
+  // digest — so EVERY real build recorded `Inputs: unverifiable` and the
+  // freshness check could never verify anything. Unit tests all passed; only
+  // building an actual app surfaced it.
+  const warnHint = [
+    'warnOnce(`theme-injection:${theme.name}`, `Theme`,',
+    '  `"${theme.name}" is using runtime style injection.\\n` +',
+    "  `  import {${theme.name}Theme} from '@astryxdesign/theme-${theme.name}/built';\\n` +",
+    "  `  import '@astryxdesign/theme-${theme.name}/theme.css';\\n`);",
+  ].join('\n');
+
+  it('ignores an import written inside a template literal', () => {
+    expect(readSpecifiers(warnHint)).toEqual({specifiers: [], dynamic: false});
+  });
+
+  it('keeps a real import that sits beside such prose', () => {
+    const src = `import {tokens} from './tokens';\n${warnHint}`;
+    expect(readSpecifiers(src).specifiers).toEqual(['./tokens']);
+  });
+
+  it('still treats a genuinely computed specifier as unfollowable', () => {
+    expect(readSpecifiers('const x = require(name);').dynamic).toBe(true);
+    expect(readSpecifiers('const y = await import(name);').dynamic).toBe(true);
+  });
+
+  it('a theme importing real core stays VERIFIABLE end to end', () => {
+    // The end-to-end shape of the bug: any theme whose graph reaches a module
+    // containing import-shaped prose must still produce a digest.
+    const dir = mkProject({
+      'node_modules/dep/package.json': JSON.stringify({name: 'dep', version: '1.0.0', main: 'index.js'}),
+      'node_modules/dep/index.js': `export const x = 1;\n${warnHint}`,
+      'theme.ts': "import {x} from 'dep';\nexport const t = x;",
+    });
+    const {digest, complete} = themeInputsDigest(path.join(dir, 'theme.ts'));
+    expect(complete).toBe(true);
+    expect(digest).not.toBeNull();
+  });
+});
