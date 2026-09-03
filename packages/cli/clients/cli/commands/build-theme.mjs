@@ -39,6 +39,7 @@ import {themeAdd} from '../../../api/theme/add/add.mjs';
 import {themeTemplate} from '../../../api/theme/template/template.mjs';
 import {themeList} from '../../../api/theme/list/list.mjs';
 import {themeTargets} from '../../../api/theme/targets/targets.mjs';
+import {themePaletteGenerate} from '../../../api/theme/palette/generate/generate.mjs';
 import {themeBuild, importSpecifier} from '../../../api/theme/build/build.mjs';
 import {defineCommand} from '../lib/define-command.mjs';
 import {doc as themeGroup} from './theme.doc.mjs';
@@ -47,11 +48,14 @@ import {doc as themeListCommand} from './theme-list.doc.mjs';
 import {doc as themeAddCommand} from './theme-add.doc.mjs';
 import {doc as themeTemplateCommand} from './theme-template.doc.mjs';
 import {doc as themeTargetsCommand} from './theme-targets.doc.mjs';
+import {doc as themePaletteGroup} from './theme-palette.doc.mjs';
+import {doc as themePaletteGenerateCommand} from './theme-palette-generate.doc.mjs';
 import {doc as themeBuildFn} from '../../../api/theme/themeBuild.doc.mjs';
 import {doc as themeListFn} from '../../../api/theme/themeList.doc.mjs';
 import {doc as themeAddFn} from '../../../api/theme/themeAdd.doc.mjs';
 import {doc as themeTemplateFn} from '../../../api/theme/themeTemplate.doc.mjs';
 import {doc as themeTargetsFn} from '../../../api/theme/themeTargets.doc.mjs';
+import {doc as themePaletteGenerateFn} from '../../../api/theme/themePaletteGenerate.doc.mjs';
 
 /**
  * Path to this CLI's real entry (clients/cli/bin/astryx.mjs), resolved from
@@ -269,6 +273,80 @@ export function registerTheme(program) {
       `  ${getCliInvocation()} component <Name>         One component's theming table\n` +
       `  ${getCliInvocation()} docs theme               How component overrides work\n`,
   );
+
+  const palette = defineCommand(theme, themePaletteGroup, {
+    action: (
+      /** @type {unknown} */ options,
+      /** @type {import('commander').Command} */ cmd,
+    ) => {
+      const extras = cmd?.args ?? [];
+      if (extras.length > 0) {
+        const suggestions = (palette.commands ?? []).map(command => ({
+          name: command.name(),
+          reason: 'available subcommand',
+        }));
+        cliError(`unknown subcommand 'theme palette ${String(extras[0])}'`, {
+          suggestions,
+          code: ERROR_CODES.ERR_UNKNOWN_SUBCOMMAND,
+        });
+        return;
+      }
+      palette.help();
+    },
+  });
+
+  defineCommand(palette, themePaletteGenerateCommand, {
+    fn: themePaletteGenerateFn,
+    action: (
+      /** @type {string} */ configPath,
+      /** @type {{out?: string, overwrite?: boolean}} */ options,
+    ) => {
+      const json = program.opts().json || false;
+      /** @type {import('../../../api/theme/theme.type.mjs').ThemePaletteGenerateResponse} */
+      let result;
+      try {
+        result = themePaletteGenerate(configPath, options, {
+          cwd: process.cwd(),
+        });
+      } catch (error) {
+        const err =
+          /** @type {import('../../../api/error.mjs').AstryxError} */ (error);
+        cliError(err.message, {
+          suggestions: err.suggestions || [],
+          code: err.code,
+        });
+        return;
+      }
+
+      if (json) return jsonOut(result);
+      if (!result.data.output) {
+        emit(
+          section(
+            'Palette candidate',
+            `${result.data.familyCount} families · ${result.data.stopCount} stops · ${result.data.modes.join(', ')}`,
+          ),
+          code(JSON.stringify(result.data.candidate, null, 2)),
+        );
+        return;
+      }
+      if (!result.data.written) {
+        emit(
+          text(
+            `[skip] ${result.data.output} or ${result.data.receipt} already exists — left as is.`,
+          ),
+          text('Pass --overwrite to replace both generated candidate files.'),
+        );
+        return;
+      }
+      emit(
+        text(`[ok] Wrote ${result.data.output}`),
+        text(`[ok] Wrote ${result.data.receipt}`),
+        text(
+          'Review and edit the candidate before adopting it as theme-owned palette data.',
+        ),
+      );
+    },
+  });
 
   defineCommand(theme, themeBuildCommand, {
     fn: themeBuildFn,
