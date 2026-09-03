@@ -1,0 +1,69 @@
+{
+  "head": "85338e1228d35ccca31897d6a08d90cee62a1e23",
+  "story": "core-hooks-useresizable--css-math-defaults",
+  "tolerancePx": 0.51,
+  "initial": {
+    "wide": {
+      "expression": "max(40%, 333px)",
+      "outerWidth": 1000,
+      "basis": 998,
+      "state": 399,
+      "panel": 399,
+      "ariaNow": "399",
+      "ariaMin": "50",
+      "ariaMax": null,
+      "stored": {
+        "size": 399,
+        "isCollapsed": false
+      }
+    },
+    "narrow": {
+      "expression": "max(40%, 333px)",
+      "outerWidth": 500,
+      "basis": 498,
+      "state": 333,
+      "panel": 333,
+      "ariaNow": "333",
+      "ariaMin": "50",
+      "ariaMax": null,
+      "stored": {
+        "size": 333,
+        "isCollapsed": false
+      }
+    }
+  },
+  "afterResize": {
+    "wide": {
+      "expression": "max(40%, 333px)",
+      "outerWidth": 500,
+      "basis": 498,
+      "state": 399,
+      "panel": 399,
+      "ariaNow": "399",
+      "ariaMin": "50",
+      "ariaMax": null,
+      "stored": {
+        "size": 399,
+        "isCollapsed": false
+      }
+    },
+    "narrow": {
+      "expression": "max(40%, 333px)",
+      "outerWidth": 1000,
+      "basis": 998,
+      "state": 333,
+      "panel": 333,
+      "ariaNow": "333",
+      "ariaMin": "50",
+      "ariaMax": null,
+      "stored": {
+        "size": 333,
+        "isCollapsed": false
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failures": [],
+  "passed": true
+}

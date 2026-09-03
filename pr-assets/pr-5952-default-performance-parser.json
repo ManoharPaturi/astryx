@@ -1,0 +1,285 @@
+{
+  "setup": {
+    "parentHead": "57f6e816b743610e218279fe0749d5cc1f5b900a",
+    "currentChildHead": "a67d677def7a8b6dabb6573acd57487bf62efbd0",
+    "candidate": "85338e1228d35ccca31897d6a08d90cee62a1e23",
+    "node": "v24.20.0",
+    "thresholds": {
+      "setBeforeMeasurement": true,
+      "baselines": {
+        "parent": "57f6e816b743610e218279fe0749d5cc1f5b900a",
+        "currentChild": "a67d677def7a8b6dabb6573acd57487bf62efbd0"
+      },
+      "strictMode": false,
+      "numericDefaultRenders": "exactly N for N=1,10,50 and zero observer activity",
+      "atomicPercentageDefault": "candidate renders no more than either baseline; zero active observer after final choice",
+      "expressionDefault": "same render count as candidate atomic percentage; zero active observer after final choice",
+      "purePixelExpression": "same render count as candidate numeric default with containerRef; zero observer activity",
+      "mountMedianRatioMax": 1.2,
+      "atomicParserMedianRatioMax": 1.25,
+      "atomicParserAbsoluteDeltaNsFloor": 100,
+      "expressionParserMedianNsMax": 5000,
+      "browserRuns": 7,
+      "parserRuns": 11,
+      "parserWarmupIterations": 200000,
+      "parserMeasuredIterationsPerRun": 1000000
+    },
+    "workload": {
+      "atomic": "alternate parse+evaluate of '40%' and '333px' at basis 998",
+      "expression": "parse+evaluate 'max(40%, 333px)' with basis cycling 400..1199",
+      "warmupRuns": 3,
+      "measuredRuns": 11,
+      "warmupIterations": 200000,
+      "measuredIterations": 1000000,
+      "order": "alternated"
+    }
+  },
+  "results": {
+    "atomic": {
+      "parent": [
+        {
+          "nsPerIteration": 77.47961599999996,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 76.85342600000014,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 78.27009500000031,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 76.19280200000048,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 76.10733299999993,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 76.70110600000044,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.01381299999957,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.2696990000004,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 76.19978199999969,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 78.84384600000158,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 77.70383299999958,
+          "checksum": 366000000
+        }
+      ],
+      "current": [
+        {
+          "nsPerIteration": 81.38858100000004,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.51726199999985,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 83.06509099999994,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.56165500000043,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.51881099999991,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 78.91648500000063,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.87928499999907,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 83.58680599999934,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.56058299999859,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.80990200000087,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.75046199999997,
+          "checksum": 366000000
+        }
+      ],
+      "candidate": [
+        {
+          "nsPerIteration": 81.13420899999994,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.854198,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 82.1479830000003,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.0827589999999,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.98446200000035,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.2399719999994,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 81.5242959999996,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 83.46445099999983,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.98160100000132,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 79.4413850000001,
+          "checksum": 366000000
+        },
+        {
+          "nsPerIteration": 80.64871900000071,
+          "checksum": 366000000
+        }
+      ]
+    },
+    "expression": {
+      "current": [
+        {
+          "nsPerIteration": 496.8100629999999,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 503.6465680000001,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 502.4131239999997,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 492.4524729999994,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 501.08405500000026,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 522.0577510000003,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 496.7462969999997,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 497.8103150000006,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 496.7243330000001,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 496.5801159999992,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 494.05413000000044,
+          "checksum": 366672500
+        }
+      ],
+      "candidate": [
+        {
+          "nsPerIteration": 506.5176039999999,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 511.11632499999996,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 508.761657,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 511.8835079999999,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 517.8914500000001,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 519.5173320000004,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 523.4024420000005,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 516.8877310000007,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 507.46250399999917,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 510.8765349999994,
+          "checksum": 366672500
+        },
+        {
+          "nsPerIteration": 520.0306339999988,
+          "checksum": 366672500
+        }
+      ]
+    }
+  },
+  "summary": {
+    "parentAtomicMedianNs": 77.47961599999996,
+    "currentAtomicMedianNs": 80.75046199999997,
+    "candidateAtomicMedianNs": 80.854198,
+    "currentExpressionMedianNs": 496.8100629999999,
+    "candidateExpressionMedianNs": 511.8835079999999,
+    "candidateAtomicVsParentRatio": 1.0435544492115194,
+    "candidateAtomicVsCurrentRatio": 1.0012846489968072,
+    "candidateExpressionVsCurrentRatio": 1.0303404583010631
+  },
+  "failures": [],
+  "passed": true
+}

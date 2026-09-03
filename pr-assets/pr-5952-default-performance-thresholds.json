@@ -1,0 +1,20 @@
+{
+  "setBeforeMeasurement": true,
+  "baselines": {
+    "parent": "57f6e816b743610e218279fe0749d5cc1f5b900a",
+    "currentChild": "a67d677def7a8b6dabb6573acd57487bf62efbd0"
+  },
+  "strictMode": false,
+  "numericDefaultRenders": "exactly N for N=1,10,50 and zero observer activity",
+  "atomicPercentageDefault": "candidate renders no more than either baseline; zero active observer after final choice",
+  "expressionDefault": "same render count as candidate atomic percentage; zero active observer after final choice",
+  "purePixelExpression": "same render count as candidate numeric default with containerRef; zero observer activity",
+  "mountMedianRatioMax": 1.2,
+  "atomicParserMedianRatioMax": 1.25,
+  "atomicParserAbsoluteDeltaNsFloor": 100,
+  "expressionParserMedianNsMax": 5000,
+  "browserRuns": 7,
+  "parserRuns": 11,
+  "parserWarmupIterations": 200000,
+  "parserMeasuredIterationsPerRun": 1000000
+}
