@@ -60,6 +60,18 @@ export const docs = {
           'The ordered list holding the steps. Owns the orientation and the indicator placement the whole flow is laid out on.',
       },
       {
+        name: 'Frame',
+        required: true,
+        description:
+          'The layout frame that groups the ordered steps with the compact summary shown at narrow widths.',
+      },
+      {
+        name: 'Compact summary',
+        required: false,
+        description:
+          'The current step label and optional previous or next controls shown when a horizontal Stepper collapses in a narrow container.',
+      },
+      {
         name: 'Step',
         required: true,
         description:

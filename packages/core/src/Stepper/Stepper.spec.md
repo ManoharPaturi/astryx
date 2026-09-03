@@ -45,8 +45,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 **Owns**
 
-- The `stepper`, `step`, `step-bar`, `step-connector`, `step-indicator`,
-  `step-label`, and `step-description` targets.
+- The `stepper`, `stepper-frame`, `stepper-summary`, `step`, `step-bar`,
+  `step-connector`, `step-indicator`, `step-label`, and `step-description` targets.
 - The two paint layers of a connector — the unfilled track (the element's own
   background) and the accent fill (an absolutely placed `::before`) — and the
   single clip that holds both off the indicator.
@@ -133,6 +133,8 @@ purely visual change. Label and Description targets add no ARIA semantics.
 | Anatomy or state | Design requirement                                                     | Representation authority       | Hierarchy role | Component contract |
 | ---------------- | ---------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
 | Stepper          | Lays the flow out on one orientation and indicator placement.          | Current source and public docs | Supporting     | FR1                |
+| Frame            | Groups the ordered steps with the optional compact summary.            | Current source and public docs | Supporting     | —                  |
+| Compact summary  | Names and controls the current step when horizontal labels collapse.   | Current source and public docs | Prominent      | —                  |
 | Step             | Carries one step's status.                                             | Current source and public docs | Supporting     | —                  |
 | Progress bar     | Presents progress as a segmented bar per step.                         | Current source and public docs | Prominent      | —                  |
 | Connector        | Presents the track between indicators, and the progress made along it. | Current source and public docs | Prominent      | FR2–FR7            |
@@ -147,6 +149,8 @@ purely visual change. Label and Description targets add no ARIA semantics.
 ```json
 {
   "Stepper": {"target": "stepper"},
+  "Frame": {"target": "stepper-frame"},
+  "Compact summary": {"target": "stepper-summary"},
   "Step": {"target": "step"},
   "Progress bar": {"target": "step-bar"},
   "Connector": {"target": "step-connector"},
@@ -185,7 +189,7 @@ parts. Their own typography and color declarations make `inherits: step` false;
 | FR8                 | `Stepper.test.tsx` vocabulary guard                      | vertical on-track                                        | Re-adding `data-segment` or a bare role class fails the guard.                           | `audit:Stepper/theming` |
 | FR9, FR10           | `Stepper.test.tsx` target and generated-theme assertions | Both indicator positions; progress, status, and disabled | Removing a target or state, or moving it off the painted span, fails focused tests.      | `audit:Stepper/theming` |
 | FR11                | Exact-head Chromium probe                                | Themed `step`, Label, and Description                    | If inheritance reaches the text, the Step target's probe color appears there.            | `audit:Stepper/theming` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                            | Canonical anatomy and the seven current targets          | A target with no anatomy owner, or a stale/extra part, fails repository validation.      | `audit:Stepper/theming` |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                            | Canonical anatomy and the nine current targets           | A target with no anatomy owner, or a stale/extra part, fails repository validation.      | `audit:Stepper/theming` |
 
 ## Decision log
 
