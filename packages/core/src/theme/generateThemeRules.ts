@@ -339,14 +339,16 @@ function expandContainerPadding(
 /**
  * The parts of a theme that turn into CSS rules.
  *
- * Narrower than `DefinedTheme` on purpose: a width tier is not a whole theme,
- * and it calls this with a layer's resolved values. Typing the parameter as
- * `DefinedTheme` would let a future field be read here and silently lost for
- * every tier, with no type error to catch it.
+ * Narrower than `DefinedTheme` on purpose: an adaptation rule is not a whole
+ * theme, and it calls this with only the values that rule writes. Typing the
+ * parameter as `DefinedTheme` would let a future field be read here and silently
+ * lost for every conditional rule, with no type error to catch it.
  */
 export interface ThemeRuleSource {
-  /** Resolved token values. */
+  /** Resolved portable token values. */
   tokens: Record<string, string>;
+  /** Resolved theme-local token values. */
+  localTokens?: Record<string, string>;
   /** Resolved component style overrides. */
   components?: ComponentStyleMap;
 }
@@ -355,9 +357,10 @@ export function generateThemeRules(theme: ThemeRuleSource): string[] {
   const parts: string[] = [];
   const tokens = theme.tokens;
 
-  // Helper: resolve a token value — tokens always have computed values
-  // since defineTheme runs expandTypeScale to produce them.
-  const val = (key: string): string => tokens[key] || `var(${key})`;
+  // Bare prose rules reference semantic variables instead of baking the root
+  // value. That lets adaptation token writes take effect through CSS alone
+  // without duplicating prose selectors inside every media query.
+  const val = (key: string): string => `var(${key})`;
 
   // 1. Token block — CSS custom properties on :scope
   const tokenEntries = [
@@ -777,123 +780,58 @@ export function generateOnMediaCSS(theme: DefinedTheme): string {
   return `@scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${inner}\n}`;
 }
 
+/** Generate only the declarations one adaptation rule writes. */
+function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
+  const parts: string[] = [];
+  const tokenEntries = [
+    ...Object.entries(rule.tokens),
+    ...Object.entries(rule.localTokens ?? {}),
+  ];
+  if (tokenEntries.length > 0) {
+    const declarations = tokenEntries
+      .map(([prop, value]) => `    ${prop}: ${value};`)
+      .join('\n');
+    parts.push(`  :scope {\n${declarations}\n  }`);
+  }
+
+  if (rule.components) {
+    generateComponentRules(rule.components, parts);
+    generateColorOverrides(rule.components, parts);
+    generateSizeOverrides(rule.components, parts);
+  }
+  return parts;
+}
+
 /**
- * Generate CSS for a theme's width tiers, split by layer.
+ * Generate CSS for a theme's ordered adaptation rules.
  *
- * Each tier layer becomes one `@media` block wrapping a `@scope` identical to
- * the base theme's, emitted after the base rules so it wins where it matches —
- * a media query contributes no specificity, so source order is the whole
- * mechanism. Because tiers partition the width axis, at most one tier block
- * matches at a time and no two ever compete.
- *
- * Prose and component rules are split exactly as the base theme's are, so a
- * tier's prose defaults keep sitting at reset-layer priority rather than
- * quietly gaining the power to beat a class.
- *
- * Two prunes keep the output honest, both by comparing against what the base
- * theme already emits:
- *
- * - **Tokens** are diffed value by value, so a tier's `:scope` block carries
- *   only the tokens it actually changes, not the theme's whole map.
- * - **Rules identical to a base rule are dropped.** A tier resolves a complete
- *   theme, so most rules it generates come out byte-identical to the base's —
- *   pure weight in the stylesheet, and the bulk of what a naive emitter ships.
- *
- * A layer left with nothing to say emits nothing at all.
+ * Each authored rule stays a separate media block in declaration order. Blocks
+ * are never merged, reordered, or value-diffed: a later rule that deliberately
+ * writes a root value must remain present so it can override an earlier matching
+ * rule. Bare prose follows semantic variables, so token writes need no duplicate
+ * prose selectors here.
  */
-export function generateTierCSS(theme: DefinedTheme): ThemeCSSOutput {
-  const tiers = theme.__tiers;
-  if (!tiers || tiers.length === 0) {
+export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
+  const rules = theme.__adaptationRules;
+  if (!rules || rules.length === 0) {
     return {prose: '', component: ''};
   }
 
   const scopeSelector = themeScopeStart(theme.name);
-  const scopeTo = THEME_SCOPE_TO;
-
-  // Everything the base theme emits, so a tier rule that merely repeats one
-  // can be recognized and dropped.
-  const themeRules = new Set(generateThemeRules(theme));
-
-  // The baseline a layer has to beat is whatever else applies where it does.
-  // For a width tier that is the base theme, because tiers are disjoint and no
-  // other tier can be matching. A pointer refinement is NOT disjoint from the
-  // tier it sits in — on a coarse-pointer phone both match — so its baseline
-  // is that tier, and a refinement that returns a value to the base theme's
-  // must still be emitted, or the tier underneath keeps applying.
-  let tierTokens: Record<string, string> = theme.tokens;
-  let tierRules: Set<string> = themeRules;
-
-  const proseBlocks: string[] = [];
-  const componentBlocks: string[] = [];
-
-  for (const layer of tiers) {
-    const baseTokens = layer.condition ? tierTokens : theme.tokens;
-    const baseRules = layer.condition ? tierRules : themeRules;
-
-    // Only the tokens whose value differs from that baseline.
-    const changedTokens: Record<string, string> = {};
-    for (const [name, value] of Object.entries(layer.tokens)) {
-      if (baseTokens[name] !== value) {
-        changedTokens[name] = value;
-      }
+  const blocks: string[] = [];
+  for (const rule of rules) {
+    const parts = generateAdaptationRuleRules(rule);
+    if (parts.length === 0) {
+      continue;
     }
-
-    // Rules are generated from the layer's FULL resolution, so a value baked
-    // into a rule (a prose font-size, say) is this tier's value rather than
-    // the base theme's. The identical-rule prune then drops what did not move.
-    const fullRules = generateThemeRules({
-      tokens: layer.tokens,
-      components: layer.components,
-    });
-    const layerRules = fullRules.filter(
-      rule => !isScopeTokenBlock(rule) && !baseRules.has(rule),
+    blocks.push(
+      `@media ${rule.query} {\n  @scope (${scopeSelector}) to (${THEME_SCOPE_TO}) {\n${parts
+        .map(indentRule)
+        .join('\n\n')}\n  }\n}`,
     );
-
-    // A width tier becomes the baseline for the pointer refinements that
-    // follow it, which is the order resolveThemeTiers emits them in.
-    if (!layer.condition) {
-      tierTokens = layer.tokens;
-      tierRules = new Set(fullRules);
-    }
-
-    const componentParts: string[] = [];
-    const proseParts: string[] = [];
-
-    const tokenEntries = Object.entries(changedTokens);
-    if (tokenEntries.length > 0) {
-      const declarations = tokenEntries
-        .map(([prop, value]) => `      ${prop}: ${value};`)
-        .join('\n');
-      componentParts.push(`    :scope {\n${declarations}\n    }`);
-    }
-
-    for (const rule of layerRules) {
-      const target = rule.trimStart().startsWith(':where(')
-        ? proseParts
-        : componentParts;
-      target.push(indentRule(rule));
-    }
-
-    const wrap = (parts: string[]): string =>
-      `@media ${layer.query} {\n  @scope (${scopeSelector}) to (${scopeTo}) {\n${parts.join('\n\n')}\n  }\n}`;
-
-    if (componentParts.length > 0) {
-      componentBlocks.push(wrap(componentParts));
-    }
-    if (proseParts.length > 0) {
-      proseBlocks.push(wrap(proseParts));
-    }
   }
 
-  return {
-    prose: proseBlocks.join('\n\n'),
-    component: componentBlocks.join('\n\n'),
-  };
-}
-
-/** Whether a generated rule is the `:scope` token block. */
-function isScopeTokenBlock(rule: string): boolean {
-  return rule.trimStart().startsWith(':scope');
+  return {prose: '', component: blocks.join('\n\n')};
 }
 
 /** Indent a generated rule one level further, for nesting inside `@media`. */
@@ -961,24 +899,20 @@ export function generateThemeCSS(theme: DefinedTheme): ThemeCSSOutput {
     componentCss = `@scope (${scopeSelector}) to (${scopeTo}) {\n${componentInner}\n}`;
   }
 
+  // Adaptations follow the root theme in authored order. Media-surface rules
+  // follow adaptations so onDark/onLight keep their specified precedence.
+  const adaptationCss = generateAdaptationCSS(theme);
+  if (adaptationCss.component) {
+    componentCss = componentCss
+      ? `${componentCss}\n\n${adaptationCss.component}`
+      : adaptationCss.component;
+  }
+
   const onMediaCss = generateOnMediaCSS(theme);
   if (onMediaCss) {
     componentCss = componentCss
       ? `${componentCss}\n\n${onMediaCss}`
       : onMediaCss;
-  }
-
-  // Width tiers last within each layer: a media query adds no specificity, so
-  // being emitted after the base rules is the whole of why a tier wins where
-  // it matches.
-  const tierCss = generateTierCSS(theme);
-  if (tierCss.component) {
-    componentCss = componentCss
-      ? `${componentCss}\n\n${tierCss.component}`
-      : tierCss.component;
-  }
-  if (tierCss.prose) {
-    proseCss = proseCss ? `${proseCss}\n\n${tierCss.prose}` : tierCss.prose;
   }
 
   return {prose: proseCss, component: componentCss};

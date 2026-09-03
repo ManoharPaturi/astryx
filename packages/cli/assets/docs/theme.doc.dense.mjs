@@ -5,18 +5,154 @@
 export const docsDense = {
   description: 'Theme provider, custom themes, light/dark, component overrides',
   sections: [
-    { section: 'Quick Start', title: 'Quick Start', content: [null, null, null, null, { type: 'prose', text: 'default import = runtime injection. /built import = pre-compiled CSS (pair with theme.css).' }] },
-    { section: 'Available Themes', title: 'Themes', content: [null, null, { type: 'prose', text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. @astryxdesign/theme-{name} = source (runtime). @astryxdesign/theme-{name}/built = optimized (+ theme.css).' }] },
-    { section: 'Theme Props', title: 'Props', content: [null] },
-    { section: 'Creating a Custom Theme', title: 'Custom Theme', content: [{ type: 'prose', text: '`theme list` + `theme add <slug>` to start from a shipped theme, or defineTheme from scratch. only override tokens that differ.' }, null, { type: 'prose', text: '`astryx theme template` writes theme.template.ts: every defineTheme field + token families + override syntax, annotated, with the CLI command that prints each reference.' }] },
-    { section: 'defineTheme', title: 'defineTheme', content: [{ type: 'prose', text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent.' }, null, null] },
-    { section: 'Responsive Width Tiers', title: 'Width Tiers', content: [{ type: 'prose', text: 'mobile|tablet|desktop|wide form DISJOINT bands — at most one matches, so tiers never compete. declaring a tier turns it on; declare none and no tier CSS is emitted. bounds default 756/1024/1440, wide is the open top (no maxWidth). an UNDECLARED tier is not a boundary: the lowest declared bounded tier owns every width through its upper bound; root values apply above the highest bounded tier unless wide is declared; wide alone is an error (no lower bound). a tier value is a partial theme, same axes, same pipeline — state only what differs (scale with base and no ratio inherits the ratio). extends = value inheritance resolved at define time, defaults to the theme itself; naming a tier starts from that tier. nest \'@media (pointer: coarse)\' / \'(pointer: fine)\' for values that depend on the primary pointer rather than width (e.g. taller controls under a finger or stylus): a narrow desktop window stays fine, while a wider tablet can still be coarse. within a tier explicit tokens beat generated scales; a pinned generated token stays fixed when a tier moves neighbouring scale steps, so pin only when that uneven scale is intentional; a pointer refinement beats its tier; tier CSS is emitted last in each layer so it beats everything without a media query. pure CSS media queries = SSR-safe, no useMediaQuery, no hydration flash — but only a BUILT theme is in the stylesheet at first paint.' }, null, null] },
-    { section: 'Component Style Overrides', title: 'Component Overrides', content: [{ type: 'prose', text: 'components field uses semantic component keys + style keys (base, variant:value, stateName), not raw selectors. for external CSS, prefer data-* selectors from `astryx docs styling`. write standard CSS (borderRadius, padding) — pipeline expands to internal vars. public vars (--button-focus-offset etc) set directly. private vars (--_*) cannot be set — use CSS properties. run `astryx theme targets [Name]` to enumerate every themeable key (--json for lint), `astryx component <Name>` for one component.' }, null, null, null, null] },
-    { section: 'Custom Variants', title: 'Custom Variants', content: [{ type: 'prose', text: 'any unknown prop:value in components becomes a new variant. astryx theme build generates TS augmentations. works on any extensible prop axis (variant, status, etc).' }, null, null, null, null] },
-    { section: 'Building Themes for Production', title: 'Build for Production', content: [{ type: 'prose', text: 'astryx theme build compiles defineTheme to static CSS. outputs .css + .js (__built:true) + .d.ts.' }, null, null, null, null] },
-    { section: 'Runtime vs Built Themes', title: 'Runtime vs Built', content: [{ type: 'prose', text: 'runtime: useInsertionEffect injects styles client-side. built: static CSS on first paint. USE /built + theme.css FOR SSR.' }, null, null, null] },
-    { section: 'Light/Dark Mode', title: 'Light/Dark', content: [{ type: 'prose', text: 'light-dark() in token values via [light, dark] tuples. mode=system follows OS.' }, null, null] },
-    { section: 'Nesting Themes', title: 'Nesting', content: [{ type: 'prose', text: 'wrap sections in separate <Theme> providers' }, null] },
-    { section: 'useTheme Hook', title: 'useTheme', content: [null, { type: 'prose', text: 'read-only. manage state at app level.' }] },
+    {
+      section: 'Quick Start',
+      title: 'Quick Start',
+      content: [
+        null,
+        null,
+        null,
+        null,
+        {
+          type: 'prose',
+          text: 'default import = runtime injection. /built import = pre-compiled CSS (pair with theme.css).',
+        },
+      ],
+    },
+    {
+      section: 'Available Themes',
+      title: 'Themes',
+      content: [
+        null,
+        null,
+        {
+          type: 'prose',
+          text: 'published: neutral (start here), butter, chocolate, gothic (dark-only), matcha, stone, y2k. @astryxdesign/theme-{name} = source (runtime). @astryxdesign/theme-{name}/built = optimized (+ theme.css).',
+        },
+      ],
+    },
+    {section: 'Theme Props', title: 'Props', content: [null]},
+    {
+      section: 'Creating a Custom Theme',
+      title: 'Custom Theme',
+      content: [
+        {
+          type: 'prose',
+          text: '`theme list` + `theme add <slug>` to start from a shipped theme, or defineTheme from scratch. only override tokens that differ.',
+        },
+        null,
+        {
+          type: 'prose',
+          text: '`astryx theme template` writes theme.template.ts: every defineTheme field + token families + override syntax, annotated, with the CLI command that prints each reference.',
+        },
+      ],
+    },
+    {
+      section: 'defineTheme',
+      title: 'defineTheme',
+      content: [
+        {
+          type: 'prose',
+          text: 'scale configs (color, typography, radius, motion) + explicit token overrides + component overrides. color derives full palette from accent via HCT; accent = hex or [light, dark] tuple (per-scheme palettes). tokens overrides win token-by-token; --color-on-accent stays baked from color.accent, so prefer a tuple accent over overriding --color-accent.',
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Theme Adaptations',
+      title: 'Adaptations',
+      content: [
+        {
+          type: 'prose',
+          text: 'adaptations = ordered {when,value} rules over width/pointer/contrast/motion. widthBreakpoints fixed sm|md|lg|xl|2xl defaults 640|768|1024|1280|1536; map alone emits no CSS. width.from inclusive, width.below exclusive; condition fields AND. root first, then matching rules in authored order (later writes win), then onDark/onLight. rules can write typography/color/radius/motion/tokens/localTokens/components; local names and custom visual-prop values must already exist on root. extends inherits breakpoints + ordered rules, appends child rules, re-resolves against child axes. CSS-only; use built themes for SSR first paint.',
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Component Style Overrides',
+      title: 'Component Overrides',
+      content: [
+        {
+          type: 'prose',
+          text: 'components field uses semantic component keys + style keys (base, variant:value, stateName), not raw selectors. for external CSS, prefer data-* selectors from `astryx docs styling`. write standard CSS (borderRadius, padding) — pipeline expands to internal vars. public vars (--button-focus-offset etc) set directly. private vars (--_*) cannot be set — use CSS properties. run `astryx theme targets [Name]` to enumerate every themeable key (--json for lint), `astryx component <Name>` for one component.',
+        },
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Custom Variants',
+      title: 'Custom Variants',
+      content: [
+        {
+          type: 'prose',
+          text: 'any unknown prop:value in components becomes a new variant. astryx theme build generates TS augmentations. works on any extensible prop axis (variant, status, etc).',
+        },
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Building Themes for Production',
+      title: 'Build for Production',
+      content: [
+        {
+          type: 'prose',
+          text: 'astryx theme build compiles defineTheme to static CSS. outputs .css + .js (__built:true) + .d.ts.',
+        },
+        null,
+        null,
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Runtime vs Built Themes',
+      title: 'Runtime vs Built',
+      content: [
+        {
+          type: 'prose',
+          text: 'runtime: useInsertionEffect injects styles client-side. built: static CSS on first paint. USE /built + theme.css FOR SSR.',
+        },
+        null,
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Light/Dark Mode',
+      title: 'Light/Dark',
+      content: [
+        {
+          type: 'prose',
+          text: 'light-dark() in token values via [light, dark] tuples. mode=system follows OS.',
+        },
+        null,
+        null,
+      ],
+    },
+    {
+      section: 'Nesting Themes',
+      title: 'Nesting',
+      content: [
+        {type: 'prose', text: 'wrap sections in separate <Theme> providers'},
+        null,
+      ],
+    },
+    {
+      section: 'useTheme Hook',
+      title: 'useTheme',
+      content: [
+        null,
+        {type: 'prose', text: 'read-only. manage state at app level.'},
+      ],
+    },
   ],
 };

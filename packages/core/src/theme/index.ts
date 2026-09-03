@@ -22,7 +22,7 @@ export {
   defineTheme,
   generateThemeCSS,
   generateOnMediaCSS,
-  generateTierCSS,
+  generateAdaptationCSS,
   generateThemeRules,
   generateThemeRulesSplit,
   type ThemeCSSOutput,
@@ -39,6 +39,7 @@ export {
 export type {
   DefineThemeInput,
   DefinedTheme,
+  ResolvedDefinedTheme,
   CoreTokenName,
   TokenName,
   TokenValue,
@@ -46,16 +47,21 @@ export type {
   StyleOverrides,
 } from './defineTheme';
 
-// Width tiers — responsive theming
-export {WIDTH_TIERS} from './themeTiers';
+// Ordered environment-conditioned theme adaptations
+export {
+  DEFAULT_WIDTH_BREAKPOINTS,
+  WIDTH_BREAKPOINT_NAMES,
+} from './themeAdaptations';
 export type {
-  WidthTier,
-  ThemeTier,
-  TierValues,
-  TierTypeScale,
-  TierTypographyConfig,
-  TierConditionKey,
-} from './themeTiers';
+  WidthBreakpointName,
+  WidthBreakpoints,
+  ThemeAdaptations,
+  ThemeAdaptationCondition,
+  ThemeAdaptationWidthCondition,
+  ThemeAdaptationRule,
+  ThemeAdaptationValue,
+  ThemeAdaptationTypographyConfig,
+} from './themeAdaptations';
 
 export type {
   SyntaxTokenName,

@@ -329,61 +329,58 @@ export const myTheme = defineTheme({
   // onLight: {tokens: {'--color-accent': '#0B5FCC'}},
 
   // ───────────────────────────────────────────────────────────────────────
-  // Responsive width tiers
+  // Theme adaptations
   // ───────────────────────────────────────────────────────────────────────
 
   /**
-   * What the theme looks like at each viewport width. Declaring a tier turns
-   * it on; a theme that declares none behaves exactly as it did before.
+   * Opt-in values for reviewed environmental conditions. Width points use the
+   * fixed names `sm`, `md`, `lg`, `xl`, and `2xl`; overriding the map alone
+   * emits no CSS. Fields inside `when` are ANDed, and matching rules cascade in
+   * authored order so later writes win.
    *
-   * The four tiers — `mobile`, `tablet`, `desktop`, `wide` — form disjoint
-   * bands, so at most one matches at a time and no two ever compete. Bounds
-   * default to 756 / 1024 / 1440; `wide` is the open top and takes no
-   * `maxWidth`. Setting one moves both of its adjacent boundaries.
-   *
-   * A tier you do NOT declare is not a boundary. Declare `mobile` and
-   * `desktop` and there is one line, not three — desktop covers everything
-   * from the phone line up to 1440px. (`wide` on its own is an error: it would
-   * have no lower boundary and match every width.)
-   *
-   * A tier's value is a partial theme — the same axes as above, resolved the
-   * same way — so state only what differs. `extends` names where a tier starts
-   * from; it defaults to the theme's own values.
-   *
-   * An explicit token keeps winning inside a tier. If you pin a token generated
-   * by a scale, then change that scale in a tier, the pinned step stays fixed
-   * while its generated neighbours move — pin only when that uneven scale is
-   * intentional.
-   *
-   * Nest `'@media (pointer: coarse)'` for values that depend on the primary
-   * pointer rather than the viewport width — for example, taller controls for
-   * a finger or stylus. A narrow desktop window still has a fine pointer; a
-   * wider tablet can still need the coarse-pointer values.
+   * `from` includes its point; `below` excludes it. The other supported axes
+   * are primary-pointer precision, contrast preference, and motion preference.
+   * A rule may replace only theme-local names and custom visual-prop values
+   * already declared by the root theme or its exact base lineage.
    */
-  mobile: {
-    maxWidth: 756,
-    // Layout spacing tightens on a phone…
-    tokens: {'--spacing-4': '12px'},
-    '@media (pointer: coarse)': {
-      // Coarse primary pointers get taller controls without changing typography.
-      tokens: {
-        '--size-element-sm': '36px',
-        '--size-element-md': '40px',
-        '--size-element-lg': '44px',
-      },
-    },
-  },
-
-  // Build on another tier instead of restating it. This is value inheritance,
-  // not the cascade — `tablet` still applies only at tablet widths.
-  tablet: {extends: 'mobile'},
-
-  // Declaring nothing here is not "the theme's own values in the desktop band"
-  // — it removes the 1440px line entirely, so `wide` (if declared) reaches
-  // down to wherever `tablet` ends. Declare it to keep the line.
-  // desktop: {maxWidth: 1440},
-
-  // The open top: everything above the nearest boundary below it. No
-  // `maxWidth`, and never the only tier a theme declares.
-  // wide: {typography: {scale: {base: 16}}},
+  // adaptations is opt-in. Replace this empty block with the commented
+  // example below when the theme needs environmental values.
+  adaptations: {rules: []},
+  // adaptations: {
+  //   widthBreakpoints: {
+  //     sm: 640,
+  //     md: 768,
+  //     lg: 1024,
+  //     xl: 1280,
+  //     '2xl': 1536,
+  //   },
+  //   rules: [
+  //     {
+  //       // Narrow at every pointer precision.
+  //       when: {width: {below: 'md'}},
+  //       value: {tokens: {'--spacing-4': '12px'}},
+  //     },
+  //     {
+  //       // Taller controls under a finger or stylus at every width.
+  //       when: {pointer: 'coarse'},
+  //       value: {
+  //         tokens: {
+  //           '--size-element-sm': '36px',
+  //           '--size-element-md': '40px',
+  //           '--size-element-lg': '44px',
+  //         },
+  //       },
+  //     },
+  //     // Combined conditions are peers, not nested syntax:
+  //     // {
+  //     //   when: {
+  //     //     width: {from: 'lg', below: 'xl'},
+  //     //     pointer: 'coarse',
+  //     //     contrast: 'more',
+  //     //     motion: 'reduce',
+  //     //   },
+  //     //   value: {components: {card: {base: {borderWidth: '2px'}}}},
+  //     // },
+  //   ],
+  // },
 });

@@ -5,30 +5,22 @@
  * @input The value-bearing axes of a theme input (typography, color, radius,
  *        motion, syntax, tokens, components) and an optional resolved seed
  * @output A resolved token map and component style map
- * @position Theme system core; consumed by defineTheme and themeTiers
+ * @position Theme system core; consumed by defineTheme and themeAdaptations
  *
  * One resolution pipeline, shared by every layer that turns declarative theme
- * axes into concrete values. `defineTheme` runs its top-level input through it;
- * a width tier runs its merged input through the same function.
+ * axes into concrete values. `defineTheme` runs its top-level input over an
+ * optional base seed. An adaptation rule completes partial axes from root
+ * metadata first, then runs its own value without a seed to obtain exactly the
+ * leaves that rule writes.
  *
- * That sharing is the point. A tier is not "the base theme plus a few patched
- * tokens" — it is a theme input in its own right, resolved from scratch. Two
- * classes of bug follow from resolving a tier as a patch instead, and neither
- * is expressible here:
- *
- * - A tier that sets `typography.scale` cannot revert the base theme's font
- *   *weights*, because the weights come from the merged typography config
- *   rather than from the built-in defaults.
- * - A tier that sets a generated axis (`color`, `radius`, `motion`) cannot beat
- *   the base theme's explicit `tokens`, because explicit tokens are applied
- *   last here, exactly as they are for the base theme.
- *
- * Precedence, lowest to highest: seed → color → type scale → radius → motion →
- * font families → syntax → explicit `tokens`.
+ * Precedence inside one resolved layer, lowest to highest: seed → color → type
+ * scale → radius → motion → font families → syntax → explicit `tokens`.
+ * Ordered rule-vs-root and rule-vs-rule precedence is owned by
+ * `themeAdaptations` and CSS source order, outside this value resolver.
  *
  * SYNC: When modified, update:
  * - /packages/core/src/theme/defineTheme.ts (its only other caller)
- * - /packages/core/src/theme/themeTiers.ts
+ * - /packages/core/src/theme/themeAdaptations.ts
  */
 
 import type {ComponentStyleMap, TokenName, TokenValue} from './defineTheme';
@@ -98,10 +90,20 @@ export interface ResolvedThemeValues {
  * - [light, dark] tuples become light-dark(light, dark)
  */
 export function resolveTokenValue(value: TokenValue): string {
-  if (Array.isArray(value)) {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (
+    Array.isArray(value) &&
+    value.length === 2 &&
+    typeof value[0] === 'string' &&
+    typeof value[1] === 'string'
+  ) {
     return `light-dark(${value[0]}, ${value[1]})`;
   }
-  return value;
+  throw new Error(
+    'Theme token values must be CSS strings or [light, dark] string tuples.',
+  );
 }
 
 /**
@@ -279,9 +281,8 @@ export function resolveThemeValues(
     }
   }
 
-  // 7. Explicit token overrides — highest precedence, over everything
-  // generated above. This is the rule that keeps a generated axis in one
-  // layer from silently beating an explicit token in the layer below it.
+  // 7. Explicit token overrides — highest precedence within this input layer.
+  // A generated axis in the same root or adaptation value cannot beat them.
   if (input.tokens) {
     for (const [key, value] of Object.entries(input.tokens)) {
       if (value !== undefined) {

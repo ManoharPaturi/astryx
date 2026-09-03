@@ -12,6 +12,7 @@ owners: [cixzhang, imdreamrunner]
 applies_to:
   [
     packages/core/src/theme/defineTheme.ts,
+    packages/core/src/theme/themeAdaptations.ts,
     packages/core/src/theme/expandColorScale.ts,
     packages/core/src/theme/expandTypeScale.ts,
     packages/core/src/theme/expandRadiusScale.ts,
@@ -24,6 +25,7 @@ applies_to:
 verified_by:
   [
     packages/core/src/theme/defineTheme.test.ts,
+    packages/core/src/theme/themeAdaptations.test.ts,
     packages/core/src/theme/expandColorScale.test.ts,
     packages/core/src/theme/expandTypeScale.test.ts,
     packages/core/src/theme/expandRadiusScale.test.ts,
@@ -38,6 +40,10 @@ deciding_specs:
     spec:AST-006/DEC-3,
     spec:AST-006/DEC-4,
     spec:AST-006/DEC-6,
+    spec:AST-012/DEC-1,
+    spec:AST-012/DEC-2,
+    spec:AST-012/DEC-3,
+    spec:AST-012/DEC-4,
   ]
 ---
 
@@ -62,8 +68,9 @@ source configuration independently.
 - optional theme-family-local token declarations;
 - component target/style-key overrides;
 - icon and indicator registries;
-- syntax tokens; and
-- `onDark` / `onLight` surface overrides.
+- syntax tokens;
+- `onDark` / `onLight` surface overrides; and
+- ordered environmental `adaptations` with a fixed named width map.
 
 `defineTheme` resolves that input into a flat `DefinedTheme`. An extended theme
 contains the resolved values it inherits, so a build does not need the base
@@ -109,6 +116,11 @@ style key, and CSS property rather than replacing the entire inherited target.
 - **INV9 — Authoring and output are separate systems.** This record owns the
   normalized theme definition. The shared compiler owns turning it into styles;
   runtime and build own using or saving that output.
+- **INV10 — Adaptations are ordered normalized intent.** Every effective theme
+  retains its complete `sm`/`md`/`lg`/`xl`/`2xl` width map, generative-axis
+  metadata, and inherited-then-local `{when, value}` rule order. Rules re-resolve
+  against a child theme's effective root metadata; they do not mutate root token
+  reads or introduce identity, registries, media surfaces, or new local names.
 
 This record does not own:
 
@@ -141,6 +153,9 @@ public surface belongs to
   and on-media composition; no layer invents its own merge rule.
 - A new generated scale states which semantic tokens it may produce and confirms
   explicit token overrides still win.
+- An adaptation change preserves the fixed condition vocabulary, inclusive
+  `from`/exclusive `below` width edges, authored rule order, root-only local-name
+  enrollment, and source/built extension parity.
 - Authoring fields unavailable to the runtime-only path are prohibited; build
   tooling may add emitted type/artifact metadata but not new theme semantics.
 
@@ -148,6 +163,8 @@ public surface belongs to
 
 - `packages/core/src/theme/defineTheme.ts` owns the public input, normalized IR,
   orchestration, and extension behavior.
+- `themeAdaptations.ts` owns the fixed breakpoint/condition vocabulary,
+  validation, inherited rule ordering, axis completion, and concrete rule writes.
 - `expandColorScale.ts`, `expandTypeScale.ts`, `expandRadiusScale.ts`, and
   `expandMotionScale.ts` own their derived token/component values.
 - `mergeComponents.ts` owns the shared deep-merge rule.
@@ -161,8 +178,8 @@ public surface belongs to
 
 AST-006 decisions 1–4 and 6 establish the shipped theme-local authoring shape,
 exact naming and inheritance rules, enrolled-only validation, and shared value
-contract. The remaining authoring and normalization architecture predates that
-spec and remains unchanged.
+contract. AST-012 decisions 1–4 establish the fixed width map, named closed
+conditions, ordered rule cascade, and source/built adaptation metadata parity.
 
 ## Verification
 
@@ -173,4 +190,5 @@ spec and remains unchanged.
 | INV6                 | component merge tests across base/generated/explicit rules     | Restating one property drops inherited component styles                                     |
 | INV7                 | `onMediaTokens.test.ts` and generated surface-rule tests       | A child loses inherited surface customization or surface precedence changes                 |
 | INV8                 | `defineTheme.test.ts` and CLI source/built inheritance tests   | Enrollment, validation, or lineage differs across runtime and static authoring paths        |
+| INV10                | `themeAdaptations.test.ts` and CLI build fixtures              | Width metadata, rule order, or child re-resolution diverges across source and built themes  |
 | Authoring projection | `scripts/check-theme-template.test.mjs`                        | A supported authoring concept is missing or misstated in the template                       |

@@ -270,3 +270,67 @@ export function resolveLocalTokenContract(
     lineage: [...(base?.__localTokenLineage ?? []), input.name],
   };
 }
+
+/**
+ * Resolve theme-local values written by one adaptation rule.
+ *
+ * Adaptations may replace names already enrolled by the root theme lineage, but
+ * they never enroll names of their own. The effective root declarations remain
+ * the reference and cycle baseline for the conditional override.
+ */
+export function resolveAdaptationLocalTokens(
+  themeName: string,
+  ruleIndex: number,
+  declarations: Record<string, TokenValue> | undefined,
+  rootLocalTokens: Record<string, string> | undefined,
+  tokens: Record<string, string>,
+  components: ComponentStyleMap | undefined,
+): Record<string, string> | undefined {
+  const path = `defineTheme("${themeName}").adaptations.rules[${ruleIndex}].value.localTokens`;
+  if (declarations === undefined) {
+    const refs = new Set<string>();
+    collectLocalReferences(tokens, refs);
+    collectLocalReferences(components, refs);
+    for (const reference of refs) {
+      if (!rootLocalTokens || !hasOwn(rootLocalTokens, reference)) {
+        throw new Error(
+          `${path}: theme-local token reference "${reference}" has no declaration in the enrolled root theme lineage.`,
+        );
+      }
+    }
+    return undefined;
+  }
+  if (
+    declarations === null ||
+    typeof declarations !== 'object' ||
+    Array.isArray(declarations)
+  ) {
+    throw new Error(`${path} must be a token map.`);
+  }
+
+  const resolved: Record<string, string> = {};
+  for (const [name, value] of Object.entries(declarations)) {
+    if (!rootLocalTokens || !hasOwn(rootLocalTokens, name)) {
+      throw new Error(
+        `${path}["${name}"] cannot enroll a theme-local token. Declare it in the root theme or an exact enrolled base first.`,
+      );
+    }
+    resolved[name] = resolveTokenValue(value, `${path}["${name}"]`);
+  }
+
+  const effective = {...rootLocalTokens, ...resolved};
+  const refs = new Set<string>();
+  collectLocalReferences(resolved, refs);
+  collectLocalReferences(tokens, refs);
+  collectLocalReferences(components, refs);
+  for (const reference of refs) {
+    if (!hasOwn(effective, reference)) {
+      throw new Error(
+        `${path}: theme-local token reference "${reference}" has no declaration in the enrolled root theme lineage.`,
+      );
+    }
+  }
+  assertNoLocalTokenCycles(effective);
+
+  return Object.keys(resolved).length > 0 ? resolved : undefined;
+}

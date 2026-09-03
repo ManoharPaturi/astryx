@@ -12,7 +12,7 @@ export const docs = {
   sections: [
     {
       title: 'Quick Start',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'code',
@@ -63,7 +63,7 @@ function App() {
     },
     {
       title: 'Available Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -118,7 +118,7 @@ function App() {
     },
     {
       title: 'Theme Props',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'table',
@@ -138,7 +138,7 @@ function App() {
     },
     {
       title: 'Creating a Custom Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -158,7 +158,7 @@ function App() {
     },
     {
       title: 'defineTheme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -231,7 +231,7 @@ const myTheme = defineTheme({
     },
     {
       title: 'Extending a Theme',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -258,74 +258,126 @@ const brandTheme = defineTheme({
           type: 'table',
           headers: ['Field', 'Merge behavior'],
           rows: [
-            ['tokens', 'Base tokens are copied first, then child tokens override on top.'],
-            ['components', 'Deep-merged: child component rules override matching keys from the base.'],
-            ['icons', 'Shallow-merged: child icons override matching names from the base.'],
-            ['indicators', 'Shallow-merged: child indicators override matching names from the base.'],
-            ['onDark, onLight', "Deep-merged per surface: the base's resolved surface first, then the child's overrides."],
-            ['typography, motion, radius, color', 'Child config replaces base entirely (these are scale inputs, not additive).'],
-            ['mobile, tablet, desktop, wide', "Inherited and re-resolved against the child's values, so a variant theme keeps the responsive behaviour it was built on. Where both declare a tier, the child's values win per field."],
+            [
+              'tokens',
+              'Base tokens are copied first, then child tokens override on top.',
+            ],
+            [
+              'components',
+              'Deep-merged: child component rules override matching keys from the base.',
+            ],
+            [
+              'icons',
+              'Shallow-merged: child icons override matching names from the base.',
+            ],
+            [
+              'indicators',
+              'Shallow-merged: child indicators override matching names from the base.',
+            ],
+            [
+              'onDark, onLight',
+              "Deep-merged per surface: the base's resolved surface first, then the child's overrides.",
+            ],
+            [
+              'typography, motion, radius, color',
+              'Child config replaces base entirely (these are scale inputs, not additive).',
+            ],
+            [
+              'adaptations',
+              'Width-breakpoint overrides merge by fixed name. Inherited ordered rules keep their relative order; child rules append and re-resolve against the child root axes.',
+            ],
           ],
         },
         {
           type: 'prose',
-          text: 'Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme\'s CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.',
+          text: "Inheritance is resolved when the theme is defined, so an extended theme is flat: `astryx theme build` emits one self-contained stylesheet holding everything the child inherited, and the base theme's CSS does not need to be loaded next to it. A base that is not a theme (most often an import that missed) is a build error rather than a theme that silently inherits nothing.",
         },
       ],
     },
     {
-      title: 'Responsive Width Tiers',
+      title: 'Theme Adaptations',
       category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'A theme can say what it looks like at each viewport width. The four tiers — `mobile`, `tablet`, `desktop`, `wide` — form **disjoint bands**, so at most one tier matches at any width and no two ever compete. Declaring a tier turns it on; a theme that declares none emits no tier CSS at all.',
+          text: 'Use `adaptations` for opt-in token, theme-local token, and component changes under viewport width, primary-pointer precision, contrast preference, or motion preference. Conditions in one `when` are ANDed. Rules are ordinary ordered objects, and later matching writes win.',
         },
         {
           type: 'code',
           lang: 'tsx',
-          label: 'A theme that adapts on a phone',
-          code: "const acmeTheme = defineTheme({\n  name: 'acme',\n  tokens: {'--spacing-4': '16px'},\n\n  mobile: {\n    maxWidth: 756,                      // optional; this is the default\n    tokens: {'--spacing-4': '12px'},    // narrow, any pointer\n    '@media (pointer: coarse)': {\n      // Taller controls for a coarse primary pointer.\n      tokens: {\n        '--size-element-sm': '36px',\n        '--size-element-md': '40px',\n        '--size-element-lg': '44px',\n      },\n    },\n  },\n\n  tablet: {extends: 'mobile'},          // start from mobile's values\n});",
+          label: 'Width and pointer adaptations',
+          code: `const acmeTheme = defineTheme({
+  name: 'acme',
+  adaptations: {
+    widthBreakpoints: {
+      sm: 640,
+      md: 768,
+      lg: 1024,
+      xl: 1280,
+      '2xl': 1536,
+    },
+    rules: [
+      {
+        when: {width: {below: 'md'}},
+        value: {tokens: {'--spacing-4': '12px'}},
+      },
+      {
+        when: {pointer: 'coarse'},
+        value: {
+          tokens: {
+            '--size-element-sm': '36px',
+            '--size-element-md': '40px',
+            '--size-element-lg': '44px',
+          },
+        },
+      },
+      {
+        when: {
+          width: {from: 'lg', below: 'xl'},
+          pointer: 'coarse',
+          contrast: 'more',
+        },
+        value: {components: {card: {base: {borderWidth: '2px'}}}},
+      },
+    ],
+  },
+});`,
         },
         {
           type: 'table',
-          headers: ['Tier', 'Matches', 'Default bound'],
+          headers: ['Condition', 'Values'],
           rows: [
-            ['mobile', 'width <= 756px', '756'],
-            ['tablet', '756px < width <= 1024px', '1024'],
-            ['desktop', '1024px < width <= 1440px', '1440'],
-            ['wide', 'width > 1440px', 'none — the open top, so it takes no maxWidth'],
+            ['width.from / width.below', 'sm | md | lg | xl | 2xl'],
+            ['pointer', 'coarse | fine'],
+            ['contrast', 'more | less | no-preference'],
+            ['motion', 'reduce | no-preference'],
           ],
         },
         {
           type: 'prose',
-          text: "The bands above assume all four tiers are declared. **A tier you do not declare is not a boundary.** The lowest declared bounded tier owns every width up to its upper bound: declare only `desktop` and desktop values apply through 1440px, including phone widths. Declare `mobile` and `desktop` and there is one line between them, not a hidden tablet line. Above the highest declared bounded tier the theme's own values apply, unless `wide` is declared. `wide` on its own is an error because it would have no lower boundary and match every width.",
+          text: '`widthBreakpoints` are fixed named start points. Defaults are 640 / 768 / 1024 / 1280 / 1536 CSS pixels. `from` includes its point; `below` excludes it. Breakpoint configuration alone emits no CSS.',
         },
         {
           type: 'prose',
-          text: "A tier's value is a partial theme: the same axes as the theme itself (`typography`, `color`, `radius`, `motion`, `tokens`, `components`), resolved through the same pipeline. State only what differs — a scale that sets `base` and not `ratio` inherits the theme's ratio. Setting a `maxWidth` moves both of that tier's boundaries, since a tier's lower bound is the bound of the nearest tier declared below it.",
+          text: '**Precedence follows rule order.** Root theme values apply first, then every matching rule in declaration order. A later rule may deliberately restore a root value. `onDark` and `onLight` media-surface overrides apply after adaptations and win on the same leaf.',
         },
         {
           type: 'prose',
-          text: "**`extends` is value inheritance, not the cascade.** It defaults to the theme's own values; naming another tier starts from that tier's resolved values instead. `tablet: {extends: 'mobile'}` takes mobile's *values* — mobile's CSS still applies only at mobile widths.",
+          text: "`extends` preserves the base rule order and appends child rules. Inherited conditions use the child's effective breakpoint map, and partial generative axes complete from the child root metadata. An empty child rule is a no-op, not a removal operator.",
         },
         {
           type: 'prose',
-          text: '**Precedence.** Tiers partition, so no two tiers can both match and the question never arises. Within a tier, explicit `tokens` beat values generated from a scale — the same rule the theme itself follows — and a nested pointer refinement wins over the tier it sits in. Tier CSS is emitted last in each layer, after everything the theme emits without a media query, so a tier always wins where it matches. A pin stays pinned: if `tokens` fixes one generated scale token (for example `--font-size-base`) and a tier changes that scale, the pinned step stays fixed while neighbouring generated steps move. Use that deliberately; otherwise the ladder becomes uneven.',
+          text: 'A rule may replace a theme-local token only when the exact name is already enrolled by root `localTokens` or an enrolled base. Custom component visual-prop values must also be declared on the root theme before an adaptation styles them.',
         },
         {
           type: 'prose',
-          text: "Nest `'@media (pointer: coarse)'` (or `'@media (pointer: fine)'`) for values that depend on the primary pointer rather than viewport width. For example, a theme can give controls more height under a finger or stylus without enlarging them in a narrow desktop window. Keep width and pointer separate: a desktop window dragged narrow still has a fine pointer, while a tablet can be wider than `mobile` and still need coarse-pointer sizing.",
-        },
-        {
-          type: 'prose',
-          text: 'Tiers are plain CSS media queries inside the theme stylesheet, so they render correctly on the server with no hydration flash and need no `useMediaQuery`. Both distribution modes emit them from the same generator — but only a built theme (`astryx theme build`) is in the stylesheet at first paint, so prefer the built path for a responsive theme.',
+          text: 'Adaptations compile to CSS media queries with no resize listener or styling rerender. Runtime and `astryx theme build` use the same compiler, but only a built theme is present at first paint in an SSR app.',
         },
       ],
     },
     {
       title: 'Component Style Overrides',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -358,7 +410,7 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component\'s theming targets, public CSS variables, and which standard CSS properties are supported.',
+          text: "Run `astryx theme targets` for every themeable key in the system (`astryx theme targets <Name>` to scope it, `--json` to lint a theme against it), and `astryx component <Name>` for one component's theming targets, public CSS variables, and which standard CSS properties are supported.",
         },
         {
           type: 'list',
@@ -379,11 +431,11 @@ const brandTheme = defineTheme({
     },
     {
       title: 'Custom Variants',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
-          text: 'Themes can add new prop values to any component. Any `prop:value` key where the value isn\'t a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.',
+          text: "Themes can add new prop values to any component. Any `prop:value` key where the value isn't a built-in gets treated as a new variant. Use `astryx theme build` to generate TypeScript augmentations for type safety.",
         },
         {
           type: 'code',
@@ -422,13 +474,13 @@ const brandTheme = defineTheme({
         },
         {
           type: 'prose',
-          text: 'Custom variants only work when the theme that defines them is active. The component\'s variant map is extended via module augmentation, with no changes to the component source needed.',
+          text: "Custom variants only work when the theme that defines them is active. The component's variant map is extended via module augmentation, with no changes to the component source needed.",
         },
       ],
     },
     {
       title: 'Building Themes for Production',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -462,7 +514,7 @@ const brandTheme = defineTheme({
             ],
             [
               'ocean.variants.d.ts',
-              '(Optional) Module augmentations for custom component prop values found in the theme\'s component overrides',
+              "(Optional) Module augmentations for custom component prop values found in the theme's component overrides",
             ],
           ],
         },
@@ -483,13 +535,13 @@ import './themes/ocean.css';
         },
         {
           type: 'prose',
-          text: 'The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app\'s job. See `astryx docs typography` for the full recipe.',
+          text: "The build also warns when the theme names font families it does not load (webfonts like Fraunces) and prints the `<link>`/`@font-face` to add. The built CSS only sets font-family, so loading the font files stays the app's job. See `astryx docs typography` for the full recipe.",
         },
       ],
     },
     {
       title: 'Runtime vs Built Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -501,13 +553,13 @@ import './themes/ocean.css';
           rows: [
             [
               'Import (published theme)',
-              "@astryxdesign/theme-{name}",
-              "@astryxdesign/theme-{name}/built + theme.css",
+              '@astryxdesign/theme-{name}',
+              '@astryxdesign/theme-{name}/built + theme.css',
             ],
             [
               'Import (custom theme)',
               'defineTheme() directly',
-              "Built .js + .css from `astryx theme build`",
+              'Built .js + .css from `astryx theme build`',
             ],
             [
               'How it works',
@@ -545,14 +597,14 @@ import './themes/ocean.css';
           style: 'dont',
           items: [
             'Use runtime themes in production SSR apps; component overrides will flash on hydration.',
-            'Import /built without the CSS file; component overrides won\'t apply.',
+            "Import /built without the CSS file; component overrides won't apply.",
           ],
         },
       ],
     },
     {
       title: 'Light/Dark Mode',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -581,7 +633,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Nesting Themes',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -607,7 +659,7 @@ import './themes/ocean.css';
     },
     {
       title: 'Token Utilities',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
@@ -650,7 +702,7 @@ const chartTheme = {
     },
     {
       title: 'useTheme Hook',
-  category: 'guide',
+      category: 'guide',
       content: [
         {
           type: 'prose',
