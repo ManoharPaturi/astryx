@@ -34,6 +34,7 @@ import {
   CollapsibleGroupPresentationContext,
 } from './CollapsibleGroupContext';
 import type {
+  CollapsibleChevronPlacement,
   CollapsibleGroupContextValue,
   CollapsibleGroupDensity,
   CollapsibleGroupPresentationValue,
@@ -95,6 +96,14 @@ export interface CollapsibleGroupProps extends Omit<
    * keep their default unpadded look.
    */
   density?: CollapsibleGroupDensity;
+
+  /**
+   * Which side of the trigger the items' chevrons sit on. Set here rather than
+   * per item: a list whose arrows change sides row to row reads as a bug. An
+   * individual Collapsible can still override it.
+   * @default 'end'
+   */
+  chevronPlacement?: CollapsibleChevronPlacement;
 
   /**
    * Children — any components that support isCollapsible + value.
@@ -175,6 +184,7 @@ export function CollapsibleGroup({
   onChange,
   hasDividers = false,
   density,
+  chevronPlacement,
   children,
   ref,
   xstyle,
@@ -234,8 +244,12 @@ export function CollapsibleGroup({
   const resolvedDensity = density ?? (hasDividers ? 'balanced' : null);
 
   const presentationValue = useMemo<CollapsibleGroupPresentationValue>(
-    () => ({hasDividers, density: resolvedDensity}),
-    [hasDividers, resolvedDensity],
+    () => ({
+      hasDividers,
+      density: resolvedDensity,
+      chevronPlacement: chevronPlacement ?? null,
+    }),
+    [hasDividers, resolvedDensity, chevronPlacement],
   );
 
   // The wrapper anchors divider chrome: it makes the items' :first-child
