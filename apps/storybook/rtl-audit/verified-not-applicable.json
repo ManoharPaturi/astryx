@@ -1,5 +1,9 @@
 [
   {
+    "component": "core/CheckboxInput",
+    "reason": "CheckboxInput's check and indeterminate glyphs are non-directional. The control, label, description, and status use logical flex/block flow; the coarse-pointer hit target is centered with a 50% logical inset and matching translation. It has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior."
+  },
+  {
     "component": "core/Field",
     "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior."
   },

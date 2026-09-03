@@ -126,6 +126,15 @@
     }
   },
   {
+    "component": "Switch",
+    "storyId": "core-switch--on",
+    "dims": ["D4"],
+    "selectors": {
+      "overlay": ".astryx-switch-thumb",
+      "overlayRoot": ".astryx-switch"
+    }
+  },
+  {
     "component": "TabList",
     "storyId": "core-tablist--overflow",
     "dims": [
