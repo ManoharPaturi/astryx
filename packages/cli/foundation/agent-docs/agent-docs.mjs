@@ -208,6 +208,57 @@ export function resolveAgentPaths(targetDir, agent) {
   return {inject: [], create: [searchPaths[searchPaths.length - 1]]};
 }
 
+/** Build configs that could plausibly wire a StyleX plugin. */
+const STYLEX_CONFIG_FILES = [
+  'vite.config.ts', 'vite.config.js', 'vite.config.mjs',
+  'next.config.ts', 'next.config.js', 'next.config.mjs',
+  'webpack.config.ts', 'webpack.config.js', 'webpack.config.mjs',
+  'rollup.config.ts', 'rollup.config.js', 'rollup.config.mjs',
+  'babel.config.json', 'babel.config.js', 'babel.config.mjs', '.babelrc', '.babelrc.json',
+  'postcss.config.js', 'postcss.config.mjs', 'postcss.config.cjs',
+];
+
+/**
+ * Is one of these plugins referenced by a build config in `dir`, in live code?
+ *
+ * Text search, never evaluation — running a consumer's build config is not
+ * something doc generation may do. Comments are blanked first, so a
+ * commented-out `// stylex()` does not count as wiring, and a match must look
+ * like a specifier or a call rather than a word in prose.
+ *
+ * @param {string} dir
+ * @param {string[]} plugins
+ * @returns {boolean}
+ */
+function stylexConfigured(dir, plugins) {
+  const live = (/** @type {string} */ src) =>
+    src
+      .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+      .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, ' '));
+  for (const name of STYLEX_CONFIG_FILES) {
+    const fp = path.join(dir, name);
+    if (!fs.existsSync(fp)) continue;
+    try {
+      const code = live(fs.readFileSync(fp, 'utf-8'));
+      for (const n of plugins) {
+        const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (new RegExp(`['"\`]${esc}['"\`]|\\b${esc}\\s*[(:]`).test(code)) return true;
+      }
+    } catch {
+      /* unreadable: try the next one */
+    }
+  }
+  // package.json can carry babel/postcss config inline; JSON has no comments.
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
+    const blob = JSON.stringify({babel: pkg.babel, postcss: pkg.postcss});
+    if (plugins.some(n => blob.includes(n))) return true;
+  } catch {
+    /* fine */
+  }
+  return false;
+}
+
 /**
  * Detect which styling system the consumer project has wired up, so the agent
  * docs recommend a path that actually compiles in THIS project.
@@ -218,6 +269,11 @@ export function resolveAgentPaths(targetDir, agent) {
  * Plain CSS variables (via `style`/`className`) always work, so they're the
  * safe default. Precedence: stylex (compiler wired) → tailwind → css.
  *
+ * "Wired" means a build config actually references the plugin, not merely that
+ * it appears in `devDependencies`. An installed plugin no bundler invokes
+ * compiles nothing, and telling an agent to write `xstyle` in that project
+ * produces exactly the blank output this function exists to avoid.
+ *
  * @param {string} targetDir
  * @returns {'stylex' | 'tailwind' | 'css'}
  */
@@ -227,7 +283,8 @@ export function detectStylingSystem(targetDir) {
     if (!fs.existsSync(pkgPath)) return 'css';
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     const deps = {...pkg.dependencies, ...pkg.devDependencies};
-    // Key off a StyleX *compiler* plugin — the runtime alone won't render.
+    // Key off a StyleX *compiler* plugin — the runtime alone won't render —
+    // AND on that plugin being referenced by a build config.
     const stylexCompilers = [
       '@stylexjs/babel-plugin',
       'vite-plugin-stylex',
@@ -236,7 +293,8 @@ export function detectStylingSystem(targetDir) {
       '@stylexswc/nextjs-plugin',
       'stylex-webpack',
     ];
-    if (stylexCompilers.some(d => d in deps)) return 'stylex';
+    const declared = stylexCompilers.filter(d => d in deps);
+    if (declared.length > 0 && stylexConfigured(targetDir, declared)) return 'stylex';
     if ('tailwindcss' in deps) return 'tailwind';
     return 'css';
   } catch {
@@ -314,6 +372,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   lines.push('RULES:');
   lines.push('- No <div> — components do all layout/spacing, page frame included.');
   lines.push('- Frame first: read `astryx docs layout` before writing any page or screen — page frame, region widths, breakpoint behavior.');
+  lines.push('- Theme first: read `astryx docs theme` before changing brand color, radius, or type scale, or before restyling the same component twice — defineTheme, component overrides, custom variants, and when `astryx theme build` is needed (importing the theme SOURCE injects at runtime and applies on reload; only the BUILT import needs a rebuild, and a stale build fails silently).');
   lines.push('- Dense data = rows (Table, List/Item), never Card-wrapped list items; Card is for standalone widgets. Status = StatusDot/Token; Badge = counts only.');
   // Styling guidance tailored to the project's configured system — never
   // recommend a path that isn't compiled here (xstyle needs the StyleX compiler;
@@ -361,6 +420,7 @@ export function generateCompressedIndex(version, {coreDir, invocation = getCliIn
   if (resolvedTopics.length > 0) {
     lines.push(`  docs <topic>       ${resolvedTopics.join(', ')}`);
   }
+  lines.push('  theme add|build    scaffold a theme, then compile it — edits to a theme do nothing until rebuilt');
   lines.push('  swizzle <Name>     eject component source for deep customization');
   lines.push('  upgrade --apply    run after any @astryxdesign/core bump');
   lines.push(MARKER_END);
