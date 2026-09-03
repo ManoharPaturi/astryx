@@ -58,10 +58,12 @@ function Harness({
   initialExpanded = EMPTY_KEYS,
   isItemExpandable,
   renderExpanded = defaultRenderExpanded,
+  density,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
   renderExpanded?: (item: Row) => React.ReactNode;
+  density?: 'compact' | 'balanced' | 'spacious';
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
   const expansion = useTableRowExpansion<Row>({
@@ -81,7 +83,13 @@ function Harness({
     getIsItemExpandable: isItemExpandable,
   });
   return (
-    <Table data={rows} columns={columns} idKey="id" plugins={{expansion}} />
+    <Table
+      data={rows}
+      columns={columns}
+      idKey="id"
+      density={density}
+      plugins={{expansion}}
+    />
   );
 }
 
@@ -194,6 +202,34 @@ describe('useTableRowExpansion (detail panel)', () => {
       screen.getAllByRole('menuitem', {name: /expand row/i, hidden: true})
         .length,
     ).toBeGreaterThan(0);
+  });
+
+  it('turns the glyph without turning the button beneath it', () => {
+    // The button is the hit target and carries the hover chip. Rotating it
+    // swings that rounded rectangle around with the arrow, so the transform
+    // has to sit on the glyph instead.
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    const button = screen.getAllByRole('button', {name: /collapse row/i})[0];
+    const glyph = button.querySelector('svg')?.parentElement;
+    expect(glyph).toHaveStyle({transform: 'rotate(90deg)'});
+    expect(button).not.toHaveStyle({transform: 'rotate(90deg)'});
+  });
+
+  it('starts the panel at the first column, not at the row edge', () => {
+    // Left to itself the panel begins under the chevron, a column to the left
+    // of every label it describes. It should start where the first column's
+    // content does: the chevron column's width plus a cell's own padding.
+    render(<Harness initialExpanded={new Set(['a'])} />);
+    expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
+      paddingInlineStart: 'calc(40px + var(--spacing-3))',
+    });
+  });
+
+  it('tracks the table density it is rendered at', () => {
+    render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
+    expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
+      paddingInlineStart: 'calc(40px + var(--spacing-4))',
+    });
   });
 
   it('localizes the chevron aria-label through the i18n catalog', () => {

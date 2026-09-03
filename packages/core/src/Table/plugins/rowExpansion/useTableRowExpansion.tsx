@@ -4,7 +4,8 @@
 
 /**
  * @file useTableRowExpansion.tsx
- * @input React, StyleX, Icon, Table types, i18n (useTranslator)
+ * @input React, StyleX, Icon, Table types, table context (density), i18n
+ *   (useTranslator)
  * @output Exports useTableRowExpansion hook + config type
  * @position Row-expansion plugin (detail panel); consumed by Table via plugins prop
  *
@@ -23,6 +24,7 @@ import {spacingVars, colorVars, radiusVars} from '../../../theme/tokens.stylex';
 import {Icon} from '../../../Icon';
 import {VisuallyHidden} from '../../../VisuallyHidden';
 import {resolveContextActions} from '../../tableContextMenu';
+import {useTableContext} from '../../useTableCellStyles';
 import {useTranslator} from '../../../i18n';
 import {rtlStyles} from '../../../utils';
 import type {
@@ -66,7 +68,11 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
 // Styles
 // =============================================================================
 
-const EXPANSION_COLUMN_WIDTH = {type: 'pixel' as const, value: 40};
+const EXPANSION_COLUMN_WIDTH_PX = 40;
+const EXPANSION_COLUMN_WIDTH = {
+  type: 'pixel' as const,
+  value: EXPANSION_COLUMN_WIDTH_PX,
+};
 
 const expansionStyles = stylex.create({
   chevronButton: {
@@ -83,7 +89,10 @@ const expansionStyles = stylex.create({
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
     color: colorVars['--color-icon-secondary'],
-    transitionProperty: 'transform, color',
+    // Colour only. The rotation belongs to the glyph, not to the button: the
+    // button is the hit target and carries the hover chip, and turning that
+    // swings the rounded rectangle and its highlight around with the arrow.
+    transitionProperty: 'color',
     transitionDuration: '150ms',
     padding: 0,
     // Match IconButton ghost hover: subtle overlay background.
@@ -96,6 +105,10 @@ const expansionStyles = stylex.create({
     ':hover:where(:not(:disabled,[aria-disabled="true"]))': {
       color: colorVars['--color-icon-primary'],
     },
+  },
+  chevron: {
+    transitionProperty: 'transform',
+    transitionDuration: '150ms',
   },
   // The RTL mirror is folded into each state's transform rather than living
   // on a parent span, matching TreeListItem's chevron (both are `transform`,
@@ -117,7 +130,31 @@ const expansionStyles = stylex.create({
   },
   expandedCell: {
     paddingBlock: spacingVars['--spacing-4'],
-    paddingInline: spacingVars['--spacing-5'],
+    paddingInlineEnd: spacingVars['--spacing-5'],
+  },
+});
+
+/**
+ * Start inset for the detail panel, one per density.
+ *
+ * The panel is one cell spanning the whole row, so left to itself its content
+ * starts at the row's edge — under the chevron, a column to the left of every
+ * label it describes. These line it up with the first real column instead: the
+ * chevron column's fixed width, plus the inline padding a cell of that density
+ * gives its own content.
+ *
+ * Written as a logical property so RTL mirrors it, and kept in `calc` so the
+ * padding half still tracks the spacing scale.
+ */
+const panelIndentStyles = stylex.create({
+  compact: {
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-2']})`,
+  },
+  balanced: {
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-3']})`,
+  },
+  spacious: {
+    paddingInlineStart: `calc(${EXPANSION_COLUMN_WIDTH_PX}px + ${spacingVars['--spacing-4']})`,
   },
 });
 
@@ -136,12 +173,7 @@ function ExpansionChevron({
   return (
     <button
       type="button"
-      {...stylex.props(
-        expansionStyles.chevronButton,
-        isExpanded
-          ? expansionStyles.chevronExpanded
-          : expansionStyles.chevronCollapsed,
-      )}
+      {...stylex.props(expansionStyles.chevronButton)}
       onClick={e => {
         e.stopPropagation();
         onToggle();
@@ -152,8 +184,43 @@ function ExpansionChevron({
           : t('@astryx.tableRowExpansion.expandRow')
       }
       aria-expanded={isExpanded}>
-      <Icon icon="chevronRight" size="xsm" />
+      <Icon
+        icon="chevronRight"
+        size="xsm"
+        xstyle={[
+          expansionStyles.chevron,
+          isExpanded
+            ? expansionStyles.chevronExpanded
+            : expansionStyles.chevronCollapsed,
+        ]}
+      />
     </button>
+  );
+}
+
+/**
+ * The detail panel's cell. A component rather than a bare `<td>` so it can
+ * read the table's density off the context and indent itself to match the
+ * first column — the plugin builds this row outside the Table's own render,
+ * where that context is not otherwise in hand.
+ */
+function ExpansionPanelCell({
+  colSpan,
+  children,
+}: {
+  colSpan: number;
+  children: ReactNode;
+}) {
+  const ctx = useTableContext();
+  return (
+    <td
+      colSpan={colSpan}
+      {...stylex.props(
+        expansionStyles.expandedCell,
+        panelIndentStyles[ctx?.density ?? 'balanced'],
+      )}>
+      {children}
+    </td>
   );
 }
 
@@ -301,11 +368,9 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           <tr
             key={`${key}-expanded`}
             {...stylex.props(expansionStyles.expandedRow)}>
-            <td
-              colSpan={columnCountRef.current}
-              {...stylex.props(expansionStyles.expandedCell)}>
+            <ExpansionPanelCell colSpan={columnCountRef.current}>
               {renderExpanded(item)}
-            </td>
+            </ExpansionPanelCell>
           </tr>
         );
 
