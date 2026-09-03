@@ -1,0 +1,87 @@
+{
+  "pr": 5952,
+  "head": "82c4467db231cafaf5d6c6d0cf7bb2b398391930",
+  "story": {
+    "id": "core-hooks-useresizable--css-math-constraints",
+    "title": "Core/Hooks/useResizable",
+    "name": "Css Math Constraints",
+    "url": "http://127.0.0.1:6011/iframe.html?id=core-hooks-useresizable--css-math-constraints&viewMode=story"
+  },
+  "negativeControl": false,
+  "tolerancePx": 0.51,
+  "expected": {
+    "tolerancePx": 0.51,
+    "wide": {
+      "requestedOuterWidth": 1000,
+      "outerWidth": 1000,
+      "contentBasis": 998,
+      "minimum": 399,
+      "maximum": 100
+    },
+    "narrow": {
+      "requestedOuterWidth": 500,
+      "outerWidth": 500,
+      "contentBasis": 498,
+      "minimum": 333,
+      "maximum": 50
+    }
+  },
+  "observations": {
+    "wide": {
+      "minimum": {
+        "state": "wide",
+        "expression": "max(40%, 333px)",
+        "outerWidth": 1000,
+        "contentBasis": 998,
+        "resolvedBound": 399,
+        "selectedSize": 399,
+        "panelWidth": 399,
+        "ariaValueMin": "399",
+        "ariaValueMax": null,
+        "ariaValueNow": "399"
+      },
+      "maximum": {
+        "state": "wide",
+        "expression": "min(400px, 10%)",
+        "outerWidth": 1000,
+        "contentBasis": 998,
+        "resolvedBound": 100,
+        "selectedSize": 100,
+        "panelWidth": 100,
+        "ariaValueMin": "50",
+        "ariaValueMax": "100",
+        "ariaValueNow": "100"
+      }
+    },
+    "narrow": {
+      "minimum": {
+        "state": "narrow",
+        "expression": "max(40%, 333px)",
+        "outerWidth": 500,
+        "contentBasis": 498,
+        "resolvedBound": 333,
+        "selectedSize": 333,
+        "panelWidth": 333,
+        "ariaValueMin": "333",
+        "ariaValueMax": null,
+        "ariaValueNow": "333"
+      },
+      "maximum": {
+        "state": "narrow",
+        "expression": "min(400px, 10%)",
+        "outerWidth": 500,
+        "contentBasis": 498,
+        "resolvedBound": 50,
+        "selectedSize": 50,
+        "panelWidth": 50,
+        "ariaValueMin": "50",
+        "ariaValueMax": "50",
+        "ariaValueNow": "50"
+      }
+    }
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failures": [],
+  "passed": true
+}
