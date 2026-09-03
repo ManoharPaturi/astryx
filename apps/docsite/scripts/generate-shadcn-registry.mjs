@@ -214,7 +214,6 @@ function componentItem(packageName, component, packageDependencies) {
 }
 
 function blockItem(block, packageDependencies, cliRoot) {
-  const kind = block.isShowcase ? 'showcase' : 'example';
   const identity = blockRegistryIdentity(
     block.name,
     block.exampleFor,
@@ -222,6 +221,7 @@ function blockItem(block, packageDependencies, cliRoot) {
     block.registry,
   );
   const itemName = identity.name;
+  const kind = identity.kind;
   const fileName = path.join(
     cliRoot,
     'assets',
@@ -247,7 +247,7 @@ function blockItem(block, packageDependencies, cliRoot) {
       {
         path: `registry/${itemName}/${block.dirName}.${compiled.extension}`,
         type: 'registry:block',
-        target: `components/astryx/${kind}s/${block.dirName}.${compiled.extension}`,
+        target: `components/astryx/${kind === 'block' ? 'blocks' : `${kind}s`}/${block.dirName}.${compiled.extension}`,
         content: compiled.source,
       },
     ],
@@ -428,9 +428,16 @@ export function buildShadcnRegistry({
     registry,
     items,
     counts: {
-      components: componentItems.length,
+      components: componentItems.filter(
+        item => item.astryx.kind === 'component',
+      ).length,
+      hooks: componentItems.filter(item => item.astryx.kind === 'hook').length,
+      showcases: blockItems.filter(item => item.astryx.kind === 'showcase')
+        .length,
+      examples: blockItems.filter(item => item.astryx.kind === 'example')
+        .length,
+      blocks: blockItems.filter(item => item.astryx.kind === 'block').length,
       skippedUnpublishedComponents: skippedComponents,
-      blocks: blockItems.length,
       skippedUnpublishedBlocks,
       pages: pageItems.length,
       skippedUnpublishedPages,

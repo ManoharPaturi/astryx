@@ -1,5 +1,5 @@
 export interface RegistryItemIdentity {
-  kind: 'component' | 'hook' | 'showcase' | 'example' | 'page';
+  kind: 'component' | 'hook' | 'showcase' | 'example' | 'block' | 'page';
   name: string;
   path: string;
   aliases: string[];
@@ -19,7 +19,7 @@ export function componentRegistryIdentity(
 ): RegistryItemIdentity;
 export function blockRegistryIdentity(
   blockName: string,
-  exampleFor: string,
+  exampleFor?: string | null,
   isShowcase: boolean,
   registry?: {slug?: string; aliases?: string[]} | null,
 ): RegistryItemIdentity;
@@ -41,13 +41,13 @@ export function shadcnComponentItemPath(
 ): string;
 export function shadcnBlockItemName(
   blockName: string,
-  exampleFor: string,
+  exampleFor?: string | null,
   isShowcase: boolean,
   registry?: {slug?: string; aliases?: string[]} | null,
 ): string;
 export function shadcnBlockItemPath(
   blockName: string,
-  exampleFor: string,
+  exampleFor?: string | null,
   isShowcase: boolean,
   registry?: {slug?: string; aliases?: string[]} | null,
 ): string;

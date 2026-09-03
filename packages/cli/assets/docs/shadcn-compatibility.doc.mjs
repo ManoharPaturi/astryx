@@ -42,6 +42,7 @@ export const docs = {
 /r/hooks/use-app-shell-mobile.json
 /r/showcases/button/variants.json
 /r/examples/button/icon.json
+/r/blocks/filter-toolbar.json
 /r/templates/dashboard.json`,
         },
         {

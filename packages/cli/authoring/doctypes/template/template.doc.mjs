@@ -16,15 +16,15 @@ export const doc = {
   description:
     'The doc-type for template metadata. A discriminated union of PageTemplateDoc ' +
     "(type: 'page') for full page templates and BlockTemplateDoc (type: 'block') for " +
-    'component example blocks. Both share BaseTemplateDoc; block templates add ' +
-    'example/preview fields.',
+    'editable compositions. A block can stand alone or use `exampleFor` to attach ' +
+    'to one component; `isShowcase` requires that component ownership.',
   appliesTo: '<Name>.template.mjs',
   fields: [
     {
       name: 'type',
       type: "'page' | 'block'",
       description:
-        "Discriminant selecting the variant: 'page' for a full page template, 'block' for a component example block.",
+        "Discriminant selecting the variant: 'page' for a full page template, 'block' for an editable composition that may be standalone or component-owned.",
       required: true,
     },
     {
@@ -80,7 +80,7 @@ export const doc = {
       name: 'exampleFor',
       type: 'string',
       description:
-        "Block templates only (required): the component this block is an example of, matching the component's doc name (e.g. 'Button'). Powers examples on component detail pages.",
+        'Block templates only: optional component ownership. Set this when the block is specifically an example of one component. Omit it for a standalone composition.',
     },
     {
       name: 'alsoExampleFor',
@@ -116,7 +116,7 @@ export const doc = {
       name: 'isShowcase',
       type: 'boolean',
       description:
-        "Block templates only: when true this block is the canonical 'hero' showcase for its `exampleFor` component.",
+        'Block templates only: when true this block is the canonical hero showcase for its `exampleFor` component. Requires `exampleFor`.',
     },
   ],
   examples: [
@@ -150,14 +150,14 @@ export const doc = {
   notes: [
     {
       type: 'prose',
-      text: "TemplateDoc is a discriminated union keyed by `type`. Set `type: 'page'` for a standalone page template (only the BaseTemplateDoc fields apply) or `type: 'block'` for a component example (the exampleFor/aspectRatio/showcase fields apply).",
+      text: "TemplateDoc is a discriminated union keyed by `type`. Set `type: 'page'` for a full page template. Set `type: 'block'` for an editable composition; add `exampleFor` only when one component owns the example.",
     },
     {
       type: 'list',
       style: 'unordered',
       items: [
         "PageTemplateDoc (type: 'page'): a full page template; `name` doubles as its display value.",
-        "BlockTemplateDoc (type: 'block'): an example of a component; requires `exampleFor` and `aspectRatio`.",
+        "BlockTemplateDoc (type: 'block'): an editable composition. `exampleFor` is optional component ownership; omit it for a standalone block. `isShowcase` requires `exampleFor`.",
       ],
     },
     {

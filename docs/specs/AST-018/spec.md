@@ -176,9 +176,9 @@ a stable production registry.
 Treat registry names and paths as public API before publication. Derive them
 from stable component/hook names, block `name` plus `exampleFor`, and the
 existing template slug. Keep `displayName` editorial. Use these path families:
-`components`, `hooks`, `showcases/<component>`, `examples/<component>`, and
-`templates`. Reserve `blocks` for a future standalone-block doc kind; current
-`type: 'block'` records require `exampleFor` and are component examples.
+`components`, `hooks`, `showcases/<component>`, `examples/<component>`,
+`blocks`, and `templates`. A block without `exampleFor` is standalone under
+`blocks`; a block with component ownership is an example or showcase.
 
 Allow a doc to override its leaf with `registry.slug` and retain old relative
 paths with `registry.aliases`. Check all names and paths against a reviewed lock

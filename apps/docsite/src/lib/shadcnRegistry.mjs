@@ -147,10 +147,32 @@ function blockLeafSlug(blockName, exampleFor, registry, kind) {
 
 export function blockRegistryIdentity(
   blockName,
-  exampleFor,
-  isShowcase,
+  exampleFor = null,
+  isShowcase = false,
   registry = null,
 ) {
+  if (!exampleFor) {
+    if (isShowcase) {
+      throw new Error(
+        `showcase ${blockName} requires exampleFor; standalone blocks cannot be component showcases`,
+      );
+    }
+    const slug = registrySlug(registry, blockName, `block ${blockName}`);
+    const path = `blocks/${slug}`;
+    return {
+      kind: 'block',
+      name: `block-${slug}`,
+      path,
+      aliases: registryAliases(
+        registry,
+        'blocks',
+        '',
+        path,
+        `block ${blockName}`,
+      ),
+    };
+  }
+
   const kind = isShowcase ? 'showcase' : 'example';
   const root = isShowcase ? 'showcases' : 'examples';
   const parentSlug = assertSlug(
@@ -212,8 +234,8 @@ export function shadcnComponentItemPath(
 
 export function shadcnBlockItemName(
   blockName,
-  exampleFor,
-  isShowcase,
+  exampleFor = null,
+  isShowcase = false,
   registry = null,
 ) {
   return blockRegistryIdentity(blockName, exampleFor, isShowcase, registry)
@@ -222,8 +244,8 @@ export function shadcnBlockItemName(
 
 export function shadcnBlockItemPath(
   blockName,
-  exampleFor,
-  isShowcase,
+  exampleFor = null,
+  isShowcase = false,
   registry = null,
 ) {
   return blockRegistryIdentity(blockName, exampleFor, isShowcase, registry)

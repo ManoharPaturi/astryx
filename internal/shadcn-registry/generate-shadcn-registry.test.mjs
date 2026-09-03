@@ -124,6 +124,11 @@ describe('registry identities', () => {
       name: 'example-button-leading-icon',
       path: 'examples/button/leading-icon',
     });
+    expect(blockRegistryIdentity('Filter Toolbar', null, false)).toMatchObject({
+      kind: 'block',
+      name: 'block-filter-toolbar',
+      path: 'blocks/filter-toolbar',
+    });
     expect(pageRegistryIdentity('analytics-dashboard')).toMatchObject({
       name: 'template-analytics-dashboard',
       path: 'templates/analytics-dashboard',
@@ -144,6 +149,12 @@ describe('registry identities', () => {
     });
   });
 
+  it('rejects a standalone block marked as a component showcase', () => {
+    expect(() => blockRegistryIdentity('Hero Layout', null, true)).toThrow(
+      /requires exampleFor/,
+    );
+  });
+
   it('rejects malformed or unknown registry identity fields', () => {
     expect(() =>
       pageRegistryIdentity('dashboard', {slug: 'Dashboard'}),
@@ -160,8 +171,11 @@ describe('buildShadcnRegistry', () => {
 
     expect(counts).toEqual({
       components: 1,
+      hooks: 0,
+      showcases: 1,
+      examples: 0,
+      blocks: 0,
       skippedUnpublishedComponents: 0,
-      blocks: 1,
       skippedUnpublishedBlocks: 0,
       pages: 1,
       skippedUnpublishedPages: 0,
@@ -188,15 +202,24 @@ describe('buildShadcnRegistry', () => {
         slug: 'button-styles',
         aliases: ['button/variants'],
       };
+      input.blocks.push({
+        ...input.blocks[0],
+        dirName: 'FilterToolbar',
+        name: 'Filter Toolbar',
+        displayName: 'Filter Toolbar',
+        exampleFor: null,
+        isShowcase: false,
+        registry: null,
+      });
       const result = generateShadcnRegistry({
         ...input,
         outDir,
         cliRoot: outDir,
       });
 
-      expect(
-        existsSync(path.join(outDir, 'components', 'button.json')),
-      ).toBe(true);
+      expect(existsSync(path.join(outDir, 'components', 'button.json'))).toBe(
+        true,
+      );
       expect(
         existsSync(
           path.join(outDir, 'showcases', 'button', 'button-styles.json'),
@@ -206,12 +229,38 @@ describe('buildShadcnRegistry', () => {
         existsSync(path.join(outDir, 'showcases', 'button', 'variants.json')),
       ).toBe(true);
       expect(
-        existsSync(path.join(outDir, 'templates', 'dashboard.json')),
+        existsSync(path.join(outDir, 'blocks', 'filter-toolbar.json')),
       ).toBe(true);
+      expect(existsSync(path.join(outDir, 'templates', 'dashboard.json'))).toBe(
+        true,
+      );
       expect(result.routes).toContain('showcases/button/variants');
+      expect(result.routes).toContain('blocks/filter-toolbar');
     } finally {
       rmSync(outDir, {recursive: true, force: true});
     }
+  });
+
+  it('creates a first-class standalone block item', () => {
+    const standalone = {
+      ...fixture().blocks[0],
+      dirName: 'FilterToolbar',
+      name: 'Filter Toolbar',
+      displayName: 'Filter Toolbar',
+      exampleFor: null,
+      isShowcase: false,
+    };
+    const {items} = buildShadcnRegistry(fixture({blocks: [standalone]}));
+    const block = items.find(item => item.name === 'block-filter-toolbar');
+
+    expect(block.astryx).toMatchObject({
+      kind: 'block',
+      path: 'blocks/filter-toolbar',
+      exampleFor: null,
+    });
+    expect(block.files[0].target).toBe(
+      'components/astryx/blocks/FilterToolbar.tsx',
+    );
   });
 
   it('keeps component implementation inside the package', () => {

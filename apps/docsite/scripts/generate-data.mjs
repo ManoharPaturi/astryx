@@ -1245,7 +1245,7 @@ async function generateBlockRegistry() {
     let isShowcase = false;
     let aspectRatio = 1;
     let componentsUsed = [];
-    let exampleFor = '';
+    let exampleFor = null;
     let alsoExampleFor = [];
     let alsoShowcaseFor = [];
     let registry = null;
@@ -1277,6 +1277,12 @@ async function generateBlockRegistry() {
         : null;
     } catch {
       /* ignore */
+    }
+
+    if (isShowcase && !exampleFor) {
+      throw new Error(
+        `Block ${path.relative(REPO_ROOT, docPath)} sets isShowcase without exampleFor`,
+      );
     }
 
     let source = '';
@@ -1329,8 +1335,8 @@ export interface BlockEntry {
    */
   displayName: string;
   description: string;
-  /** The component this block is an example of (e.g. 'Button', 'Dialog') */
-  exampleFor: string;
+  /** Optional component ownership. Null means a standalone block. */
+  exampleFor: string | null;
   alsoExampleFor: string[];
   alsoShowcaseFor: string[];
   isShowcase: boolean;
@@ -1728,7 +1734,7 @@ function generateShowcaseRegistry(blocks, availableRegistryPaths) {
       ? identity.path
       : null;
 
-    if (block.isShowcase) {
+    if (block.isShowcase && block.exampleFor) {
       const destFile = `${block.dirName}.tsx`;
       fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
       entries.push({
@@ -1824,7 +1830,7 @@ function generateExampleRegistry(blocks, availableRegistryPaths) {
       ? identity.path
       : null;
 
-    if (!block.isShowcase) {
+    if (!block.isShowcase && block.exampleFor) {
       fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${block.dirName}.tsx`));
       entries.push({
         exampleFor: block.exampleFor,
@@ -2051,8 +2057,9 @@ export const shadcnRegistryIsPreview = ${registryIsPreview};
   if (shadcnCounts) {
     console.log(
       `  ${shadcnCounts.total} shadcn registry items ` +
-        `(${shadcnCounts.components} components/hooks, ` +
-        `${shadcnCounts.blocks} blocks, ${shadcnCounts.pages} pages; ` +
+        `(${shadcnCounts.components} components, ${shadcnCounts.hooks} hooks, ` +
+        `${shadcnCounts.showcases} showcases, ${shadcnCounts.examples} examples, ` +
+        `${shadcnCounts.blocks} standalone blocks, ${shadcnCounts.pages} pages; ` +
         `${shadcnCounts.skippedUnpublishedComponents} unpublished components, ` +
         `${shadcnCounts.skippedUnpublishedBlocks} blocks, and ` +
         `${shadcnCounts.skippedUnpublishedPages} pages skipped)`,

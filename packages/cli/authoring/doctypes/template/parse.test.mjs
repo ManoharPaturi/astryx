@@ -47,6 +47,27 @@ describe('parseTemplate (load boundary)', () => {
     });
   });
 
+  it('accepts a standalone block without component ownership', () => {
+    const parsed = parseTemplate({
+      type: 'block',
+      name: 'FilterToolbar',
+      description: 'Filters a data view.',
+      aspectRatio: 16 / 9,
+    });
+    expect(parsed.exampleFor).toBeUndefined();
+  });
+
+  it('requires component ownership for a showcase', () => {
+    expect(() =>
+      parseTemplate({
+        type: 'block',
+        name: 'HeroShowcase',
+        description: 'A component hero.',
+        isShowcase: true,
+      }),
+    ).toThrow(/exampleFor/);
+  });
+
   it('accepts stable registry slug and alias metadata', () => {
     const parsed = parseTemplate({
       type: 'page',
