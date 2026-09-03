@@ -171,6 +171,10 @@ The validator distinguishes the declared contract from theme usage:
   supported shapes rather than exceptions.
 - Colors outside the palette are not validator errors because the validator does
   not inspect theme tokens or components.
+- When a palette includes a neutral family, authors SHOULD use it for near-black,
+  near-white, and other achromatic UI roles. Exact black and white remain
+  ordinary explicit theme values rather than required family endpoints. This is
+  authoring guidance rather than a structural validation rule.
 - An intentional mapping difference is handled in the owning theme's alignment
   test: update the theme, retain and document the explicit deviation, or revert
   the palette change.
