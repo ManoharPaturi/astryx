@@ -2,7 +2,7 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] Turn only the chevron glyph in `useTableRowExpansion`, and start its detail panel at the first column rather than the row edge. (#PENDING)
+[fix] Turn only the chevron glyph in `useTableRowExpansion`, and start its detail panel at the first column rather than the row edge. (#5995)
 
 @ernestt
 
