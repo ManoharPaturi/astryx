@@ -333,7 +333,7 @@ export function TemplatePreviewDialog({
           </LayoutHeader>
         }
         content={
-          <LayoutContent isScrollable={false} padding={0}>
+          <LayoutContent isScrollable padding={0}>
             <div {...stylex.props(styles.body)}>
               <TemplatePreviewSurface
                 key={deferredCurrent.slug}

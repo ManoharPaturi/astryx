@@ -29,7 +29,8 @@ export const docs = {
     {
       name: 'isScrollable',
       type: 'boolean',
-      description: 'Enable scrollable overflow.',
+      description:
+        'Controls whether this panel owns an independent scrollport when it is a top-level rendered LayoutPanel root in the start or end slot. True keeps it pinned and independently scrollable. False makes it participate in the Layout middle scrollport in fill-height layouts; auto-height layouts remain page/ancestor-scrolled.',
       default: 'true',
     },
     {
@@ -82,7 +83,8 @@ export const docsZh = {
     {
       name: 'isScrollable',
       type: 'boolean',
-      description: '启用可滚动溢出。',
+      description:
+        '控制此面板是否拥有独立滚动容器。true 时固定并独立滚动；false 时在填充高度的 Layout 中参与中间滚动容器，在自动高度的 Layout 中由页面或祖先滚动。',
       default: 'true',
     },
     {
@@ -120,7 +122,8 @@ export const docsDense = {
     hasDivider: 'Border on appropriate edge.',
     padding:
       'Internal padding on spacing scale. Overrides layout container default.',
-    isScrollable: 'Enable scrollable overflow.',
+    isScrollable:
+      'Own an independent scrollport when true; participate in the fill-height Layout middle scrollport when false.',
     label: 'Accessible label for landmark element.',
     role: 'ARIA landmark role.',
     width:

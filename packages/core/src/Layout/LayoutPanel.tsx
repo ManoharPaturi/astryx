@@ -37,7 +37,6 @@ const styles = stylex.create({
   panel: {
     boxSizing: 'border-box',
     flexShrink: 0,
-    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
@@ -74,8 +73,29 @@ const styles = stylex.create({
     '--container-padding-block-start': '0px',
     '--container-padding-block-end': '0px',
   },
-  scrollable: {
-    overflow: 'auto',
+  directOverflowStatic: {
+    overflow: {
+      default: 'clip',
+      ':is([data-layout-scroll-state="middle"])': 'visible',
+      ':is([data-layout-scroll-state="self"])': 'auto',
+    },
+  },
+  directOverflowScrollable: {
+    overflow: {
+      default: 'auto',
+      ':is([data-layout-scroll-state="middle"])': 'visible',
+    },
+  },
+  directScrollState: {
+    height: {
+      default: null,
+      ':is([data-layout-scroll-state="middle"])': 'auto',
+    },
+    minHeight: {
+      default: null,
+      ':is([data-layout-scroll-state="middle"])':
+        'var(--layout-middle-client-height, 100%)',
+    },
   },
   // For start panel: divider on end edge
   dividerEnd: {
@@ -134,9 +154,11 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
   padding?: SpacingStep;
 
   /**
-   * Enables scrollable overflow for the panel.
-   * Set to false for auto-height layouts where sticky positioning
-   * needs to work with parent containers.
+   * Controls whether this panel owns an independent scrollport when it is a
+   * top-level rendered LayoutPanel root in the `start` or `end` slot.
+   * - `true`: this panel stays pinned and scrolls independently (default).
+   * - `false`: in a fill-height Layout, this panel moves with the Layout's
+   *   middle scrollport; in an auto-height Layout, the page/ancestor scrolls.
    * @default true
    */
   isScrollable?: boolean;
@@ -183,8 +205,9 @@ export interface LayoutPanelProps extends BaseProps<HTMLDivElement> {
  * Renders with optional divider and context-aware padding.
  * Divider position is auto-detected based on which slot the panel is in.
  *
- * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `padding={0}` if you need edge-to-edge content.
+ * Provides context-aware padding and either owns an independent scrollport or
+ * participates in its fill-height Layout's middle scrollport. Don't add padding
+ * or overflow to children. Use `padding={0}` if you need edge-to-edge content.
  *
  * @example
  * ```
@@ -258,7 +281,11 @@ export function LayoutPanel({
       {...mergeProps(
         themeProps('layout-panel'),
         stylex.props(
+          styles.directScrollState,
           styles.panel,
+          isScrollable
+            ? styles.directOverflowScrollable
+            : styles.directOverflowStatic,
           dynamicStyles.sizing(effectiveWidth ?? null),
           // Outer padding on container edges (unless component is full bleed)
           isStartPanel &&
@@ -268,7 +295,6 @@ export function LayoutPanel({
           isEndPanel && !isZeroPadding && padding == null && styles.endPanel,
           !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
           !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
-          isScrollable && styles.scrollable,
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
@@ -281,7 +307,9 @@ export function LayoutPanel({
         className,
         style,
       )}
-      {...props}>
+      {...props}
+      data-layout-region="panel"
+      data-layout-scroll-owner={isScrollable ? 'self' : 'middle'}>
       {children}
     </div>
   );

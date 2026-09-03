@@ -448,7 +448,7 @@ export default function FileExplorerPage() {
         />
       }
       content={
-        <LayoutContent padding={0} isScrollable={false}>
+        <LayoutContent padding={0} isScrollable>
           <HStack height="100%" style={columnRow}>
             {columns.map((col, colIndex) => {
               const showDivider =

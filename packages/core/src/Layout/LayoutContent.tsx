@@ -34,10 +34,7 @@ import {
 const styles = stylex.create({
   content: {
     boxSizing: 'border-box',
-    height: '100%',
     flex: 1,
-    minHeight: 0,
-    overflow: 'clip',
     // Default: inner padding on all sides (will be overridden by position-specific styles)
     paddingInlineStart: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
     paddingInlineEnd: `var(--layout-padding-inner-x, ${spacingVars['--spacing-4']})`,
@@ -45,14 +42,14 @@ const styles = stylex.create({
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When header has no divider, collapse top padding for seamless visual flow
       [stylex.when.ancestor(
-        ':has(> .astryx-layout-header:not([data-divider]))',
+        ':has(> [data-layout-header-lane] > .astryx-layout-header:not([data-divider]))',
       )]: 0,
     },
     paddingBlockEnd: {
       default: `var(--layout-padding-inner-y, ${spacingVars['--spacing-4']})`,
       // When footer has no divider, collapse bottom padding for seamless visual flow
       [stylex.when.ancestor(
-        ':has(> .astryx-layout-footer:not([data-divider]))',
+        ':has(> [data-layout-footer-lane] > .astryx-layout-footer:not([data-divider]))',
       )]: 0,
     },
     // Publish container padding vars for bleed children (Table, Divider, etc.)
@@ -81,8 +78,29 @@ const styles = stylex.create({
     paddingBlockEnd: `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
     '--container-padding-block-end': `var(--layout-padding-outer-y, ${spacingVars['--spacing-4']})`,
   },
-  scrollable: {
-    overflow: 'auto',
+  directSizeState: {
+    height: {
+      default: '100%',
+      ':is([data-layout-scroll-state="middle"])': 'auto',
+    },
+    minHeight: {
+      default: 0,
+      ':is([data-layout-scroll-state="middle"])':
+        'var(--layout-middle-client-height, 100%)',
+    },
+  },
+  directOverflowStatic: {
+    overflow: {
+      default: 'clip',
+      ':is([data-layout-scroll-state="middle"])': 'visible',
+      ':is([data-layout-scroll-state="self"])': 'auto',
+    },
+  },
+  directOverflowScrollable: {
+    overflow: {
+      default: 'auto',
+      ':is([data-layout-scroll-state="middle"])': 'visible',
+    },
   },
   fullBleed: {
     paddingInlineStart: 0,
@@ -111,9 +129,11 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
   padding?: SpacingStep;
 
   /**
-   * Enables scrollable overflow for the content area.
-   * Set to false for auto-height layouts where sticky positioning
-   * needs to work with parent containers.
+   * Controls whether this region owns an independent scrollport when it is the
+   * top-level rendered LayoutContent root for the `content` slot.
+   * - `true`: this content area scrolls independently (default).
+   * - `false`: in a fill-height Layout, this region moves with the Layout's
+   *   middle scrollport; in an auto-height Layout, the page/ancestor scrolls.
    * @default true
    */
   isScrollable?: boolean;
@@ -135,8 +155,9 @@ export interface LayoutContentProps extends BaseProps<HTMLDivElement> {
  * Scrollable main content area for Layout. Wraps the primary body content
  * with automatic scroll containment and context-aware padding.
  *
- * Already provides its own padding and scroll — don't add padding or
- * overflow to children. Use `padding={0}` if you need edge-to-edge content.
+ * Provides context-aware padding and either owns an independent scrollport or
+ * participates in its fill-height Layout's middle scrollport. Don't add padding
+ * or overflow to children. Use `padding={0}` if you need edge-to-edge content.
  *
  * @example
  * ```
@@ -191,12 +212,15 @@ export function LayoutContent({
         themeProps('layout-content'),
         stylex.props(
           styles.content,
+          styles.directSizeState,
+          isScrollable
+            ? styles.directOverflowScrollable
+            : styles.directOverflowStatic,
           // Outer padding on container edges (unless content is full bleed)
           !hasStart && !isZeroPadding && padding == null && styles.noStart,
           !hasEnd && !isZeroPadding && padding == null && styles.noEnd,
           !hasHeader && !isZeroPadding && padding == null && styles.noHeader,
           !hasFooter && !isZeroPadding && padding == null && styles.noFooter,
-          isScrollable && styles.scrollable,
           isZeroPadding && styles.fullBleed,
           padding != null && paddingStyles[padding],
           padding != null && containerPaddingInlineVarStyles[padding],
@@ -207,7 +231,9 @@ export function LayoutContent({
         className,
         style,
       )}
-      {...props}>
+      {...props}
+      data-layout-region="content"
+      data-layout-scroll-owner={isScrollable ? 'self' : 'middle'}>
       {children}
     </div>
   );
