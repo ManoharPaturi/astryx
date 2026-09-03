@@ -24,7 +24,8 @@
  * Nothing about it is public API: Stepper hands each Step the step it came
  * from through context, and the rest is derived. In a compact horizontal
  * Stepper, each track node is presentational rather than clickable; navigation
- * moves to the named previous/next controls in the summary row.
+ * moves to the named previous/next controls in the summary row, while each
+ * public content slot stays mounted and is hidden to preserve local state.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs
@@ -93,7 +94,8 @@ export interface StepProps extends BaseProps<HTMLLIElement> {
   description?: string;
   /**
    * Content rendered below the label and description. Useful in vertical
-   * steppers to show form fields or detailed content for each step.
+   * steppers to show form fields or detailed content for each step. Compact
+   * horizontal steppers hide it without unmounting it, preserving local state.
    */
   children?: ReactNode;
 
@@ -1017,7 +1019,10 @@ export function Step({
   // width divided by this count, so a stepper narrow enough to collapse can
   // only know it once every step is counted. Running after paint would show
   // the full stepper for a frame and then snap it shut.
-  useLayoutEffect(() => registerStep(step), [registerStep, step]);
+  useLayoutEffect(
+    () => registerStep(step, isDisabled),
+    [registerStep, step, isDisabled],
+  );
 
   const density = densityProp ?? ctxDensity;
   // Inline padding of a separated step's hover target. Density varies the block
@@ -1339,8 +1344,11 @@ export function Step({
     </div>
   ) : null;
 
+  // Compact horizontal layouts hide public step content without unmounting it,
+  // so local state survives as the container crosses the threshold.
   const contentNode = isRenderable(children) ? (
     <div
+      hidden={isCompact || undefined}
       {...stylex.props(
         styles.stepContent,
         styles.contentIndent(
@@ -1515,7 +1523,9 @@ export function Step({
         </div>
       </div>
     ) : (
-      <div {...stylex.props(styles.otContent)}>{children}</div>
+      <div hidden={isCompact || undefined} {...stylex.props(styles.otContent)}>
+        {children}
+      </div>
     );
 
     if (isVertical) {
@@ -1691,7 +1701,7 @@ export function Step({
           </div>
         )}
         {compactNameNode}
-        {!isCompact && otContentNode}
+        {otContentNode}
         {summaryNode}
       </li>
     );
@@ -1822,7 +1832,7 @@ export function Step({
           {descriptionNode}
         </div>
       )}
-      {!isCompact && contentNode}
+      {contentNode}
       {summaryNode}
     </li>
   );

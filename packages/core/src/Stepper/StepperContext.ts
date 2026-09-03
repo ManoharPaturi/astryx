@@ -49,11 +49,13 @@ export interface StepperContextValue {
   density: StepperDensity;
   indicatorPosition: StepperIndicatorPosition;
   /**
-   * Dev-mode index registration. Each Step calls this on mount with its `step`
-   * index. The Stepper tracks the set and warns if two Steps share the same
-   * index. Returns a cleanup function to call on unmount.
+   * Dev-mode index registration and compact-navigation metadata. Each Step
+   * calls this on mount with its `step` index and disabled state. The Stepper
+   * tracks the set, warns if two Steps share an index, and keeps compact
+   * previous/next controls from selecting disabled steps. Returns a cleanup
+   * function to call on unmount.
    */
-  registerStep: (index: number) => () => void;
+  registerStep: (index: number, isDisabled: boolean) => () => void;
   /**
    * How many steps have registered. Needed to know how much width each one is
    * getting, and to tell the last step from the rest without counting

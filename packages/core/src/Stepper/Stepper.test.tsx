@@ -1,8 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-import {StrictMode} from 'react';
+import {StrictMode, createRef} from 'react';
 import {describe, it, expect, vi} from 'vitest';
-import {render, screen, within} from '@testing-library/react';
+import {act, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
@@ -1029,10 +1029,12 @@ describe('Stepper', () => {
     const SUMMARY = '.astryx-stepper-summary';
 
     /**
-     * jsdom has no layout, so the width the stepper measures itself at is
-     * described by hand. It has to be in place before the first render: the
-     * shared resize observer takes its opening measurement synchronously as it
-     * subscribes, during commit, and that is the reading the collapse turns on.
+     * jsdom has no layout, so the width the public Stepper root measures is
+     * described by hand. The frame deliberately reports a wide parent: this
+     * keeps the test honest about measuring the consumer-styled/ref'd `<ol>`
+     * rather than the unstyled wrapper around it. The value has to be in place
+     * before the first render because the shared resize observer takes its
+     * opening measurement synchronously during commit.
      */
     function atWidth(width: number, ui: React.ReactElement) {
       const original = Object.getOwnPropertyDescriptor(
@@ -1042,7 +1044,10 @@ describe('Stepper', () => {
       Object.defineProperty(Element.prototype, 'clientWidth', {
         configurable: true,
         get(this: Element) {
-          return this.classList.contains('astryx-stepper-frame') ? width : 0;
+          if (this.classList.contains('astryx-stepper')) {
+            return width;
+          }
+          return this.classList.contains('astryx-stepper-frame') ? 1000 : 0;
         },
       });
       try {
@@ -1050,6 +1055,8 @@ describe('Stepper', () => {
       } finally {
         if (original) {
           Object.defineProperty(Element.prototype, 'clientWidth', original);
+        } else {
+          delete (Element.prototype as {clientWidth?: number}).clientWidth;
         }
       }
     }
@@ -1072,6 +1079,29 @@ describe('Stepper', () => {
         expect(screen.getByText(name)).toBeInTheDocument();
       }
       expect(document.querySelector(FRAME)).toBeInTheDocument();
+    });
+
+    it('measures the public styled and ref-forwarding root', () => {
+      const ref = createRef<HTMLOListElement>();
+      atWidth(
+        320,
+        <Stepper
+          ref={ref}
+          activeStep={1}
+          className="consumer-stepper"
+          style={{width: 320}}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" />
+          <Step step={3} label="Payment" />
+        </Stepper>,
+      );
+
+      const list = screen.getByRole('list');
+      expect(ref.current).toBe(list);
+      expect(list).toHaveClass('consumer-stepper');
+      expect(list).toHaveStyle({width: '320px'});
+      expect(document.querySelector(SUMMARY)).toBeInTheDocument();
     });
 
     it('drops the labels and names the current step once they no longer fit', () => {
@@ -1148,6 +1178,131 @@ describe('Stepper', () => {
       await user.click(screen.getByRole('button', {name: 'Previous step'}));
       expect(onStepClick).toHaveBeenCalledWith(0);
     });
+
+    it('skips disabled steps in either direction', async () => {
+      const user = userEvent.setup();
+      const onStepClick = vi.fn();
+      const forward = atWidth(
+        320,
+        <Stepper activeStep={1} onStepClick={onStepClick}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" isDisabled />
+          <Step step={3} label="Payment" />
+        </Stepper>,
+      );
+
+      await user.click(screen.getByRole('button', {name: 'Next step'}));
+      expect(onStepClick).toHaveBeenLastCalledWith(3);
+      forward.unmount();
+
+      atWidth(
+        320,
+        <Stepper activeStep={2} onStepClick={onStepClick}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" isDisabled />
+          <Step step={2} label="Delivery" />
+          <Step step={3} label="Payment" />
+        </Stepper>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Previous step'}));
+      expect(onStepClick).toHaveBeenLastCalledWith(0);
+    });
+
+    it('disables a summary control with no enabled step in its direction', () => {
+      atWidth(
+        320,
+        <Stepper activeStep={1} onStepClick={() => {}}>
+          <Step step={0} label="Cart" />
+          <Step step={1} label="Shipping" />
+          <Step step={2} label="Delivery" isDisabled />
+          <Step step={3} label="Payment" isDisabled />
+        </Stepper>,
+      );
+      expect(screen.getByRole('button', {name: 'Next step'})).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+    });
+
+    it.each(['separated', 'on-track'] as const)(
+      'keeps %s step content mounted across compact resizing',
+      async indicatorPosition => {
+        const originalWidth = Object.getOwnPropertyDescriptor(
+          Element.prototype,
+          'clientWidth',
+        );
+        let width = 600;
+        let resize: ResizeObserverCallback = () => {};
+        class ResizeObserverStub {
+          constructor(callback: ResizeObserverCallback) {
+            resize = callback;
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        }
+        vi.stubGlobal('ResizeObserver', ResizeObserverStub);
+        Object.defineProperty(Element.prototype, 'clientWidth', {
+          configurable: true,
+          get(this: Element) {
+            return this.classList.contains('astryx-stepper') ? width : 0;
+          },
+        });
+
+        let view: ReturnType<typeof render> | null = null;
+        try {
+          view = render(
+            <Stepper activeStep={0} indicatorPosition={indicatorPosition}>
+              <Step step={0} label="Account">
+                <input aria-label="Account name" defaultValue="" />
+              </Step>
+              <Step step={1} label="Review" />
+            </Stepper>,
+          );
+          const user = userEvent.setup();
+          const input = screen.getByRole<HTMLInputElement>('textbox', {
+            name: 'Account name',
+          });
+          await user.type(input, 'Draft');
+          const list = screen.getByRole('list');
+
+          width = 120;
+          act(() =>
+            resize([{target: list} as unknown as ResizeObserverEntry], null!),
+          );
+          const compactInput = document.querySelector<HTMLInputElement>(
+            'input[aria-label="Account name"]',
+          );
+          expect(compactInput).toBe(input);
+          expect(compactInput).toHaveValue('Draft');
+          expect(compactInput?.closest('[hidden]')).not.toBeNull();
+          expect(document.querySelector(SUMMARY)).toBeInTheDocument();
+
+          width = 600;
+          act(() =>
+            resize([{target: list} as unknown as ResizeObserverEntry], null!),
+          );
+          expect(
+            document.querySelector('input[aria-label="Account name"]'),
+          ).toBe(input);
+          expect(input.closest('[hidden]')).toBeNull();
+          expect(document.querySelector(SUMMARY)).toBeNull();
+        } finally {
+          view?.unmount();
+          vi.unstubAllGlobals();
+          if (originalWidth) {
+            Object.defineProperty(
+              Element.prototype,
+              'clientWidth',
+              originalWidth,
+            );
+          } else {
+            delete (Element.prototype as {clientWidth?: number}).clientWidth;
+          }
+        }
+      },
+    );
 
     it('stops the controls at both ends of the sequence', () => {
       const onStepClick = vi.fn();
