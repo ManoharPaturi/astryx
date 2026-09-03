@@ -23,8 +23,9 @@ affects_consumer_docs: [color, theme]
 
 Theme authors need a repeatable way to make complete tonal palette candidates.
 Generation is authoring work: it produces colors for people to inspect, adjust,
-and accept. A theme ships exact reviewed values, not a live relationship to a
-recipe or palette.
+and accept. The accepted result is saved as a private, theme-owned palette file.
+A theme may explicitly reference reviewed values from that committed file, but
+ordinary theme builds do not rerun the generator.
 
 Current `main` has an experimental Palette Generator Lab. It compares candidate
 recipes, complete families, modes, anchors, and existing themes, then lets an
@@ -33,16 +34,15 @@ for the first production recipe. This record freezes that intent before a
 follow-up extracts it into supported tooling. AST-018 separately proposes the
 shape, ownership, and validation boundary for accepted palette data.
 
-No current public library or CLI consumes palette generation. This record
-therefore defines authoring requirements and implementation prerequisites; it
-does not yet accept a public function, command, package, or serialized schema.
+The first supported consumer is the Astryx CLI's theme-authoring workflow. This
+record accepts a pure `generateTonalPalette()` authoring API and the
+`astryx theme palette generate` command. Both use one versioned engine and remain
+outside Core theme normalization and runtime behavior.
 
 ## Non-goals
 
 - Add palette data, generation, or mapping to `DefineThemeInput`, `DefinedTheme`,
   `defineTheme`, `expandColorScale`, runtime mounting, or theme compilation.
-- Implement the production generator or accept a public function name, command,
-  package, or serialized schema.
 - Require generated palettes or provenance for hand-authored or imported data.
 - Define palette shape, validation, association, inheritance, or artifacts.
 - Make a palette stop a semantic token, live lookup, design approval, or
@@ -57,18 +57,18 @@ does not yet accept a public function, command, package, or serialized schema.
 | AST-018, if accepted       | Accepted palette shape, ownership, validation boundary, and separation from runtime themes.                          |
 | `theme:<name>`             | Accepted exact palette values, saved mappings and deviations, required states, compatibility, and rendered evidence. |
 | Current theme architecture | Productive `defineTheme` normalization and compilation; AST-008 does not change them.                                |
-| A future CLI/API owner     | Any accepted command, response, error, function, package, or public schema.                                          |
+| CLI authoring surface      | The generation command, pure API, candidate serialization, receipts, and safe writes.                                |
 
 ## Authoring lifecycle
 
-| Stage             | Required result                                                                                                   |
-| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Create            | Generate, hand-author, or import a complete candidate palette.                                                    |
-| Review            | Inspect complete families, modes, diagnostics, comparisons, and rendered contexts; adjust or reject freely.       |
-| Accept            | Save the final exact palette data as a reviewed snapshot under the accepted palette contract.                     |
-| Suggest, optional | Produce a read-only candidate mapping from accepted palette data to one explicit theme role.                      |
-| Save mapping      | After human acceptance, write the final explicit color into theme source; never save a live numbered-stop lookup. |
-| Verify            | Record contextual evidence for the exact saved values in the owning theme record.                                 |
+| Stage             | Required result                                                                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Create            | Generate, hand-author, or import a complete candidate palette.                                                     |
+| Review            | Inspect complete families, modes, diagnostics, comparisons, and rendered contexts; adjust or reject freely.        |
+| Accept            | Save the final exact palette data as a reviewed snapshot under the accepted palette contract.                      |
+| Suggest, optional | Produce a read-only candidate mapping from accepted palette data to one explicit theme role.                       |
+| Save mapping      | After human acceptance, save a literal CSS color or an intentional reference to its exact committed palette value. |
+| Verify            | Record contextual evidence for the exact saved values in the owning theme record.                                  |
 
 ## Requirements
 
@@ -83,6 +83,13 @@ does not yet accept a public function, command, package, or serialized schema.
   `0, 5, …, 100` layout, while accepting any non-empty author-defined numeric
   stop list. Eleven-stop and specialized layouts are valid author choices, not
   exceptions.
+- **FR2a — Custom stop syntax is exact.** Every stop MUST be a finite JSON number
+  from 0 through 100 inclusive. Stops MUST be unique and strictly increasing.
+  Integer and decimal stops are valid; equivalent numeric spellings such as `5`
+  and `5.0` identify the same stop and therefore cannot coexist. Endpoints 0 and
+  100 are optional. A one-stop palette is valid. Serialization uses the canonical
+  JSON number spelling produced by the implementation and MUST NOT depend on
+  locale.
 - **FR3 — Mode intent is explicit.** Light-only, dark-only, independent light and
   dark inputs, shared candidates, and named dark transforms are distinct. A
   light ramp MUST NOT silently become a reviewed dark ramp, and labels MUST NOT
@@ -102,13 +109,15 @@ does not yet accept a public function, command, package, or serialized schema.
   MUST emit the complete candidate plus a detached record naming the normalized
   request, recipe and implementation versions, output format versions,
   adjustments, deviations, and every canonical output digest. An output change
-  MUST change a matching identity or digest. No public schema is accepted here.
+  MUST change a matching identity or digest.
 - **FR7 — Generation stops at a candidate.** Output MUST identify itself as a
-  candidate and MUST NOT edit source, adopt values, map roles, or claim visual or
-  accessibility approval. Reviewers may replace or adjust any stop. Once an
-  author saves and adopts the result, the palette is ordinary author-owned data:
-  it may be edited freely and does not remain under generator control. Edited
-  accepted data MUST NOT claim exact regeneration.
+  candidate and MUST NOT adopt values, map roles, or claim visual or accessibility
+  approval. Preview is read-only. An explicit output option MAY save the candidate
+  as a separate TypeScript or JSON file, but MUST NOT overwrite an existing file
+  without explicit author intent. Once adopted, the palette is ordinary
+  author-owned data: it may be edited freely and does not remain under generator
+  control. Edited accepted data MUST NOT claim exact regeneration, and ordinary
+  theme builds MUST NOT rerun the generator.
 - **FR8 — The selected recipe preserves complete-family evidence.** The first
   production recipe MUST preserve the intended results of
   `apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts` at
@@ -125,12 +134,13 @@ does not yet accept a public function, command, package, or serialized schema.
   role, current saved value, and versioned method. It returns an inspectable
   family, stop, exact color, rationale, and measured differences without editing.
   A separate explicit apply action shows the target and patch, preserves author
-  edits, saves final hex atomically, and permits adjustment or rejection. It MUST
-  NOT create a live lookup.
-- **FR10 — Palette edits never recolor themes implicitly.** Regenerating or
-  replacing palette data MUST leave saved theme values, normalized tokens, CSS,
-  built runtime modules, and mounted behavior unchanged. A tool MAY offer a new
-  reviewable patch; nothing changes until an author accepts it.
+  edits, saves a literal CSS value or an intentional committed-palette reference,
+  and permits adjustment or rejection.
+- **FR10 — Regeneration never recolors themes implicitly.** Generating a new
+  candidate MUST NOT replace an adopted palette or change saved theme values,
+  normalized tokens, CSS, built runtime modules, or mounted behavior. A committed
+  palette edit MAY intentionally change theme mappings that explicitly reference
+  it; that source diff and its rendered impact MUST be reviewed together.
 - **FR11 — Validation is separate from construction.** Palette inspection uses a
   `validate*` or `check*` role in theme-package tests, internal test utilities, or
   an explicitly accepted future CLI checker. Validation-only data and helpers
@@ -143,31 +153,86 @@ does not yet accept a public function, command, package, or serialized schema.
   dependencies, candidates, reproducibility data, and suggestion logic MUST NOT
   enter Core component runtime, theme mounting, default theme CSS or JavaScript,
   or a theme package's default runtime export.
+- **FR14 — The supported surfaces stay narrow.** `generateTonalPalette(request)`
+  is a pure authoring function that returns candidate data without reading or
+  writing files. `astryx theme palette generate <config>` is its non-interactive
+  file adapter. TypeScript is the primary committed output so exact family and
+  stop keys remain checkable; JSON MAY be requested for interoperable tooling.
+  Neither surface changes `defineTheme()` or performs semantic mapping.
 
-## Future implementation prerequisites
+## Implementation contract
 
 1. The implementation PR pins the current Sandbox OKLCH behavior as
    `astryx-oklch-v1`, copies its constants and transformations into one owned
    engine, and adds exact regression vectors. The Sandbox remains a prototype,
    not the production import path.
-2. A library proposal follows AST-002 admission and verb rules and names a
-   current supported consumer. A CLI proposal follows `architecture:cli-surface`
-   and separately defines its command, response, error, support, and write contract.
-3. If both are proposed, they MUST use one deterministic engine and agree on
-   recipe semantics; this requires neither to ship and accepts no public schema.
+2. The pure authoring API and CLI adapter use one deterministic engine and agree
+   on recipe semantics. The CLI follows `architecture:cli-surface` for its
+   command, response, error, documentation, support, and write contract.
+3. Generated TypeScript exports author-owned palette data without importing the
+   generator. Generated JSON contains the same canonical palette values.
 4. Every public function, command, package, schema, or artifact receives separate
    API and AST-017 compatibility acceptance before release.
 
+### `astryx-oklch-v1` normative recipe
+
+The first production recipe is defined here rather than by mutable Sandbox code:
+
+- Normalize supported seed and anchor colors to lowercase six-digit sRGB hex.
+- Convert sRGB through the standard D65 OKLab matrices, then express hue and
+  chroma in OKLCH.
+- Convert requested tone to lightness with the CIELAB L* transfer: values above
+  8 use `((tone + 16) / 116)³`; lower values use `tone / 903.3`; the result is
+  cube-rooted for OKLab lightness.
+- Apply the pinned tone chroma envelope
+  `0.18 + 0.82 × sqrt(sin(π × tone / 100))`.
+- Apply hue-balance factors 0.94 for `[70,115)`, 0.78 for `[115,175)`, 0.82 for
+  `[175,230)`, 0.90 for `[285,340)`, and 1 elsewhere. Orange hues `[40,70)`
+  rotate toward red below tone 50 by at most 18 degrees.
+- Vibrancy 50 is neutral. Values 0–25 interpolate to multiplier 0.72; values
+  25–50 interpolate from 0.72 to 1; values above 50 add 0.0096 per point.
+- Cross-family coordination mixes source chroma 35% with reference chroma 0.18
+  at 65%. Neutral profiles are `neutral-v1` (hue 0, chroma 0), `warm-v1`
+  (hue 75, chroma 0.018), `cool-v1` (hue 250, chroma 0.018), and `custom`
+  (the normalized neutral seed).
+- Dark ramps multiply chroma by 0.85 and lift tone by 5 through tone 80. The
+  lift tapers linearly to zero at tone 95 and is zero above it.
+- Out-of-gamut OKLCH candidates preserve lightness and hue while chroma is found
+  by 20 iterations of binary search over `[0, 0.4]`.
+- Exact anchors replace their stop. Bounded anchors move toward the requested
+  color only within their declared OKLab Euclidean `maxDeltaE`; preferred anchors
+  blend 35% toward the requested color. Anchor corrections use smoothstep
+  interpolation and taper to zero 25 tone units beyond the nearest anchor.
+- Convert final colors to sRGB by rounding each clamped channel to the nearest
+  8-bit integer. Emit lowercase `#rrggbb`. Canonical JSON uses two-space
+  indentation, insertion-ordered families and stops, and one trailing newline.
+- Invalid requests fail before producing a candidate. Family-local anchor
+  conflicts report the family and produce no adoptable output.
+
+The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON:
+
+| Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
+| ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3527 | `27e7ebffd5dcea11985e4a814329bc6069ed6cbb1665da09f28a6f4607af17a5` |
+| `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
+| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `2bd7880a2154978c44b351e05d15ebd5094feb37ee30449a1a39c60da1513dfa` |
+
+Exact fixture equality is the release gate for recipe compatibility. Monotonicity,
+adjacent-stop distance, hue drift, family distinction, gamut events, and CVD
+simulations are recorded as design evidence for the complete candidate; they do
+not become universal accessibility or contrast guarantees for isolated colors.
+
 ## Current-state impact
 
-| State                 | Required result                                                                                   |
-| --------------------- | ------------------------------------------------------------------------------------------------- |
-| Generation absent     | Existing themes, builds, runtime bytes, and supported package ranges stay unchanged.              |
-| Candidate produced    | No source, theme, package, or runtime output changes.                                             |
-| Palette accepted      | Exact values enter the AST-018-owned shape, if accepted; the theme record owns adoption evidence. |
-| Suggestion produced   | Source and output stay unchanged.                                                                 |
-| Mapping accepted      | One reviewed patch saves explicit values; failure leaves no partial edit.                         |
-| Palette changed later | Saved mappings and rendered output stay unchanged until another explicit review and save.         |
+| State                   | Required result                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Generation absent       | Existing themes, builds, runtime bytes, and supported package ranges stay unchanged.              |
+| Candidate produced      | No source, theme, package, or runtime output changes.                                             |
+| Palette accepted        | Exact values enter the AST-018-owned shape, if accepted; the theme record owns adoption evidence. |
+| Suggestion produced     | Source and output stay unchanged.                                                                 |
+| Mapping accepted        | One reviewed patch saves explicit values; failure leaves no partial edit.                         |
+| New candidate generated | Adopted palettes and rendered output stay unchanged until an explicit review and save.            |
+| Adopted palette edited  | Literal mappings stay unchanged; explicit references change intentionally and are reviewed.       |
 
 ## Verification
 
@@ -189,21 +254,24 @@ FR8 preserves Ruby's complete-authoring requirements and the comparison evidence
 behind the selected OKLCH direction. A color-space name or isolated ramps alone
 do not define the production recipe.
 
-### DEC-10 — Accepted theme colors are explicit snapshots
+### DEC-10 — Accepted palettes are committed snapshots
 
 **Decider:** `cixzhang`, `2026-09-03`
 
-FR7, FR9, and FR10 replace former draft DEC-8 and its palette-backed
-`defineTheme` / `expandColorScale` direction. Accepted palettes and mappings store
-exact values. OQ3 is removed with the rejected automatic runtime coupling.
+FR7, FR9, and FR10 replace former draft DEC-8 and its palette-aware
+`defineTheme` / `expandColorScale` direction. Accepted palettes are committed
+snapshots. Theme mappings use literal CSS values or explicit references to those
+snapshots; generation never runs implicitly. OQ3 is removed with the rejected
+automatic mapping and runtime coupling.
 
-### DEC-11 — A public surface waits for a supported consumer
+### DEC-11 — Generation has one authoring engine and two adapters
 
 **Decider:** `cixzhang`, `2026-09-03`
 
-DEC-11 supersedes former draft DEC-4's required library, fixed function, CLI,
-and public byte-parity contract. Sandbox generation is experimental; each future
-surface needs a current consumer. Prerequisite 3 accepts no surface or schema.
+The CLI theme-authoring workflow is the first supported consumer. The pure
+`generateTonalPalette()` API enables programmatic authoring without filesystem
+effects; `astryx theme palette generate` adds preview and explicit file output.
+Both use the same `astryx-oklch-v1` engine. Neither enters Core or `defineTheme()`.
 
 ### DEC-12 — The generator defaults without restricting palette authors
 
