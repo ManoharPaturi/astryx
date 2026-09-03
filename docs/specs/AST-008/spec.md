@@ -198,6 +198,10 @@ The first production recipe is defined here rather than by mutable Sandbox code:
 - Apply hue-balance factors 0.94 for `[70,115)`, 0.78 for `[115,175)`, 0.82 for
   `[175,230)`, 0.90 for `[285,340)`, and 1 elsewhere. Orange hues `[40,70)`
   rotate toward red below tone 50 by at most 18 degrees.
+- Above tone 60, green hues `[115,175)` taper to 72% of their balanced chroma
+  and teal hues `[175,200)` taper to 60% at tone 95 using smoothstep. This keeps
+  their light stops optically balanced without muting cyan or changing the
+  midtone anchors.
 - Vibrancy 50 is neutral. Values 0–25 interpolate to multiplier 0.72; values
   25–50 interpolate from 0.72 to 1; values above 50 add 0.0096 per point.
 - Cross-family coordination mixes source chroma 35% with reference chroma 0.18
@@ -227,6 +231,7 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 | `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 19 default stops |            3227 | `72f2fca4236dfc76e3fc60444fd6268583f05a840b5e8aa7631b8da126d0cc78` |
 | `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
 | `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b` |
+| `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             825 | `991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d` |
 
 Exact fixture equality is the release gate for recipe compatibility. Monotonicity,
 adjacent-stop distance, hue drift, family distinction, gamut events, and CVD
@@ -293,6 +298,10 @@ or neutral stops from 5 through 95 and accepts any explicit non-empty numeric
 stop list. It does not repeat exact black and white in every family. The
 generated candidate becomes author-owned after review and acceptance. Generator
 defaults therefore do not become palette-validity rules.
+
+Generated palettes are reviewable starting points. Authors may adjust
+family-level inputs and regenerate until the palette matches their intended
+expression; only the explicitly approved output becomes the theme-owned palette.
 
 Rejected: requiring every accepted palette to use the generator's 19-stop
 default. Themes may need compact or specialized palettes for iconography,
