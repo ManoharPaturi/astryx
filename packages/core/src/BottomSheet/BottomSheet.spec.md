@@ -22,7 +22,7 @@ design_specs: []
 architecture:
   [architecture:component-theming-surface, architecture:layer-runtime]
 contributing: []
-system_specs: []
+system_specs: [spec:AST-019]
 ---
 
 # BottomSheet component contract
@@ -30,16 +30,17 @@ system_specs: []
 ## Intent
 
 BottomSheet presents caller-provided content in a panel that rises from the
-bottom edge. This draft records current consumer anatomy and theming reachability
-without changing runtime behavior, styling, targets, or public API.
+bottom edge. This draft records current consumer anatomy and projects the
+keyboard-reachable scrolling contract proposed by `spec:AST-019`. It does not
+change runtime behavior, styling, targets, or public API on its own.
 
 ## Compatibility and migration
 
 - Released default preserved: `yes`
-- Compatibility class: additive documentation only; runtime, DOM, styling,
-  targets, and public API remain unchanged
+- Compatibility class: additive keyboard behavior proposed by `spec:AST-019`;
+  existing component and consumer-owned `tabindex` values retain precedence
 - Controlled/uncontrolled behavior: unchanged
-- Migration decision: none
+- Migration decision: `spec:AST-019/DEC-1` and `spec:AST-019/DEC-2`
 
 Consumer migration instructions belong in consumer docs and release notes.
 
@@ -49,6 +50,8 @@ Consumer migration instructions belong in consumer docs and release notes.
 
 - The visual Sheet panel and its current `bottom-sheet` target.
 - The scrolling Content area and decorative Handle inside the panel.
+- The Content area's keyboard route when rendered overflow requires scrolling,
+  as proposed by `spec:AST-019`.
 - Standalone sheet presentation, including its optional native-dialog Scrim.
 
 **Does not own / non-goals**
@@ -67,10 +70,11 @@ in `BottomSheet.doc.mjs`.
 
 ## Behavioral and layout contract
 
-| ID  | Candidate invariant                                                                                                                                                | Basis                           | Draft review state                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- | -------------------------------------------------- |
-| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation. | Current source, docs, and tests | Verified current behavior; no new behavior decided |
-| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                        | Current source, docs, and tests | Verified current behavior; no target change        |
+| ID  | Candidate invariant                                                                                                                                                                                                                 | Basis                                      | Draft review state                                 |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | -------------------------------------------------- |
+| FR1 | The current presented sheet contains one Sheet panel, one scrolling Content area, and one decorative Handle; a Scrim is present only in scrim-backed presentation.                                                                  | Current source, docs, and tests            | Verified current behavior; no new behavior decided |
+| FR2 | The Sheet panel carries `bottom-sheet`; Content area, Handle, and Scrim carry no BottomSheet public target.                                                                                                                         | Current source, docs, and tests            | Verified current behavior; no target change        |
+| FR3 | Under the proposed `spec:AST-019` contract, an actually overflowing Content area with no visible sequential-focus descendant owns the fallback keyboard stop; control-bearing, fitting, clipped, and hidden-overflow states do not. | `spec:AST-019` and implementation PR #5553 | Proposed shared behavior; implementation pending   |
 
 ### Allowed variation
 
@@ -92,21 +96,26 @@ in `BottomSheet.doc.mjs`.
 
 ### Performance and resources
 
-- No new performance or resource rule is introduced.
+- `spec:AST-019/IR4` proposes one pending measurement per observer delivery
+  and complete cleanup when the Content area detaches.
 
 ## Accessibility contract
 
-This draft does not change or extend BottomSheet's existing dialog naming,
-focus, Handle, keyboard, or dismissal behavior.
+`spec:AST-019` proposes that the scrolling Content area remain reachable in the
+sequential keyboard focus order whenever it actually overflows. A visible
+sequential-focus descendant owns that route when one exists; otherwise Content
+owns the temporary fallback stop and shared visible focus indicator. The
+fallback does not change BottomSheet's dialog naming, focus trap, Handle,
+keyboard, or dismissal behavior.
 
 ## Design relationships
 
-| Anatomy or state | Design requirement                                                                    | Representation authority       | Hierarchy role | Component contract |
-| ---------------- | ------------------------------------------------------------------------------------- | ------------------------------ | -------------- | ------------------ |
-| Sheet panel      | Presents the painted bottom-edge surface and owns panel geometry and motion.          | Current source and public docs | Prominent      | FR1, FR2           |
-| Content area     | Provides the scrolling area for caller-provided sheet content.                        | Current source and tests       | Prominent      | FR1, FR2           |
-| Handle           | Presents the decorative grab affordance and owns the panel's drag interaction region. | Current source and tests       | Supporting     | FR1, FR2           |
-| Scrim            | Dims and blocks the page in a scrim-backed host.                                      | Current source and public docs | Supporting     | FR1, FR2           |
+| Anatomy or state | Design requirement                                                                                                          | Representation authority                  | Hierarchy role | Component contract |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | -------------- | ------------------ |
+| Sheet panel      | Presents the painted bottom-edge surface and owns panel geometry and motion.                                                | Current source and public docs            | Prominent      | FR1, FR2           |
+| Content area     | Provides the scrolling area for caller-provided sheet content and the proposed fallback keyboard stop when FR3 requires it. | Current source, tests, and `spec:AST-019` | Prominent      | FR1, FR2, FR3      |
+| Handle           | Presents the decorative grab affordance and owns the panel's drag interaction region.                                       | Current source and tests                  | Supporting     | FR1, FR2           |
+| Scrim            | Dims and blocks the page in a scrim-backed host.                                                                            | Current source and public docs            | Supporting     | FR1, FR2           |
 
 Content area, Handle, and Scrim are stable visible parts, but no current public
 target reaches them. Their `none` dispositions record factual reachability, not
@@ -139,6 +148,8 @@ a decision that they must remain unthemeable.
 
 ## Family and system relationships
 
+- `spec:AST-019` owns the proposed shared fallback-stop condition, focus
+  stability, public primitive, resource bounds, and browser-evidence boundary.
 - `architecture:component-theming-surface` owns anatomy qualification, target
   mapping, and factual `none` dispositions.
 - `architecture:layer-runtime` owns the current native-dialog host distinction
@@ -149,12 +160,13 @@ a decision that they must remain unthemeable.
 
 ## Verification map
 
-| Contract            | Verification                                                              | Representative states                          | Mutation or failure expectation                                                                 | Audit section               |
-| ------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------- |
-| FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites | Modal, non-modal, and switcher presentations   | Removing a documented part fails existing content, structure, or dismissal assertions.          | `audit:BottomSheet/anatomy` |
-| FR2                 | Panel target assertion, source inspection, and theming target inventories | Sheet panel, Content area, Handle, and Scrim   | Removing the panel target or documenting an unshipped child target fails evidence or inventory. | `audit:BottomSheet/theming` |
-| Layout evidence     | `BottomSheetPanel.test.tsx`                                               | Floating Handle and scrolling Content area     | Reordering or merging the stable parts fails existing panel structure and style assertions.     | `audit:BottomSheet/anatomy` |
-| Theming anatomy map | `scripts/check-knowledge.mjs`                                             | Canonical anatomy and current target inventory | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.      | `audit:BottomSheet/theming` |
+| Contract            | Verification                                                                                                                  | Representative states                                                                                   | Mutation or failure expectation                                                                                        | Audit section                     |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| FR1                 | `BottomSheet.test.tsx` render, content, Handle, and scrim behavior suites                                                     | Modal, non-modal, and switcher presentations                                                            | Removing a documented part fails existing content, structure, or dismissal assertions.                                 | `audit:BottomSheet/anatomy`       |
+| FR2                 | Panel target assertion, source inspection, and theming target inventories                                                     | Sheet panel, Content area, Handle, and Scrim                                                            | Removing the panel target or documenting an unshipped child target fails evidence or inventory.                        | `audit:BottomSheet/theming`       |
+| FR3                 | Proposed `useScrollableTabStop` unit tests, BottomSheet panel tests, open Storybook fixture, and real-Chromium keyboard probe | Text-only overflow; visible/hidden/negative-tabindex descendant; fitting content; overflow-mode changes | Content becomes unreachable, a duplicate/dead stop appears, focus drops, or keyboard scrolling/focus indication fails. | `audit:BottomSheet/accessibility` |
+| Layout evidence     | `BottomSheetPanel.test.tsx`                                                                                                   | Floating Handle and scrolling Content area                                                              | Reordering or merging the stable parts fails existing panel structure and style assertions.                            | `audit:BottomSheet/anatomy`       |
+| Theming anatomy map | `scripts/check-knowledge.mjs`                                                                                                 | Canonical anatomy and current target inventory                                                          | Missing, extra, prefixed, stale, or multiply assigned mappings fail repository validation.                             | `audit:BottomSheet/theming`       |
 
 Existing tests directly assert the Sheet panel target, Content area placement,
 Handle structure, and scrim behavior. Source and public target metadata confirm
@@ -162,8 +174,11 @@ that the other three parts have no public target.
 
 ## Decision log
 
-None. This draft records current facts and introduces no component-local design,
-API, theming, or layer-system decision.
+The current anatomy and theming facts introduce no component-local design,
+API, theming, or layer-system decision. `spec:AST-019/DEC-1` and
+`spec:AST-019/DEC-2` propose the shared accessibility and derivation decisions
+used by FR3; they are not authoritative until that system spec becomes
+`current`.
 
 ## Open questions
 
