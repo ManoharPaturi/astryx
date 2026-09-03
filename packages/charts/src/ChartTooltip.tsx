@@ -98,6 +98,9 @@ const styles = stylex.create({
   // the owner-local manual popover into the native top layer.
   card: {
     position: 'fixed',
+    inset: 'auto',
+    marginBlock: 0,
+    marginInline: 0,
     backgroundColor: colorVars['--color-background-popover'],
     border: `1px solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-container'],

@@ -122,6 +122,36 @@ const pointerLeave: ChartPointerEvent = {
 
 const card = () => document.querySelector('[role="tooltip"]') as HTMLElement;
 
+function cssDeclarationsOf(el: Element): string[] {
+  const classes = new Set(
+    (el as HTMLElement).className.split(/\s+/).filter(Boolean),
+  );
+  const declarations: string[] = [];
+
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      const text = rule.cssText;
+      const brace = text.indexOf('{');
+      if (brace === -1) {
+        continue;
+      }
+      const selector = text.slice(0, brace).replaceAll(':not(#\\#)', '').trim();
+      const match = /^\.([\w-]+)(.*)$/.exec(selector);
+      if (!match || !classes.has(match[1])) {
+        continue;
+      }
+      declarations.push(
+        text
+          .slice(brace + 1, text.lastIndexOf('}'))
+          .trim()
+          .replace(/;$/, ''),
+      );
+    }
+  }
+
+  return declarations;
+}
+
 describe('ChartTooltip card', () => {
   it('hosts the manual popover beside its owning chart', () => {
     const harness = makeHarness();
@@ -130,6 +160,21 @@ describe('ChartTooltip card', () => {
     expect(card().parentElement).toBe(container);
     expect(card()).toHaveAttribute('popover', 'manual');
     expect(card().textContent).toBe('');
+  });
+
+  it('resets native popover centering before applying fixed coordinates', () => {
+    const harness = makeHarness();
+    renderTooltip(harness);
+    const declarations = cssDeclarationsOf(card());
+    expect(declarations.some(value => value.startsWith('inset: auto'))).toBe(
+      true,
+    );
+    expect(
+      declarations.some(value => value.startsWith('margin-block: 0')),
+    ).toBe(true);
+    expect(
+      declarations.some(value => value.startsWith('margin-inline: 0')),
+    ).toBe(true);
   });
 
   it('shows the hovered x value and the bare value for a single series', () => {
