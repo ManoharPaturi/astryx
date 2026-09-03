@@ -62,14 +62,14 @@ import {
 /** @type {any} */ let _defineTheme = null;
 /** @type {any} */ let _generateThemeRulesSplit = null;
 /** @type {any} */ let _generateOnMediaCSS = null;
-/** @type {any} */ let _generateThemeCSS = null;
+/** @type {any} */ let _dataTokenDefaults = null;
 /** @type {any} */ let _coreImportError = null;
 try {
   const coreTheme = await import('@astryxdesign/core/theme');
   _defineTheme = coreTheme.defineTheme;
   _generateThemeRulesSplit = coreTheme.generateThemeRulesSplit;
   _generateOnMediaCSS = coreTheme.generateOnMediaCSS;
-  _generateThemeCSS = coreTheme.generateThemeCSS;
+  _dataTokenDefaults = coreTheme.dataTokenDefaults;
 } catch (e) {
   // Capture the reason so the theme action can surface a precise, actionable
   // error. We don't throw here: this module is imported eagerly by the CLI
@@ -829,6 +829,21 @@ function generateBuiltModule(themeDef, iconInfo, iconsSpecifier) {
   };
 
   const inheritableFields =
+    (themeDef.__localTokenLineage !== undefined
+      ? `  localTokens: ${JSON.stringify(themeDef.localTokens ?? {}, null, 2)
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenOwners: ${JSON.stringify(
+          themeDef.__localTokenOwners ?? {},
+          null,
+          2,
+        )
+          .split('\n')
+          .map((line, i) => (i === 0 ? line : '  ' + line))
+          .join('\n')},\n` +
+        `  __localTokenLineage: ${JSON.stringify(themeDef.__localTokenLineage)},\n`
+      : '') +
     serializeField('components', themeDef.components) +
     serializeField('__onDark', themeDef.__onDark) +
     serializeField('__onLight', themeDef.__onLight);
@@ -1142,9 +1157,9 @@ export async function themeBuild(
       'onDark',
       'onLight',
     ];
-    const needsResolution = INPUT_ONLY_FIELDS.some(
-      field => themeDef[field] !== undefined,
-    );
+    const needsResolution =
+      INPUT_ONLY_FIELDS.some(field => themeDef[field] !== undefined) ||
+      ('localTokens' in themeDef && themeDef.__localTokenLineage === undefined);
     if (needsResolution) {
       resolvedTheme = _defineTheme({...themeDef});
     } else {
@@ -1174,6 +1189,7 @@ export async function themeBuild(
       // a substring check on it would fire for every theme.
       const themeOwnValues = JSON.stringify([
         resolvedTheme.tokens ?? {},
+        resolvedTheme.localTokens ?? {},
         resolvedTheme.components ?? {},
       ]);
       const colorSchemeDecl = themeOwnValues.includes('light-dark(')
@@ -1195,14 +1211,17 @@ export async function themeBuild(
       return null;
     }
     // The data-token defaults are theme-independent and go in @layer
-    // astryx-base, below the theme's own overrides. Taken from the runtime's
-    // own generator so the two paths cannot emit different bytes.
+    // astryx-base, below the theme's own overrides. Formatted here from the
+    // public `dataTokenDefaults` export, byte for byte as the `<Theme>`
+    // runtime emits it — build-theme.data-tokens.test.mjs is the drift guard.
     // Placed after the reset block and before the theme block: a layer's order
     // is fixed by where it is first declared, so emitting it anywhere else in
     // the file would invert reset < astryx-base < astryx-theme for a consumer
     // who imports this stylesheet on its own.
-    const baseCss = _generateThemeCSS
-      ? _generateThemeCSS(resolvedTheme).base
+    const baseCss = _dataTokenDefaults
+      ? `:root {\n${Object.entries(_dataTokenDefaults)
+          .map(([name, value]) => `  ${name}: ${value};`)
+          .join('\n')}\n}`
       : '';
     if (baseCss) {
       cssParts.splice(
@@ -1237,9 +1256,9 @@ export async function themeBuild(
   }
 
   const displayTheme = resolvedTheme || themeDef;
-  const tokenCount = displayTheme.tokens
-    ? Object.keys(displayTheme.tokens).length
-    : 0;
+  const tokenCount =
+    Object.keys(displayTheme.tokens ?? {}).length +
+    Object.keys(displayTheme.localTokens ?? {}).length;
   const componentCount = displayTheme.components
     ? Object.keys(displayTheme.components).length
     : 0;

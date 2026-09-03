@@ -780,25 +780,23 @@ describe('data visualization tokens', () => {
     expect(block).not.toContain('--color-data-categorical-orange');
   });
 
-  it('carries the palette in the base block, not the scoped stylesheet', () => {
-    const {base, component, prose} = generateThemeCSS(
+  it('keeps the palette out of the scoped stylesheet', () => {
+    // The palette's own contents are asserted once, against
+    // `dataTokenDefaults`, in `seeds the whole palette once, at :root` above.
+    const {component, prose} = generateThemeCSS(
       defineTheme({name: 'data-css'}),
     );
 
-    expect(base).toContain('--color-data-neutral:');
-    expect(base).toContain('--color-data-blue-3:');
     expect(component).not.toContain('--color-data-');
     expect(prose).not.toContain('--color-data-');
   });
 
-  it('gives every theme the same base block', () => {
-    expect(generateThemeCSS(defineTheme({name: 'data-a'})).base).toBe(
-      generateThemeCSS(
-        defineTheme({
-          name: 'data-b',
-          tokens: {'--color-data-categorical-blue': '#00A3FF'},
-        }),
-      ).base,
-    );
+  it('keeps generateThemeCSS to its two scoped blocks', () => {
+    // The defaults are theme-independent, so they are not part of the theme
+    // CSS contract: `astryx theme build` formats them from the public
+    // `dataTokenDefaults` export instead.
+    expect(
+      Object.keys(generateThemeCSS(defineTheme({name: 'data-shape'}))).sort(),
+    ).toEqual(['component', 'prose']);
   });
 });
