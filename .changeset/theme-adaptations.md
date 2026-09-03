@@ -34,4 +34,7 @@ five names through the nearest Theme. Mobile mode now uses the documented
 exclusive boundary (`width < breakpoint`), so an AppShell exactly at the named
 point renders the wider layout instead of the mobile layout.
 
+`defineTheme` now rejects malformed token values instead of coercing non-string
+scalars or accepting arrays with a length other than two.
+
 @imdreamrunner

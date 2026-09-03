@@ -507,7 +507,10 @@ export function AppShell({
   const breakpointQuery =
     sideNavBreakpoint === 'none'
       ? '(width < 0px)'
-      : `(width < ${(activeWidthBreakpoints ?? DEFAULT_WIDTH_BREAKPOINTS)[sideNavBreakpoint]}px)`;
+      : `(width < ${
+          activeWidthBreakpoints?.[sideNavBreakpoint] ??
+          DEFAULT_WIDTH_BREAKPOINTS[sideNavBreakpoint]
+        }px)`;
   const isBelowBreakpoint = useMediaQuery(
     breakpointQuery,
     mobileNavConfig?.defaultIsMobile,

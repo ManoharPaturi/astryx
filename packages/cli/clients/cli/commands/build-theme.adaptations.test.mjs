@@ -197,7 +197,13 @@ describe('theme build adaptations', () => {
           widthBreakpoints: {sm: 700},
           rules: [{
             when: {width: {below: 'sm'}},
-            value: {typography: {scale: {base: 16}}},
+            value: {
+              typography: {
+                scale: {base: 16},
+                body: {family: 'Revision Webfont'},
+              },
+              tokens: {'--color-accent': ['#111111', '#eeeeee']},
+            },
           }],
         },
       }`,
@@ -228,6 +234,27 @@ describe('theme build adaptations', () => {
     expect(child.__adaptationRules?.[0].query).toBe('(width < 720px)');
     expect(child.__adaptationRules?.[0].tokens['--font-size-lg']).toBe(
       '1.25rem',
+    );
+
+    const rebuildDir = path.join(project, 'rebuild');
+    fs.mkdirSync(rebuildDir, {recursive: true});
+    const rebuiltInput = path.join(rebuildDir, 'rebuilt.mjs');
+    fs.writeFileSync(
+      rebuiltInput,
+      `export {builtBaseTheme as default} from '../themes/built-base.js';\n`,
+    );
+    const rebuilt = await build(project, rebuiltInput);
+    expect(rebuilt.code).toBe(0);
+    const rebuiltCss = fs.readFileSync(
+      path.join(rebuildDir, 'built-base.css'),
+      'utf-8',
+    );
+    expect(rebuiltCss).toContain('@media (width < 700px)');
+    expect(rebuiltCss).toContain('--font-size-lg: 1.25rem');
+    expect(rebuiltCss).toContain('light-dark(#111111, #eeeeee)');
+    expect(rebuiltCss).toContain(':root { color-scheme: light dark; }');
+    expect(`${rebuilt.stdout}${rebuilt.stderr}`).toContain(
+      'Font "Revision Webfont" is named by this theme but not loaded',
     );
   });
 
@@ -287,6 +314,35 @@ describe('theme build adaptations', () => {
     );
     expect(css).toContain('border-width: 3px');
     expect(css).toContain('letter-spacing: -0.01em');
+  });
+
+  it('warns rather than hard-failing unknown rule targets and axes', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writeTheme(
+      themesDir,
+      'unknown-rule-axis',
+      `{
+        name: 'unknown-rule-axis',
+        adaptations: {
+          rules: [{
+            when: {pointer: 'coarse'},
+            value: {
+              components: {table: {'density:compact': {borderWidth: '3px'}}},
+            },
+          }],
+        },
+      }`,
+    );
+
+    const result = await build(project, themeFile);
+    expect(result.code).toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      'Unknown prop "density" on component "table"',
+    );
+    expect(
+      fs.readFileSync(path.join(themesDir, 'unknown-rule-axis.css'), 'utf-8'),
+    ).toContain('border-width: 3px');
   });
 
   it('requires custom visual values on the root surface before rules use them', async () => {
@@ -365,6 +421,41 @@ describe('theme build adaptations', () => {
 
     const result = await build(project, themeFile);
     expect(`${result.stdout}${result.stderr}`).toContain('private var');
+  });
+
+  it('reports invalid serialized adaptation metadata as ERR_THEME_INVALID', async () => {
+    const project = path.join(tmpDir, 'project');
+    const themesDir = path.join(project, 'themes');
+    const themeFile = writePlainTheme(
+      themesDir,
+      'stale-built',
+      `{
+        name: 'stale-built',
+        __built: true,
+        tokens: {'--spacing-4': '16px'},
+        __adaptations: {
+          widthBreakpoints: {
+            sm: 640, md: 768, lg: 1024, xl: 1280, '2xl': 1536,
+          },
+          rules: [{
+            when: {pointer: 'sideways'},
+            value: {tokens: {'--spacing-4': '12px'}},
+          }],
+        },
+        __axes: {},
+      }`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(project, themeFile), '--json'],
+      project,
+    );
+    expect(result.code).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain('ERR_THEME_INVALID');
+    expect(`${result.stdout}${result.stderr}`).toContain(
+      "when.pointer must be 'coarse' or 'fine'",
+    );
+    expect(fs.existsSync(path.join(themesDir, 'stale-built.css'))).toBe(false);
   });
 
   it('rejects invalid metadata before writing any output', async () => {

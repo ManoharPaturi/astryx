@@ -381,6 +381,27 @@ describe('AppShell', () => {
     expect(window.matchMedia).toHaveBeenCalledWith('(width < 1700px)');
   });
 
+  it('falls back per key when built metadata has a partial width map', () => {
+    const partialBuiltTheme = {
+      ...defineTheme({name: 'partial-built-app-shell-points'}),
+      __built: true as const,
+      __adaptations: {
+        widthBreakpoints: {md: 700},
+        rules: [],
+      },
+    } as unknown as ReturnType<typeof defineTheme>;
+
+    render(
+      <Theme theme={partialBuiltTheme}>
+        <AppShell sideNav={<TestSideNav />} mobileNav={{breakpoint: 'xl'}}>
+          <div>Content</div>
+        </AppShell>
+      </Theme>,
+    );
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(width < 1280px)');
+  });
+
   it('follows the registered root theme without provider context', () => {
     defineTheme({
       name: 'root-app-shell-points',

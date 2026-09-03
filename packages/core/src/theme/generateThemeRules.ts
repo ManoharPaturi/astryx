@@ -16,6 +16,10 @@
  */
 
 import type {ComponentStyleMap, DefinedTheme} from './defineTheme';
+import {
+  normalizeThemeAdaptations,
+  resolveThemeAdaptationRules,
+} from './themeAdaptations';
 import {parseStyleKey} from '../utils/parseStyleKey';
 import {getDerivedVars} from './derivedVarRegistry';
 import {dataTokenDefaults} from './domainTokens/dataTokens';
@@ -839,7 +843,16 @@ function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
  * prose selectors here.
  */
 export function generateAdaptationCSS(theme: DefinedTheme): ThemeCSSOutput {
-  const rules = theme.__adaptationRules;
+  const rules =
+    theme.__adaptationRules ??
+    (theme.__adaptations?.rules?.length
+      ? resolveThemeAdaptationRules(
+          theme.name,
+          normalizeThemeAdaptations(theme.name, theme.__adaptations, undefined),
+          theme.__axes ?? {},
+          theme.localTokens,
+        )
+      : undefined);
   if (!rules || rules.length === 0) {
     return {prose: '', component: ''};
   }

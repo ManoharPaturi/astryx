@@ -519,28 +519,37 @@ function componentHasAugmentableInterface(pascalName, interfaceName) {
 }
 
 /**
+ * Adaptation values from resolved runtime rules, raw input, or normalized built
+ * metadata. Built modules intentionally omit `__adaptationRules`, so every CLI
+ * diagnostic that reads rule intent must also understand `__adaptations`.
+ *
+ * @param {Record<string, any>} themeDef
+ * @returns {Record<string, any>[]}
+ */
+function adaptationRuleValues(themeDef) {
+  if (themeDef.__adaptationRules) {
+    return themeDef.__adaptationRules;
+  }
+  return (themeDef.adaptations?.rules ?? themeDef.__adaptations?.rules ?? [])
+    .map((/** @type {any} */ rule) => rule?.value)
+    .filter(Boolean);
+}
+
+/**
  * Every `[component, rules]` pair a theme may emit, including ordered
  * adaptation rules. Validators, private-variable checks, and notices must see
  * rule-only values even though variant augmentation is root-owned.
- *
- * Takes either a resolved theme (`__adaptationRules`) or raw defineTheme input
- * (`adaptations.rules[].value`) because validation runs on both sides of
- * normalization.
  *
  * @param {Record<string, any>} themeDef
  * @returns {[string, Record<string, any>][]}
  */
 function themedComponentEntries(themeDef) {
-  const maps = [themeDef.components];
-  if (themeDef.__adaptationRules) {
-    for (const rule of themeDef.__adaptationRules) {
-      maps.push(rule.components);
-    }
-  } else {
-    for (const rule of themeDef.adaptations?.rules ?? []) {
-      maps.push(rule?.value?.components);
-    }
-  }
+  const maps = [
+    themeDef.components,
+    ...adaptationRuleValues(themeDef).map(
+      (/** @type {any} */ value) => value.components,
+    ),
+  ];
 
   /** @type {[string, Record<string, any>][]} */
   const entries = [];
@@ -565,13 +574,9 @@ function rootComponentEntries(themeDef) {
  * @returns {[string, Record<string, any>][]}
  */
 function adaptationComponentEntries(themeDef) {
-  const maps = themeDef.__adaptationRules
-    ? themeDef.__adaptationRules.map(
-        (/** @type {any} */ rule) => rule.components,
-      )
-    : (themeDef.adaptations?.rules ?? []).map(
-        (/** @type {any} */ rule) => rule?.value?.components,
-      );
+  const maps = adaptationRuleValues(themeDef).map(
+    (/** @type {any} */ value) => value.components,
+  );
   return maps.flatMap((/** @type {any} */ map) =>
     map ? Object.entries(map) : [],
   );
@@ -600,29 +605,15 @@ async function validateAdaptationVariantValues(themeDef) {
     }
   }
 
-  const knownTargets = await getKnownComponents();
   /** @type {string[]} */
   const errors = [];
   for (const [component, rules] of adaptationEntries) {
-    if (knownTargets && !(component in knownTargets)) {
-      errors.push(
-        `Adaptation rule targets unknown component "${component}". Rules may only style an existing theme target.`,
-      );
-      continue;
-    }
-    const knownAxes = knownTargets?.[component] ?? [];
     const known = await getKnownValues(component);
     for (const key of Object.keys(rules)) {
       if (key === 'base') continue;
       for (const pair of key.split('+')) {
         const colon = pair.indexOf(':');
         const prop = colon === -1 ? pair : pair.slice(0, colon);
-        if (knownTargets && !knownAxes.includes(prop)) {
-          errors.push(
-            `Adaptation rule targets unknown prop/state "${component}.${prop}". Rules may only style component-owned axes and states.`,
-          );
-          continue;
-        }
         if (colon === -1) continue;
         const value = pair.slice(colon + 1);
         // Some public prop types are opaque aliases rather than literal unions.
@@ -1401,7 +1392,14 @@ export async function themeBuild(
       );
     }
     // Ordered adaptation rules use the same generator as the runtime path.
-    const adaptationCss = _generateAdaptationCSS(resolvedTheme);
+    let adaptationCss;
+    try {
+      adaptationCss = _generateAdaptationCSS(resolvedTheme);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Theme normalization failed.';
+      throw new AstryxError(message, undefined, ERROR_CODES.ERR_THEME_INVALID);
+    }
     const componentInner = component.join('\n\n');
     const componentScope =
       component.length > 0
@@ -1421,9 +1419,11 @@ export async function themeBuild(
         ) => [rule.tokens ?? {}, rule.localTokens ?? {}, rule.components ?? {}],
       ),
     ]);
-    const colorSchemeDecl = themeOwnValues.includes('light-dark(')
-      ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
-      : '';
+    const colorSchemeDecl =
+      themeOwnValues.includes('light-dark(') ||
+      adaptationCss.component.includes('light-dark(')
+        ? '  :root { color-scheme: light dark; }\n  html[data-theme="light"] { color-scheme: light; }\n  html[data-theme="dark"] { color-scheme: dark; }\n\n'
+        : '';
     if (colorSchemeDecl || componentScope) {
       cssParts.push(
         `@layer astryx-theme {\n${colorSchemeDecl}${componentScope}\n}`,
@@ -1678,10 +1678,8 @@ Or with a <link> tag:
   const unloadedFonts = [
     ...new Set([
       ...collectUnloadedFonts(resolvedTheme),
-      ...(resolvedTheme?.__adaptationRules ?? []).flatMap(
-        (
-          /** @type {{tokens?: Record<string, string>, components?: object}} */ rule,
-        ) => collectUnloadedFonts(rule),
+      ...adaptationRuleValues(resolvedTheme).flatMap(
+        (/** @type {any} */ value) => collectUnloadedFonts(value),
       ),
     ]),
   ];
