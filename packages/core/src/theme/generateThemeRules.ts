@@ -279,6 +279,7 @@ function parsePadding(props: [string, string][]): ParsedPadding {
 function expandContainerPadding(
   component: string,
   parsed: ParsedPadding,
+  resetInheritedSpecificity = false,
 ): [string, string][] {
   const prefix = cssVar(`${component}-padding`);
   const tokens: [string, string][] = [];
@@ -301,26 +302,47 @@ function expandContainerPadding(
 
   if (allSame) {
     tokens.push([prefix, effectiveInlineStart ?? '']);
-    return tokens;
+  } else {
+    // Directional tokens
+    if (parsed.inlineStart != null || parsed.inlineEnd != null) {
+      // Asymmetric inline — emit start and end separately
+      if (effectiveInlineStart != null) {
+        tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+      }
+      if (effectiveInlineEnd != null) {
+        tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
+      }
+    } else if (parsed.inline != null) {
+      tokens.push([`${prefix}-inline`, parsed.inline]);
+    }
+    if (parsed.blockStart != null) {
+      tokens.push([`${prefix}-block-start`, parsed.blockStart]);
+    }
+    if (parsed.blockEnd != null) {
+      tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
+    }
   }
 
-  // Directional tokens
-  if (parsed.inlineStart != null || parsed.inlineEnd != null) {
-    // Asymmetric inline — emit start and end separately
-    if (effectiveInlineStart != null) {
-      tokens.push([`${prefix}-inline-start`, effectiveInlineStart]);
+  if (resetInheritedSpecificity) {
+    const emitted = new Set(tokens.map(([name]) => name));
+    const moreSpecific = emitted.has(prefix)
+      ? [
+          `${prefix}-inline`,
+          `${prefix}-inline-start`,
+          `${prefix}-inline-end`,
+          `${prefix}-block-start`,
+          `${prefix}-block-end`,
+        ]
+      : emitted.has(`${prefix}-inline`)
+        ? [`${prefix}-inline-start`, `${prefix}-inline-end`]
+        : [];
+    for (const name of moreSpecific) {
+      if (!emitted.has(name)) {
+        // `initial` makes a custom property guaranteed-invalid so var() follows
+        // its fallback, clearing a more-specific declaration from a root rule.
+        tokens.push([name, 'initial']);
+      }
     }
-    if (effectiveInlineEnd != null) {
-      tokens.push([`${prefix}-inline-end`, effectiveInlineEnd]);
-    }
-  } else if (parsed.inline != null) {
-    tokens.push([`${prefix}-inline`, parsed.inline]);
-  }
-  if (parsed.blockStart != null) {
-    tokens.push([`${prefix}-block-start`, parsed.blockStart]);
-  }
-  if (parsed.blockEnd != null) {
-    tokens.push([`${prefix}-block-end`, parsed.blockEnd]);
   }
 
   return tokens;
@@ -407,6 +429,7 @@ function generateComponentRules(
     Record<string, Record<string, string | Record<string, string>>>
   >,
   parts: string[],
+  resetInheritedPaddingSpecificity = false,
 ): void {
   for (const [component, rules] of Object.entries(components)) {
     for (const [key, styles] of Object.entries(rules)) {
@@ -485,7 +508,11 @@ function generateComponentRules(
           ([p]) => !CONTAINER_PADDING_PROPS.has(p),
         );
         const parsed = parsePadding(paddingProps);
-        const containerTokens = expandContainerPadding(component, parsed);
+        const containerTokens = expandContainerPadding(
+          component,
+          parsed,
+          resetInheritedPaddingSpecificity,
+        );
         finalProps = [...nonPaddingProps, ...containerTokens];
       }
 
@@ -795,7 +822,7 @@ function generateAdaptationRuleRules(rule: ThemeRuleSource): string[] {
   }
 
   if (rule.components) {
-    generateComponentRules(rule.components, parts);
+    generateComponentRules(rule.components, parts, true);
     generateColorOverrides(rule.components, parts);
     generateSizeOverrides(rule.components, parts);
   }

@@ -514,6 +514,143 @@ describe('extension semantics and built metadata', () => {
     );
   });
 
+  it("merges a child's partial typography axis before re-resolving inherited rules", () => {
+    const base = defineTheme({
+      name: 'partial-typography-base',
+      typography: {
+        scale: {base: 14, ratio: 1.25},
+        body: {family: 'Inter', fallbacks: 'sans-serif'},
+        heading: {family: 'Playfair', fallbacks: 'serif'},
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {width: {from: 'lg'}},
+            value: {typography: {scale: {base: 18}}},
+          },
+        ],
+      },
+    });
+    const child = defineTheme({
+      name: 'partial-typography-child',
+      extends: base,
+      typography: {body: {family: 'Georgia'}},
+    });
+
+    expect(child.__axes.typography?.scale).toEqual({base: 14, ratio: 1.25});
+    expect(child.__axes.typography?.body?.family).toBe('Georgia');
+    expect(child.__axes.typography?.body?.fallbacks).toBeUndefined();
+    expect(child.__axes.typography?.heading?.family).toBeUndefined();
+    expect(child.__axes.typography?.heading?.fallbacks).toBeUndefined();
+    expect(child.tokens['--font-family-heading']).toBe('Georgia');
+    expect(child.__adaptationRules?.[0].tokens['--font-family-body']).toBe(
+      'Georgia',
+    );
+    expect(child.__adaptationRules?.[0].tokens['--font-family-heading']).toBe(
+      'Georgia',
+    );
+    expect(child.__adaptationRules?.[0].tokens['--font-size-lg']).toBe(
+      '1.4375rem',
+    );
+  });
+
+  it('keeps typography weights owned by the last config that declares a scale', () => {
+    const rule = {
+      when: {width: {from: 'lg' as const}},
+      value: {typography: {scale: {base: 18}}},
+    };
+    const weightedBase = defineTheme({
+      name: 'weight-owner-base',
+      typography: {
+        scale: {base: 14, ratio: 1.25},
+        body: {weight: 'medium'},
+        heading: {weight: 'bold'},
+      },
+      adaptations: {rules: [rule]},
+    });
+    const newScale = defineTheme({
+      name: 'weight-owner-new-scale',
+      extends: weightedBase,
+      typography: {scale: {base: 16, ratio: 1.2}},
+    });
+
+    expect(newScale.__adaptationRules?.[0].tokens['--text-body-weight']).toBe(
+      newScale.tokens['--text-body-weight'],
+    );
+    expect(
+      newScale.__adaptationRules?.[0].tokens['--text-heading-1-weight'],
+    ).toBe(newScale.tokens['--text-heading-1-weight']);
+
+    const defaultBase = defineTheme({
+      name: 'weight-owner-default-base',
+      typography: {scale: {base: 14, ratio: 1.25}},
+      adaptations: {rules: [rule]},
+    });
+    const weightWithoutScale = defineTheme({
+      name: 'weight-owner-no-scale',
+      extends: defaultBase,
+      typography: {heading: {weight: 'bold'}},
+    });
+
+    expect(
+      weightWithoutScale.__adaptationRules?.[0].tokens[
+        '--text-heading-1-weight'
+      ],
+    ).toBe(weightWithoutScale.tokens['--text-heading-1-weight']);
+  });
+
+  it('ignores a child fallback that has no family, matching root resolution', () => {
+    const base = defineTheme({
+      name: 'fallback-only-base',
+      typography: {
+        scale: {base: 14, ratio: 1.25},
+        heading: {family: 'Playfair', fallbacks: 'sans-serif'},
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {width: {from: 'lg'}},
+            value: {typography: {scale: {base: 18}}},
+          },
+        ],
+      },
+    });
+    const child = defineTheme({
+      name: 'fallback-only-child',
+      extends: base,
+      typography: {heading: {fallbacks: 'serif'}},
+    });
+
+    expect(child.tokens['--font-family-heading']).toBe('Playfair, sans-serif');
+    expect(child.__adaptationRules?.[0].tokens['--font-family-heading']).toBe(
+      child.tokens['--font-family-heading'],
+    );
+  });
+
+  it("uses a child's own color axis when re-resolving inherited rules", () => {
+    const rule = {
+      when: {contrast: 'more' as const},
+      value: {color: {contrast: 'high' as const}},
+    };
+    const base = defineTheme({
+      name: 'partial-color-base',
+      color: {accent: '#B7410E'},
+      adaptations: {rules: [rule]},
+    });
+    const child = defineTheme({
+      name: 'partial-color-child',
+      extends: base,
+      color: {neutralStyle: 'warm'},
+    });
+    const expected = defineTheme({
+      name: 'partial-color-expected',
+      color: {neutralStyle: 'warm', contrast: 'high'},
+    });
+
+    expect(child.__axes.color).toEqual({neutralStyle: 'warm'});
+    expect(child.__adaptationRules?.[0].tokens).toEqual(expected.tokens);
+  });
+
   it("keeps inherited rules above the child's root values", () => {
     const base = defineTheme({
       name: 'base-rule',
@@ -587,6 +724,75 @@ describe('CSS cascade placement', () => {
     const css = generateThemeCSS(theme).component;
     expect(css.indexOf('#ffffff')).toBeLessThan(css.indexOf('#eeeeee'));
     expect(css.indexOf('#eeeeee')).toBeLessThan(css.lastIndexOf('#111111'));
+  });
+
+  it('makes rule shorthand padding override root directional container padding', () => {
+    const theme = defineTheme({
+      name: 'conditional-container-padding',
+      components: {
+        card: {base: {paddingBlock: '8px', paddingInline: '16px'}},
+        section: {base: {paddingBlock: '10px', paddingInline: '18px'}},
+      },
+      adaptations: {
+        rules: [
+          {
+            when: {width: {from: 'lg'}},
+            value: {
+              components: {
+                card: {base: {padding: '32px'}},
+                section: {base: {padding: '32px'}},
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const rootCss = generateThemeCSS(theme).component;
+    expect(rootCss).toContain('--astryx-card-padding-block-start: 8px');
+    expect(rootCss).toContain('--astryx-section-padding-inline: 18px');
+
+    const ruleCss = generateAdaptationCSS(theme).component;
+    for (const component of ['card', 'section']) {
+      expect(ruleCss).toContain(`--astryx-${component}-padding: 32px`);
+      expect(ruleCss).toContain(
+        `--astryx-${component}-padding-inline: initial`,
+      );
+      expect(ruleCss).toContain(
+        `--astryx-${component}-padding-inline-start: initial`,
+      );
+      expect(ruleCss).toContain(
+        `--astryx-${component}-padding-inline-end: initial`,
+      );
+      expect(ruleCss).toContain(
+        `--astryx-${component}-padding-block-start: initial`,
+      );
+      expect(ruleCss).toContain(
+        `--astryx-${component}-padding-block-end: initial`,
+      );
+    }
+  });
+
+  it('resets only the more-specific inline siblings for a rule paddingInline write', () => {
+    const theme = defineTheme({
+      name: 'conditional-inline-padding',
+      components: {card: {base: {padding: '16px'}}},
+      adaptations: {
+        rules: [
+          {
+            when: {width: {from: 'lg'}},
+            value: {components: {card: {base: {paddingInline: '32px'}}}},
+          },
+        ],
+      },
+    });
+
+    const ruleCss = generateAdaptationCSS(theme).component;
+    expect(ruleCss).toContain('--astryx-card-padding-inline: 32px');
+    expect(ruleCss).toContain('--astryx-card-padding-inline-start: initial');
+    expect(ruleCss).toContain('--astryx-card-padding-inline-end: initial');
+    expect(ruleCss).not.toContain('--astryx-card-padding: initial');
+    expect(ruleCss).not.toContain('--astryx-card-padding-block-start: initial');
   });
 
   it('keeps media-surface component writes above matching adaptations', () => {

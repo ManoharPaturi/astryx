@@ -631,24 +631,90 @@ export function resolveThemeGenerativeAxes(
   inherited: ThemeGenerativeAxes | undefined,
   own: ThemeGenerativeAxes,
 ): ThemeGenerativeAxes {
-  const resolved: ThemeGenerativeAxes = {};
-  const typography = own.typography ?? inherited?.typography;
+  const inheritedTypography = inherited?.typography;
+  const ownTypography = own.typography;
+  const resolveFamily = (
+    inheritedRole: TypographyRole | undefined,
+    ownRole: TypographyRole | undefined,
+    followsOwnBody = false,
+  ): TypographyRole | undefined => {
+    const merged = mergeRole(inheritedRole, ownRole);
+    if (!merged) {
+      return undefined;
+    }
+    if (ownRole?.family) {
+      return {
+        ...merged,
+        family: ownRole.family,
+        fallbacks: ownRole.fallbacks,
+      };
+    }
+    if (followsOwnBody) {
+      return {...merged, family: undefined, fallbacks: undefined};
+    }
+    // A fallback without a family is inert in buildFontFamilyTokens(), so it
+    // cannot replace the fallback attached to an inherited effective family.
+    return {
+      ...merged,
+      family: inheritedRole?.family,
+      fallbacks: inheritedRole?.fallbacks,
+    };
+  };
+
+  let body = resolveFamily(inheritedTypography?.body, ownTypography?.body);
+  let heading = resolveFamily(
+    inheritedTypography?.heading,
+    ownTypography?.heading,
+    Boolean(ownTypography?.body?.family && !ownTypography?.heading?.family),
+  );
+  let code = resolveFamily(inheritedTypography?.code, ownTypography?.code);
+
+  // Weights reach tokens only when a scale is expanded. The most recent
+  // config that declares a scale owns every weight; omitted weights become the
+  // expander defaults rather than resurrecting values from an earlier scale.
+  const weightOwner = ownTypography?.scale
+    ? ownTypography
+    : inheritedTypography?.scale
+      ? inheritedTypography
+      : undefined;
+  const applyWeights = (
+    role: TypographyRole | undefined,
+    owner: TypographyRole | undefined,
+  ): TypographyRole | undefined =>
+    role
+      ? {...role, weight: owner?.weight, weights: owner?.weights}
+      : undefined;
+  body = applyWeights(body, weightOwner?.body);
+  heading = applyWeights(heading, weightOwner?.heading);
+  code = applyWeights(code, weightOwner?.code);
+
+  const typography =
+    inheritedTypography || ownTypography
+      ? {
+          ...inheritedTypography,
+          ...ownTypography,
+          scale: ownTypography?.scale ?? inheritedTypography?.scale,
+          body,
+          heading,
+          code,
+        }
+      : undefined;
+  // A color config regenerates its neutral ramp even when `accent` is omitted,
+  // so an authored child config replaces rather than field-merges the base axis.
   const color = own.color ?? inherited?.color;
-  const radius = own.radius ?? inherited?.radius;
-  const motion = own.motion ?? inherited?.motion;
-  if (typography !== undefined) {
-    resolved.typography = typography;
-  }
-  if (color !== undefined) {
-    resolved.color = color;
-  }
-  if (radius !== undefined) {
-    resolved.radius = radius;
-  }
-  if (motion !== undefined) {
-    resolved.motion = motion;
-  }
-  return resolved;
+  const radius = own.radius
+    ? {...inherited?.radius, ...own.radius}
+    : inherited?.radius;
+  const motion = own.motion
+    ? {...inherited?.motion, ...own.motion}
+    : inherited?.motion;
+
+  return {
+    ...(typography ? {typography} : {}),
+    ...(color ? {color} : {}),
+    ...(radius ? {radius} : {}),
+    ...(motion ? {motion} : {}),
+  };
 }
 
 /** Lower ordered normalized rules to concrete CSS writes. */
