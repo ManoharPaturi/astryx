@@ -26,6 +26,7 @@ import {
 
 import PixelFaithfulPanel from '../figma-design-panel/page';
 import NativePanel from '../figma-design-panel-native/page';
+import ThemedPanel from '../figma-panel-themed/page';
 
 const styles = stylex.create({
   page: {
@@ -46,6 +47,8 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
     gap: spacingVars['--spacing-3'],
+    // Bounded so the notes wrap instead of stretching the row past three up.
+    width: 400,
   },
   caption: {
     display: 'flex',
@@ -111,7 +114,7 @@ export default function FigmaPanelCompare() {
   return (
     <div {...stylex.props(styles.page)}>
       <div {...stylex.props(styles.caption)}>
-        <Text type="display-3">Two ways to build the same panel</Text>
+        <Text type="display-3">Three ways to build the same panel</Text>
       </div>
 
       <div {...stylex.props(styles.columns)}>
@@ -139,6 +142,20 @@ export default function FigmaPanelCompare() {
             '15 custom glyphs remain — Astryx has no canvas icon vocabulary.',
           ]}>
           <NativePanel />
+        </Column>
+
+        <Column
+          title="Theme-only"
+          summary="Matches Figma to ~4.8% of pixels, with nothing repainted by hand."
+          notes={[
+            'Every colour, border, radius and fill comes from defineTheme.',
+            'No Astryx component receives paint via xstyle — only Stack padding.',
+            'Overrides target real slots: text-input, input-group-text, toggle-button-group, checkbox-indicator, avatar-fallback.',
+            'No nested <Theme> — avatar-fallback and checkbox-indicator are reachable directly.',
+            'Alignment clusters are a themed ToggleButtonGroup, not a styled div.',
+            'Icons remain the one true gap: 26 glyphs still hand-drawn.',
+          ]}>
+          <ThemedPanel />
         </Column>
       </div>
     </div>
