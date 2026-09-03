@@ -13,6 +13,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {detectStylingSystem} from '../../foundation/agent-docs/agent-docs.mjs';
 import {
   scanConsumerCss,
   findSwizzled,
@@ -365,5 +366,38 @@ describe('StyleX wiring — a comment is not configuration', () => {
       }),
     );
     expect(findSwizzled(dir).hasCompiler).toBe(true);
+  });
+});
+
+describe('StyleX detection — one detector, so diagnosis and guidance cannot drift', () => {
+  // doctor and the generated agent docs carried separate hardcoded plugin
+  // lists. With @stylexjs/webpack-plugin configured, doctor called the swizzle
+  // wired while the docs selected plain CSS — two answers about one project.
+  const withPlugin = (plugin, config) => ({
+    'package.json': JSON.stringify({devDependencies: {[plugin]: '^0.17.5'}}),
+    'src/components/astryx/Button/Button.tsx':
+      "import * as stylex from '@stylexjs/stylex';\nexport function Button() { return null; }",
+    ...config,
+  });
+
+  it.each([
+    ['@stylexjs/webpack-plugin', 'webpack.config.js', "const S = require('@stylexjs/webpack-plugin');\nmodule.exports = {plugins: [new S()]};"],
+    ['@stylexjs/rollup-plugin', 'rollup.config.js', "import s from '@stylexjs/rollup-plugin';\nexport default {plugins: [s()]};"],
+    ['@stylexjs/postcss-plugin', 'postcss.config.js', "module.exports = {plugins: ['@stylexjs/postcss-plugin']};"],
+    ['@stylexjs/babel-plugin', 'babel.config.js', "module.exports = {plugins: ['@stylexjs/babel-plugin']};"],
+  ])('%s: doctor and agent docs agree', (plugin, file, body) => {
+    const dir = mkProject(withPlugin(plugin, {[file]: body}));
+    expect(findSwizzled(dir).hasCompiler).toBe(true);
+    expect(detectStylingSystem(dir)).toBe('stylex');
+  });
+
+  it('agree that a commented-out plugin is not wiring', () => {
+    const dir = mkProject(
+      withPlugin('@stylexjs/webpack-plugin', {
+        'webpack.config.js': "module.exports = {plugins: [/* new StyleXPlugin() */]};",
+      }),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBeNull();
+    expect(detectStylingSystem(dir)).toBe('css');
   });
 });

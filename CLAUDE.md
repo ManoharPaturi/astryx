@@ -177,7 +177,7 @@ search "<query>" find any component / hook / doc / template / block
 component --list 163 components by category
 template --list page + block recipes
 docs <topic> browser-support, cli-integrations, color, elevation, getting-started, icons, illustrations, internationalization, layout, migration, motion, principles, shape, spacing, styling-libraries, styling, theme, tokens, typography, working-with-ai
-theme add|build scaffold a theme, then compile it — edits to a theme do nothing until rebuilt
+theme add|build scaffold a theme, then compile it — a BUILT import needs a rebuild after every edit; a source import applies on reload
 swizzle <Name> eject component source for deep customization
 upgrade --apply run after any @astryxdesign/core bump
 <!-- ASTRYX:END -->

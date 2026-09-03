@@ -503,12 +503,15 @@ export function checkPeerDeps(ctx) {
 }
 
 /**
- * How many built themes a single `doctor` run will inspect.
+ * How many directories the built-theme scan will walk.
  *
- * A bound is necessary — the scan walks a whole project — but hitting it must
- * be REPORTED, never silently treated as "that is all of them".
+ * The bound is on the WALK, not on the findings: capping findings meant the
+ * eleventh theme was never examined, and because the cap was only tested
+ * between directories it did not even bind reliably — twelve themes in one
+ * folder all got through. Every theme the walk reaches is now checked, and
+ * only an enormous tree stops the walk early, which is reported as truncation.
  */
-const MAX_BUILT_THEMES = 10;
+const MAX_SCAN_DIRS = 4000;
 
 /** Bytes of a CSS file to read when looking for the @generated banner. */
 const BANNER_BYTES = 1024;
@@ -553,27 +556,29 @@ function readHead(file) {
  * @param {string} startDir
  * @returns {{themes: Array<{css: string, dir: string, source: string, out: string|null,
  *   cli: string|null, core: string|null, inputs: string|null}>, truncated: boolean}}
- *   `truncated` when the scan stopped at {@link MAX_BUILT_THEMES} without
- *   seeing the whole project.
+ *   `truncated` when the walk stopped at {@link MAX_SCAN_DIRS} without seeing
+ *   the whole project; every theme it DID reach is in `themes`.
  */
 export function findBuiltThemes(startDir) {
-  // Generated themes legitimately live in build directories — the CLI's own
-  // documented example is `theme build ./src/themes/ocean.ts --out
-  // ./dist/ocean.css`. Skipping them meant a stale theme in `dist/` reported
-  // "no built theme output found", which is the silent pass this whole check
-  // exists to remove. Only `node_modules` and VCS/tool metadata are skipped;
-  // build output is exactly where the artifact is expected to be.
-  const SKIP = new Set(['node_modules', '.git', '.next', 'coverage', '.turbo', '.cache']);
+  // Generated themes live wherever `--out` points, and the CLI's own example
+  // is `theme build ./src/themes/ocean.ts --out ./dist/ocean.css`. Every
+  // build-output directory is therefore a place to LOOK, not to skip: `.next`
+  // held a stale theme that reported "no built theme output found". Only
+  // dependencies and VCS metadata are excluded — nothing else can be ruled out
+  // without re-introducing the silent pass this check exists to remove.
+  const SKIP = new Set(['node_modules', '.git']);
   /** @type {Array<{css: string, dir: string, source: string, out: string|null,
    *   cli: string|null, core: string|null, inputs: string|null}>} */
   const found = [];
   const stack = [startDir];
   let truncated = false;
+  let visited = 0;
   while (stack.length > 0) {
-    if (found.length >= MAX_BUILT_THEMES) {
+    if (visited >= MAX_SCAN_DIRS) {
       truncated = true;
       break;
     }
+    visited += 1;
     const dir = stack.pop();
     if (!dir) continue;
     let entries;
@@ -700,17 +705,6 @@ function packageDirFor(file, fallback) {
   return fallback;
 }
 
-/**
- * Is the theme build wired into the scripts that `dev`/`build` run?
- *
- * If it is, stale artifacts on disk are harmless — they are regenerated before
- * anything consumes them, and reporting a hard failure for a self-healing
- * condition just teaches people to ignore the doctor. If it is not, the
- * staleness is real and silent.
- *
- * @param {string} pkgDir
- * @returns {boolean}
- */
 /**
  * Is the build of THIS theme wired into the scripts that `dev`/`build` run?
  *
@@ -891,6 +885,22 @@ export async function checkThemeBuilt(ctx) {
     };
   }
 
+  // BEFORE any success-shaped verdict. A bound that is hit means the project
+  // was not fully examined, and "the first ten happen to self-heal" is not
+  // evidence about the eleventh — an unwired stale eleventh theme was never
+  // looked at and the run still returned info.
+  if (builtTruncated) {
+    return {
+      id: 'theme-built',
+      label: 'Built theme freshness',
+      status: 'warn',
+      message:
+        `${built.length} built theme(s) checked and in step with source, but the scan stopped ` +
+        'before walking the whole project, so any theme beyond that point is unverified.',
+      fix: `Run \`${getCliInvocation(ctx.cwd)} doctor\` per package so every built theme is covered.`,
+    };
+  }
+
   if (selfHealing.length > 0) {
     const summary = selfHealing.map(s => s.rel).join(', ');
     return {
@@ -903,17 +913,6 @@ export async function checkThemeBuilt(ctx) {
     };
   }
 
-  if (builtTruncated) {
-    return {
-      id: 'theme-built',
-      label: 'Built theme freshness',
-      status: 'warn',
-      message:
-        `The first ${built.length} built theme(s) are in step with source, but this project has ` +
-        'more than that and the rest were not checked.',
-      fix: `Run \`${getCliInvocation(ctx.cwd)} doctor\` per package so every built theme is covered.`,
-    };
-  }
 
   return {
     id: 'theme-built',
@@ -924,8 +923,7 @@ export async function checkThemeBuilt(ctx) {
 }
 
 /**
- * Check 10 — report the detected package manager (informational).
- * Check 8 — report the detected package manager, and FAIL when several
+ * Check 10 — report the detected package manager, and FAIL when several
  * lockfiles tie with nothing project-owned to break them. That tie is the one
  * case where every command the CLI prints can be silently wrong, so it is the
  * one case worth surfacing rather than guessing past.

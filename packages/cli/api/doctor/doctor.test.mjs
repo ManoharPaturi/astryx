@@ -556,3 +556,22 @@ describe('findBuiltThemes — looks where the CLI writes', () => {
     expect(findBuiltThemes(dir).themes).toEqual([]);
   });
 });
+
+describe('findBuiltThemes — coverage is exhaustive, not capped at ten', () => {
+  it('examines every theme, so an unwired stale eleventh is not invisible', () => {
+    // The cap returned INFO on the first ten self-healing artifacts and never
+    // looked at the eleventh. It also did not bind reliably: it was tested
+    // between directories, so twelve themes in one folder all slipped through.
+    const files = {'package.json': JSON.stringify({scripts: {predev: 'astryx theme build src/t0.ts', dev: 'vite'}})};
+    for (let i = 0; i < 12; i++) files[`src/t${i}.css`] = banner(`src/t${i}.ts`, `src/t${i}.css`);
+    const dir = mkProject(files);
+    const {themes, truncated} = findBuiltThemes(dir);
+    expect(themes).toHaveLength(12);
+    expect(truncated).toBe(false);
+  });
+
+  it('finds a generated theme in .next, another documented output root', () => {
+    const dir = mkProject({'package.json': '{}', '.next/ocean.css': banner('src/themes/ocean.ts', '.next/ocean.css')});
+    expect(findBuiltThemes(dir).themes).toHaveLength(1);
+  });
+});

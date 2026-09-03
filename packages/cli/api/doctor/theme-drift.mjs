@@ -24,6 +24,7 @@ import {collectThemingTargets} from '../../foundation/discovery/theming-targets.
 import {loadComponentDoc} from '../../foundation/discovery/component-loader.mjs';
 import {findCoreDir} from '../../foundation/fs/paths.mjs';
 import {getCliInvocation} from '../../foundation/env/package-manager.mjs';
+import {styleXCompilerFor} from '../../foundation/discovery/stylex-compiler.mjs';
 
 /**
  * Directories that never contain hand-authored consumer source.
@@ -295,21 +296,6 @@ export function scanConsumerCss(root) {
   return {scanned: files.length, findings, truncated};
 }
 
-/** StyleX compiler plugins. Swizzled StyleX source is inert without one. */
-const STYLEX_COMPILERS = [
-  // The first-party plugins `astryx docs styling` tells people to install.
-  // <!-- SYNC: packages/cli/assets/docs/styling.doc.mjs (bundler -> plugin table) -->
-  '@stylexjs/webpack-plugin',
-  '@stylexjs/rollup-plugin',
-  '@stylexjs/babel-plugin',
-  '@stylexjs/postcss-plugin',
-  // Community and SWC-based transforms.
-  'vite-plugin-stylex',
-  'unplugin-stylex',
-  '@stylexswc/unplugin',
-  '@stylexswc/nextjs-plugin',
-  'stylex-webpack',
-];
 
 /**
  * Find swizzled components and whether their StyleX source can actually
@@ -425,111 +411,16 @@ function usesStyleX(dir) {
 }
 
 /**
- * Is a StyleX compiler declared for this package? Walks up to `root`, because
- * a workspace dependency hoists and legitimately serves the app below it.
- *
- * DECLARED is not CONFIGURED. A plugin in `devDependencies` that no bundler
- * config references compiles nothing — the component still renders unstyled,
- * which is the exact failure this check exists to catch, and reporting `info`
- * for it was reproducible. So a declaration alone is `null` (unknown), not
- * `true`; `true` requires seeing the plugin named in a build config.
+ * Is a StyleX compiler wired for this package? Delegates to the shared
+ * detector so this diagnosis and the agent docs' guidance cannot disagree.
  *
  * @param {string} pkgDir
  * @param {string} root
- * @returns {boolean|null} true = wired into a build config; false = not even
- *   declared; null = declared but no config references it, so unverifiable.
+ * @returns {boolean|null} true = wired into a build config; false = not
+ *   declared; null = declared but unreferenced, so unverifiable.
  */
 function compilerFor(pkgDir, root) {
-  /** @type {boolean|null} */
-  let seen = null;
-  let dir = pkgDir;
-  for (let i = 0; i < 12; i++) {
-    try {
-      const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-      const deps = {...pkg.dependencies, ...pkg.devDependencies};
-      const declared = STYLEX_COMPILERS.filter(c => c in deps);
-      if (declared.length > 0) {
-        return configReferences(pkgDir, root, declared) ? true : null;
-      }
-      seen = false;
-    } catch {
-      /* no readable package.json here: keep walking */
-    }
-    if (dir === root) break;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return seen;
-}
-
-/** Build configs that could plausibly wire a StyleX plugin. */
-const BUILD_CONFIG_FILES = [
-  'vite.config.ts', 'vite.config.js', 'vite.config.mjs',
-  'next.config.ts', 'next.config.js', 'next.config.mjs',
-  'webpack.config.ts', 'webpack.config.js', 'webpack.config.mjs',
-  'rollup.config.ts', 'rollup.config.js', 'rollup.config.mjs',
-  'babel.config.json', 'babel.config.js', 'babel.config.mjs', '.babelrc', '.babelrc.json',
-  'postcss.config.js', 'postcss.config.mjs', 'postcss.config.cjs',
-];
-
-/**
- * Does any build config from `pkgDir` up to `root` actually NAME one of these
- * plugins, in live code rather than in a comment?
- *
- * Text search on purpose — evaluating a consumer's build config is exactly the
- * code execution `doctor` refuses to do. But a bare `includes()` counts a
- * commented-out `// stylex()` line as wiring, which reported a working setup
- * for a project whose components render unstyled. Comments are blanked before
- * the search, and a match must be followed by something that makes it a
- * reference rather than prose: a quote, bracket, paren or colon.
- *
- * @param {string} pkgDir
- * @param {string} root
- * @param {string[]} plugins
- * @returns {boolean}
- */
-function configReferences(pkgDir, root, plugins) {
-  /** Strip comments while preserving offsets, so a commented plugin is invisible. */
-  const live = (/** @type {string} */ src) =>
-    src
-      .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-      .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, ' '));
-  /** A real reference is a specifier or a call, not a word in prose. */
-  const references = (/** @type {string} */ src, /** @type {string[]} */ names) => {
-    const code = live(src);
-    return names.some(n => {
-      const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`['"\`]${esc}['"\`]|\\b${esc}\\s*[(:]`).test(code);
-    });
-  };
-
-  let dir = pkgDir;
-  for (let i = 0; i < 12; i++) {
-    for (const name of BUILD_CONFIG_FILES) {
-      const fp = path.join(dir, name);
-      if (!fs.existsSync(fp)) continue;
-      try {
-        if (references(fs.readFileSync(fp, 'utf-8'), plugins)) return true;
-      } catch {
-        /* unreadable: try the next one */
-      }
-    }
-    // package.json can carry babel/postcss config inline. JSON has no comments,
-    // so the raw blob is safe to test.
-    try {
-      const inline = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-      const blob = JSON.stringify({babel: inline.babel, postcss: inline.postcss});
-      if (plugins.some(p => blob.includes(p))) return true;
-    } catch {
-      /* fine */
-    }
-    if (dir === root) break;
-    const parent = path.dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  return false;
+  return styleXCompilerFor(pkgDir, root);
 }
 
 /**
