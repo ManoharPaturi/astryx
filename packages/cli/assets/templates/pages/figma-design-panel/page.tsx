@@ -307,8 +307,10 @@ const CheckIcon = svg(<path d="M3.2 8.4 6.4 11.6 12.8 4.8" {...S} />);
 // ---------------------------------------------------------------------------
 
 const styles = stylex.create({
+  // Figma's canvas grey, so the panel reads against something. Sized to the
+  // panel rather than the viewport so the page can be embedded in a comparison
+  // without trailing a screen of empty grey.
   stage: {
-    minHeight: '100vh',
     backgroundColor: '#E5E5E5',
     display: 'flex',
     alignItems: 'flex-start',
