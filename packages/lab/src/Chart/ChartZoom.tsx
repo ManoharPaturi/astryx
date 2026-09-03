@@ -13,16 +13,14 @@
 import {type CSSProperties, useCallback, useRef, useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import {IconButton} from '@astryxdesign/core/IconButton';
+import {appearanceVars} from '@astryxdesign/core/theme/tokens.stylex';
 import {useChart} from './ChartContext';
 import {isBandScale} from './utils';
 import type {ScaleLinear} from 'd3-scale';
 
 /** Toolbar position relative to the chart */
 export type ZoomToolbarPosition =
-  | 'top-right'
-  | 'top-left'
-  | 'bottom-right'
-  | 'bottom-left';
+  'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 
 export interface ChartZoomProps {
   onXDomainChange?: (domain: [number, number]) => void;
@@ -328,7 +326,7 @@ export function ChartZoom({
       display: 'flex',
       flexDirection: 'column',
       gap: 4,
-      zIndex: 1,
+      zIndex: appearanceVars['--appearance-container-nesting'],
     };
     switch (pos) {
       case 'top-right':

@@ -28,6 +28,13 @@ const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 const src = readFileSync(TOKENS_SRC, 'utf-8');
 
+const numericConstants = new Map(
+  Array.from(src.matchAll(/^const ([A-Z][A-Z0-9_]*) = (-?\d+);$/gm), match => [
+    match[1],
+    match[2],
+  ]),
+);
+
 /**
  * Extract key-value pairs from a `const xxxDefaults = { ... } as const;` block.
  * Returns array of [tokenName, defaultValue].
@@ -43,14 +50,19 @@ function extractDefaults(name) {
 
   const body = m[1];
   const pairs = [];
-  // Match lines like: '--token-name': 'value',  or  '--token-name': '...',
-  // Also handles multi-line values (e.g. shadow tokens with commas inside)
-  const lineRe = /^\s*'(--[^']+)':\s*'([^']*(?:'[^']*'[^']*)*)',?\s*$/;
-  // Simpler: match  '--key': 'value'  or  '--key': "value"  on each entry
-  const entryRe = /'(--[^']+)':\s*'([^']*)'/g;
+  // Match quoted values and numeric constants interpolated into template strings.
+  // The latter lets typed StyleX variables and plain theme defaults share one
+  // numeric source of truth (for example, z-index integer tokens).
+  const entryRe = /'(--[^']+)':\s*(?:'([^']*)'|`\$\{([A-Z][A-Z0-9_]*)\}`)/g;
   let em;
   while ((em = entryRe.exec(body)) !== null) {
-    pairs.push([em[1], em[2]]);
+    const value = em[2] ?? numericConstants.get(em[3]);
+    if (value == null) {
+      throw new Error(
+        `Could not resolve ${em[3]} while reading ${name}.${em[1]}`,
+      );
+    }
+    pairs.push([em[1], value]);
   }
   return pairs;
 }

@@ -9,6 +9,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   durationVars,
   easeVars,
@@ -24,7 +25,8 @@ const indicatorBase = {
   borderRadius: radiusVars['--radius-full'],
   backgroundColor: colorVars['--color-accent'],
   pointerEvents: 'none' as const,
-  zIndex: 2,
+  zIndex:
+    `calc(${appearanceVars['--appearance-container-nesting']} + 1)` as unknown as number,
 };
 
 /**

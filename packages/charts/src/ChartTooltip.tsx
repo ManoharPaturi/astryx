@@ -36,6 +36,7 @@ import {
 import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   radiusVars,
   shadowVars,
@@ -102,7 +103,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
-    zIndex: 9999,
+    zIndex: appearanceVars['--appearance-layer-nesting'],
     display: 'none',
   },
   crosshair: {

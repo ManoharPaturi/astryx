@@ -44,7 +44,12 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  appearanceVars,
+  colorVars,
+  durationVars,
+  easeVars,
+} from '../theme/tokens.stylex';
 import {
   hasActiveFocusTrapEscape,
   isImeKeyEvent,
@@ -86,7 +91,7 @@ const styles = stylex.create({
   // consumers of this non-modal mode must still avoid clipping ancestors.
   dialogNonModal: {
     pointerEvents: 'none',
-    zIndex: 1000,
+    zIndex: appearanceVars['--appearance-layer-nesting'],
     width: '100%',
     height: '100%',
   },

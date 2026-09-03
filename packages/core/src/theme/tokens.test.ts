@@ -1,6 +1,7 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 import {describe, expect, it} from 'vitest';
+import {appearanceVars} from './tokens.stylex';
 import {defineTheme} from './defineTheme';
 import {
   resolveThemeToken,
@@ -36,6 +37,12 @@ describe('tokenVars', () => {
       'var(--appearance-container-nesting)',
     );
     expect(tokenVars['--appearance-layer-nesting']).toBe(
+      'var(--appearance-layer-nesting)',
+    );
+    expect(appearanceVars['--appearance-container-nesting']).toBe(
+      'var(--appearance-container-nesting)',
+    );
+    expect(appearanceVars['--appearance-layer-nesting']).toBe(
       'var(--appearance-layer-nesting)',
     );
   });

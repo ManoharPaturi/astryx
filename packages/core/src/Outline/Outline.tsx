@@ -26,6 +26,7 @@
 import {useRef} from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   durationVars,
   easeVars,
@@ -161,7 +162,7 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-icon-primary'],
     borderRadius: radiusVars['--radius-full'],
     pointerEvents: 'none',
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
     positionAnchor: '--outline-active',
     top: 'anchor(--outline-active top, 0px)',
     height: 'anchor-size(--outline-active height, 0px)',

@@ -263,12 +263,20 @@ export const shadowVars = stylex.defineVars(shadowDefaults);
 // Relative stacking steps for ordinary DOM surfaces. Native popovers and modal
 // dialogs use the browser top layer instead and do not need these values.
 
+const APPEARANCE_CONTAINER_NESTING = 10;
+const APPEARANCE_LAYER_NESTING = 50;
+
 export const appearanceDefaults = {
-  '--appearance-container-nesting': '10',
-  '--appearance-layer-nesting': '50',
+  '--appearance-container-nesting': `${APPEARANCE_CONTAINER_NESTING}`,
+  '--appearance-layer-nesting': `${APPEARANCE_LAYER_NESTING}`,
 } as const;
 
-export const appearanceVars = stylex.defineVars(appearanceDefaults);
+export const appearanceVars = stylex.defineVars({
+  '--appearance-container-nesting': stylex.types.integer(
+    APPEARANCE_CONTAINER_NESTING,
+  ),
+  '--appearance-layer-nesting': stylex.types.integer(APPEARANCE_LAYER_NESTING),
+});
 
 // =============================================================================
 // Motion Tokens — Duration

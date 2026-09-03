@@ -38,6 +38,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   spacingVars,
   typographyVars,
@@ -194,7 +195,7 @@ const styles = stylex.create({
     position: 'absolute',
     top: spacingVars['--spacing-2'],
     insetInlineEnd: spacingVars['--spacing-2'],
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
     display: 'flex',
     alignItems: 'center',
   },

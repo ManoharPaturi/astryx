@@ -15,7 +15,7 @@
 
 import {useRef, useMemo, useCallback, useEffect, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../../../theme/tokens.stylex';
+import {appearanceVars, colorVars} from '../../../theme/tokens.stylex';
 import type {
   TablePlugin,
   HeaderCellRenderProps,
@@ -208,7 +208,7 @@ const handleStyles = stylex.create({
       default: 'ew-resize',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
     touchAction: 'none',
     userSelect: 'none',
     // Drive the indicator color via a CSS variable that ::after reads.
