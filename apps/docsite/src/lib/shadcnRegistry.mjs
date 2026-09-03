@@ -7,9 +7,21 @@
  * @position Shared contract between registry generation and docsite UI.
  */
 
-export const SHADCN_REGISTRY_ORIGIN =
-  process.env.NEXT_PUBLIC_ASTRYX_REGISTRY_ORIGIN ??
-  `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://astryx.atmeta.com'}/r`;
+export function resolveShadcnRegistryOrigin(env = process.env) {
+  const explicitOrigin = env.NEXT_PUBLIC_ASTRYX_REGISTRY_ORIGIN;
+  if (explicitOrigin) {
+    return explicitOrigin.replace(/\/$/, '');
+  }
+
+  const siteOrigin =
+    env.NEXT_PUBLIC_SITE_URL ??
+    (env.VERCEL_URL
+      ? `https://${env.VERCEL_URL}`
+      : 'https://astryx.atmeta.com');
+  return `${siteOrigin.replace(/\/$/, '')}/r`;
+}
+
+export const SHADCN_REGISTRY_ORIGIN = resolveShadcnRegistryOrigin();
 
 export const SHADCN_REGISTRY_IS_PREVIEW =
   SHADCN_REGISTRY_ORIGIN !== 'https://astryx.atmeta.com/r';

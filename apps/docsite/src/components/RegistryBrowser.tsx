@@ -18,9 +18,10 @@ import type {
   ShadcnRegistryKind,
 } from '../generated/shadcnRegistry';
 import {
-  SHADCN_REGISTRY_IS_PREVIEW,
-  shadcnInstallCommand,
-} from '../lib/shadcnRegistry.mjs';
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../generated/shadcnRegistry';
+import {shadcnInstallCommand} from '../lib/shadcnRegistry.mjs';
 import {layout} from '../layout.stylex';
 
 const PAGE_SIZE = 48;
@@ -101,10 +102,12 @@ export function RegistryBrowser({entries, counts}: RegistryBrowserProps) {
   const visibleEntries = filteredEntries.slice(0, visibleCount);
 
   const copyCommand = (entry: ShadcnRegistryEntry) => {
-    navigator.clipboard.writeText(shadcnInstallCommand(entry.name)).then(() => {
-      setCopiedItem(entry.name);
-      setTimeout(() => setCopiedItem(null), 1600);
-    });
+    navigator.clipboard
+      .writeText(shadcnInstallCommand(entry.name, shadcnRegistryOrigin))
+      .then(() => {
+        setCopiedItem(entry.name);
+        setTimeout(() => setCopiedItem(null), 1600);
+      });
   };
 
   return (
@@ -139,7 +142,7 @@ export function RegistryBrowser({entries, counts}: RegistryBrowserProps) {
               example, block, or page install copies only editable composition
               code.
             </Text>
-            {SHADCN_REGISTRY_IS_PREVIEW && (
+            {shadcnRegistryIsPreview && (
               <Text type="supporting" color="secondary">
                 Commands on this preview use an expiring draft URL.
               </Text>
@@ -208,7 +211,7 @@ export function RegistryBrowser({entries, counts}: RegistryBrowserProps) {
                   </Text>
                 </VStack>
                 <Code xstyle={styles.command}>
-                  {shadcnInstallCommand(entry.name)}
+                  {shadcnInstallCommand(entry.name, shadcnRegistryOrigin)}
                 </Code>
                 <HStack gap={2}>
                   <Button

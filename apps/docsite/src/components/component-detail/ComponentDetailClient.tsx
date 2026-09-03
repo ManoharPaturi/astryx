@@ -39,9 +39,12 @@ import {
   showcaseRegistryItemNames,
 } from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
+import {
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../../generated/shadcnRegistry';
 import {trackNavigate} from '../../lib/analytics';
 import {
-  SHADCN_REGISTRY_IS_PREVIEW,
   shadcnComponentItemName,
   shadcnInstallCommand,
 } from '../../lib/shadcnRegistry.mjs';
@@ -124,13 +127,16 @@ function OverviewContent({
             implementation source. [How compatibility
             works](/docs/shadcn-compatibility).
           </MarkdownText>
-          {SHADCN_REGISTRY_IS_PREVIEW && (
+          {shadcnRegistryIsPreview && (
             <Text type="supporting" color="secondary">
               This install URL expires with the draft preview.
             </Text>
           )}
           <CodeExampleBlock
-            code={shadcnInstallCommand(shadcnComponentItemName(pkg, comp.name))}
+            code={shadcnInstallCommand(
+              shadcnComponentItemName(pkg, comp.name),
+              shadcnRegistryOrigin,
+            )}
             language="bash"
             width="100%"
             hasCopyButton
@@ -143,6 +149,7 @@ function OverviewContent({
               <CodeExampleBlock
                 code={shadcnInstallCommand(
                   showcaseRegistryItemNames[comp.name],
+                  shadcnRegistryOrigin,
                 )}
                 language="bash"
                 width="100%"

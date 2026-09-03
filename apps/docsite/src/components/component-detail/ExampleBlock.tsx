@@ -19,9 +19,10 @@ import {trackOpenPlayground} from '../../lib/analytics';
 import {MarkdownText} from '../MarkdownText';
 import {preventPreviewNavigation} from './previewNavigation';
 import {
-  SHADCN_REGISTRY_IS_PREVIEW,
-  shadcnInstallCommand,
-} from '../../lib/shadcnRegistry.mjs';
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../../generated/shadcnRegistry';
+import {shadcnInstallCommand} from '../../lib/shadcnRegistry.mjs';
 
 function LivePreview({
   entry,
@@ -140,13 +141,16 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
             />
           ) : entry.registryItemName ? (
             <VStack gap={2}>
-              {SHADCN_REGISTRY_IS_PREVIEW && (
+              {shadcnRegistryIsPreview && (
                 <Text type="supporting" color="secondary">
                   This install URL expires with the draft preview.
                 </Text>
               )}
               <CodeExampleBlock
-                code={shadcnInstallCommand(entry.registryItemName)}
+                code={shadcnInstallCommand(
+                  entry.registryItemName,
+                  shadcnRegistryOrigin,
+                )}
                 language="bash"
                 hasCopyButton
                 container="section"

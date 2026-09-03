@@ -29,7 +29,10 @@ import {
   collectPropTypeRefs,
 } from '../src/lib/typeDefinitions.mjs';
 import {generateShadcnRegistry} from './generate-shadcn-registry.mjs';
-import {shadcnBlockItemName} from '../src/lib/shadcnRegistry.mjs';
+import {
+  resolveShadcnRegistryOrigin,
+  shadcnBlockItemName,
+} from '../src/lib/shadcnRegistry.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -1991,6 +1994,10 @@ async function main() {
   const showcaseCopied = generateShowcaseRegistry(shadcnCounts?.itemNames);
   const examplesCopied = generateExampleRegistry(shadcnCounts?.itemNames);
   const registryEntries = shadcnCounts?.entries ?? [];
+  const registryOrigin = resolveShadcnRegistryOrigin(process.env);
+  const registryIsPreview =
+    DOCSITE_TARGET === 'canary' &&
+    registryOrigin !== 'https://astryx.atmeta.com/r';
   const registryCounts = shadcnCounts
     ? {
         components: shadcnCounts.components,
@@ -2016,6 +2023,8 @@ export interface ShadcnRegistryEntry {
 
 export const shadcnRegistryEntries: ShadcnRegistryEntry[] = ${JSON.stringify(registryEntries, null, 2)};
 export const shadcnRegistryCounts = ${JSON.stringify(registryCounts, null, 2)} as const;
+export const shadcnRegistryOrigin = ${JSON.stringify(registryOrigin)};
+export const shadcnRegistryIsPreview = ${registryIsPreview};
 `,
   );
 

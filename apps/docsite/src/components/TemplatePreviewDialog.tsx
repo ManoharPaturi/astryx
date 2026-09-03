@@ -49,7 +49,10 @@ import {buildTemplatePlaygroundHref} from './playgroundLink';
 import {trackCopy, trackOpenPlayground, trackNavigate} from '../lib/analytics';
 import {CURRENT_TARGET} from '../lib/docsVersions';
 import {
-  SHADCN_REGISTRY_IS_PREVIEW,
+  shadcnRegistryIsPreview,
+  shadcnRegistryOrigin,
+} from '../generated/shadcnRegistry';
+import {
   shadcnInstallCommand,
   shadcnPageItemName,
 } from '../lib/shadcnRegistry.mjs';
@@ -198,11 +201,16 @@ function TemplatePreviewHeader({
       {CURRENT_TARGET === 'canary' && (
         <HStack gap={2} vAlign="center">
           <Text type="supporting" color="secondary">
-            {SHADCN_REGISTRY_IS_PREVIEW
+            {shadcnRegistryIsPreview
               ? 'shadcn preview (expires)'
               : 'shadcn experiment'}
           </Text>
-          <Code>{shadcnInstallCommand(shadcnPageItemName(item.slug))}</Code>
+          <Code>
+            {shadcnInstallCommand(
+              shadcnPageItemName(item.slug),
+              shadcnRegistryOrigin,
+            )}
+          </Code>
           <Button
             variant="ghost"
             isIconOnly
@@ -340,7 +348,10 @@ export function TemplatePreviewDialog({
   }
 
   const astryxCommand = `npx @astryxdesign/cli template ${current.slug} ./src/app/${current.slug}`;
-  const shadcnCommand = shadcnInstallCommand(shadcnPageItemName(current.slug));
+  const shadcnCommand = shadcnInstallCommand(
+    shadcnPageItemName(current.slug),
+    shadcnRegistryOrigin,
+  );
   const handleCopyCmd = useCallback(
     (kind: Exclude<CopiedCommand, null>) => {
       if (kind === 'shadcn' && CURRENT_TARGET !== 'canary') {

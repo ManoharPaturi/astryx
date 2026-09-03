@@ -20,6 +20,7 @@ import path from 'node:path';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
 import {buildShadcnRegistry} from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
+import {resolveShadcnRegistryOrigin} from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -74,6 +75,25 @@ function fixture(overrides = {}) {
     ...overrides,
   };
 }
+
+describe('resolveShadcnRegistryOrigin', () => {
+  it('prefers an explicit registry origin', () => {
+    expect(
+      resolveShadcnRegistryOrigin({
+        NEXT_PUBLIC_ASTRYX_REGISTRY_ORIGIN: 'https://example.com/custom/',
+        VERCEL_URL: 'ignored.vercel.app',
+      }),
+    ).toBe('https://example.com/custom');
+  });
+
+  it('uses the Vercel deployment URL for preview builds', () => {
+    expect(
+      resolveShadcnRegistryOrigin({
+        VERCEL_URL: 'astryx-git-example.vercel.app',
+      }),
+    ).toBe('https://astryx-git-example.vercel.app/r');
+  });
+});
 
 describe('buildShadcnRegistry', () => {
   it('creates standard component, showcase, and page items', () => {
