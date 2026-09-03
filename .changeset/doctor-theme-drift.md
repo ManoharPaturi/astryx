@@ -16,4 +16,6 @@ Coverage is now exhaustive rather than capped. The built-theme scan skipped `.ne
 
 StyleX detection is one shared module. `doctor` and the generated agent docs each carried their own hardcoded plugin list, so a configured `@stylexjs/webpack-plugin` had doctor calling the swizzle wired while the docs selected plain CSS — a diagnosis and a recommendation pointing opposite ways about one project. Both now call `foundation/discovery/stylex-compiler.mjs`, which is also the only copy of the comment-stripping logic that keeps a commented-out plugin from counting as configuration.
 
+Three more from chaos-testing real projects. The failure counted every swizzled component in a package rather than the ones that actually contain StyleX, reporting "50 swizzled component(s) contain StyleX source" where exactly one did; it now counts and names the real ones. A commented-out StyleX import was read as StyleX source, so a component that compiles to plain React and renders fine was reported broken. And a plugin that is imported but never used — `import stylex from 'vite-plugin-stylex'` with `plugins: []` — counted as wiring, though it compiles nothing; wiring now requires the binding to be called, constructed, or passed on.
+
 @josephfarina

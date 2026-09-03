@@ -114,7 +114,21 @@ export function isStyleXConfigured(pkgDir, plugins, root = pkgDir) {
     const code = stripComments(src);
     return names.some(n => {
       const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      return new RegExp(`['"\`]${esc}['"\`]|\\b${esc}\\s*[(:]`).test(code);
+      // A bare string or a direct call is wiring: `plugins: ['x']`, `x()`.
+      if (new RegExp(`['"\`]${esc}['"\`]\\s*[,)\\]}]`).test(code)) return true;
+      if (new RegExp(`\\b${esc}\\s*[(:]`).test(code)) return true;
+      // An IMPORT of the plugin is only wiring if the binding is then used.
+      // `import stylex from 'vite-plugin-stylex'` with `plugins: []` compiles
+      // nothing, and counting it reported a working setup for a project whose
+      // components render unstyled.
+      const bind =
+        new RegExp(`import\\s+(?:\\*\\s+as\\s+)?(\\w+)[^;]*?from\\s*['"\`]${esc}['"\`]`).exec(code) ??
+        new RegExp(`(?:const|let|var)\\s+(\\w+)\\s*=\\s*require\\s*\\(\\s*['"\`]${esc}['"\`]`).exec(code);
+      if (!bind) return false;
+      const id = bind[1];
+      // Used = called, constructed, or passed along somewhere after the import.
+      const after = code.slice(bind.index + bind[0].length);
+      return new RegExp(`\\bnew\\s+${id}\\b|\\b${id}\\s*\\(|[[,:]\\s*${id}\\s*[,\\]}]`).test(after);
     });
   };
 

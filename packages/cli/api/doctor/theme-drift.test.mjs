@@ -274,9 +274,15 @@ describe('findSwizzled / checkSwizzled', () => {
   // bundles the code. Reading only the ROOT package.json got both directions
   // wrong: it called an app with its own compiler broken, and would equally
   // have cleared an app that has none because a sibling did.
+  //
+  // Both plugins are wired the way a real config wires them — a called import
+  // and a named entry — because a plugin that is merely imported and never
+  // used compiles nothing, and no longer counts.
   const monorepo = (rootDeps, appDeps) => ({
     'package.json': JSON.stringify({private: true, ...rootDeps}),
-    'apps/web/vite.config.js': "import stylex from 'vite-plugin-stylex';\nimport '@stylexjs/babel-plugin';\nexport default {plugins: [stylex()]};",
+    'apps/web/vite.config.js':
+      "import stylex from 'vite-plugin-stylex';\n" +
+      "export default {plugins: [stylex(), '@stylexjs/babel-plugin']};",
     'apps/web/package.json': JSON.stringify(appDeps ?? {}),
     'apps/web/src/components/astryx/Button/Button.tsx':
       "import * as stylex from '@stylexjs/stylex';\nexport function Button() { return null; }",
@@ -399,5 +405,48 @@ describe('StyleX detection — one detector, so diagnosis and guidance cannot dr
     );
     expect(findSwizzled(dir).hasCompiler).toBeNull();
     expect(detectStylingSystem(dir)).toBe('css');
+  });
+});
+
+describe('swizzle findings count and name only what is real', () => {
+  it('counts the components that use StyleX, not every swizzled one', () => {
+    // Reported "50 swizzled component(s) contain StyleX source" for a package
+    // where exactly one did, because it counted the package's whole swizzle
+    // list. The number is the reader's sense of scale — it has to be true.
+    const files = {'package.json': '{"name":"a"}'};
+    for (let i = 0; i < 12; i++) {
+      files[`src/components/astryx/Plain${i}/Plain${i}.tsx`] = `export function Plain${i}() {}`;
+    }
+    files['src/components/astryx/Styled/Styled.tsx'] =
+      "import * as stylex from '@stylexjs/stylex';\nexport function Styled() {}";
+    const c = checkSwizzled(ctx(mkProject(files)));
+    expect(c.status).toBe('fail');
+    expect(c.message).toMatch(/^1 swizzled component\(s\)/);
+    expect(c.message).toContain('Styled');
+  });
+
+  it('does not call a commented-out StyleX import "StyleX source"', () => {
+    // That component compiles to plain React and renders fine; reporting it
+    // sends people to install a compiler they do not need.
+    const dir = mkProject({
+      'package.json': '{"name":"a"}',
+      'src/components/astryx/Y/Y.tsx':
+        "// import * as stylex from '@stylexjs/stylex';\nexport function Y() {}",
+    });
+    expect(findSwizzled(dir).usesStyleX).toBe(false);
+    expect(checkSwizzled(ctx(dir)).status).toBe('info');
+  });
+
+  it('does not count a plugin that is imported and never used', () => {
+    // `import stylex from 'vite-plugin-stylex'` with `plugins: []` compiles
+    // nothing — the components still render unstyled.
+    const dir = mkProject({
+      'package.json': JSON.stringify({devDependencies: {'vite-plugin-stylex': '^0.6.0'}}),
+      'vite.config.js': "import stylex from 'vite-plugin-stylex';\nexport default {plugins: []};",
+      'src/components/astryx/Z/Z.tsx':
+        "import * as stylex from '@stylexjs/stylex';\nexport function Z() {}",
+    });
+    expect(findSwizzled(dir).hasCompiler).toBeNull();
+    expect(checkSwizzled(ctx(dir)).status).toBe('warn');
   });
 });

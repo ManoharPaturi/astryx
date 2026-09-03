@@ -310,7 +310,7 @@ export function scanConsumerCss(root) {
  *
  * @param {string} root
  * @returns {{dirs: string[], usesStyleX: boolean, hasCompiler: boolean|null,
- *   packages: Array<{dir: string, dirs: string[], usesStyleX: boolean, hasCompiler: boolean|null}>}}
+ *   packages: Array<{dir: string, dirs: string[], stylexDirs: string[], usesStyleX: boolean, hasCompiler: boolean|null}>}}
  *   The top-level fields summarise the tree: `usesStyleX` is true when any
  *   package does, and `hasCompiler` is false when any StyleX-using package
  *   lacks one — so a single broken app cannot be averaged away.
@@ -356,12 +356,20 @@ export function findSwizzled(root) {
   }
 
   const packages = [...byPackage.entries()]
-    .map(([dir, ownDirs]) => ({
-      dir,
-      dirs: ownDirs.sort(),
-      usesStyleX: ownDirs.some(usesStyleX),
-      hasCompiler: compilerFor(dir, root),
-    }))
+    .map(([dir, ownDirs]) => {
+      // Track WHICH components use StyleX, not just whether any do: the
+      // failure message counts them, and counting every swizzled directory in
+      // the package reported "50 components contain StyleX source" for a
+      // package where exactly one did.
+      const stylexDirs = ownDirs.filter(usesStyleX).sort();
+      return {
+        dir,
+        dirs: ownDirs.sort(),
+        stylexDirs,
+        usesStyleX: stylexDirs.length > 0,
+        hasCompiler: compilerFor(dir, root),
+      };
+    })
     .sort((a, b) => a.dir.localeCompare(b.dir));
 
   const stylexPackages = packages.filter(p => p.usesStyleX);
@@ -399,10 +407,25 @@ function owningPackage(from, root) {
 }
 
 /** Does any swizzled file in this directory actually use StyleX? @param {string} dir */
+/**
+ * Does this component directory contain LIVE StyleX source?
+ *
+ * Comments are blanked first. A swizzled file whose StyleX import is commented
+ * out compiles to plain React and renders fine — reporting it as broken sends
+ * people to install a compiler they do not need. (Measured: a component whose
+ * only mention was `// import * as stylex …` was reported as unstyled.)
+ *
+ * @param {string} dir
+ * @returns {boolean}
+ */
 function usesStyleX(dir) {
   for (const file of collect(dir, n => /\.(tsx?|jsx?|mjs)$/.test(n)).files) {
     try {
-      if (fs.readFileSync(file, 'utf-8').includes('@stylexjs/stylex')) return true;
+      const code = fs
+        .readFileSync(file, 'utf-8')
+        .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
+        .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, ' '));
+      if (code.includes('@stylexjs/stylex')) return true;
     } catch {
       /* skip unreadable file */
     }
@@ -588,7 +611,7 @@ export function checkSwizzled(ctx) {
   // unactionable.
   const broken = packages.filter(p => p.usesStyleX && p.hasCompiler === false);
   if (broken.length > 0) {
-    const affected = broken.reduce((n, p) => n + p.dirs.length, 0);
+    const affected = broken.reduce((n, p) => n + p.stylexDirs.length, 0);
     const where = broken
       .map(p => path.relative(ctx.cwd, p.dir) || path.basename(p.dir) || '.')
       .join(', ');
@@ -597,7 +620,7 @@ export function checkSwizzled(ctx) {
       label: 'Swizzled components',
       status: 'fail',
       message:
-        `${affected} swizzled component(s) in ${where} contain StyleX source, but no StyleX ` +
+        `${affected} swizzled component(s) in ${where} (${broken.flatMap(p => p.stylexDirs).map(d => path.basename(d)).slice(0, 5).join(', ')}) contain StyleX source, but no StyleX ` +
         'compiler is configured for those packages. They render completely unstyled — no build ' +
         'error, no warning.',
       fix:
@@ -619,7 +642,8 @@ export function checkSwizzled(ctx) {
       label: 'Swizzled components',
       status: 'warn',
       message:
-        `${dirs.length} swizzled component(s) (${listed}) contain StyleX source. A StyleX ` +
+        `${unverified.reduce((n, p) => n + p.stylexDirs.length, 0)} swizzled component(s) ` +
+        `(${unverified.flatMap(p => p.stylexDirs).map(d => path.basename(d)).slice(0, 5).join(', ')}) contain StyleX source. A StyleX ` +
         `compiler is installed for ${where}, but no build config in those packages references ` +
         'it, so it may never run — in which case they render completely unstyled, silently.',
       fix:
