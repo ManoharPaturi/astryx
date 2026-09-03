@@ -381,10 +381,10 @@
   },
   {
     "component": "core/Field",
-    "reason": "The Core/Field stories use block-flow labels, controls, descriptions, and status text without directional icons, side-specific placement, order, scrolling, dragging, overlays, or keyboard behavior.",
+    "reason": "Field lays out labels, controls, descriptions, and status text in block flow. The attached-status change extends its background vertically behind the control using a block-axis overlap, `position: relative`, and isolated negative stacking; its size-dependent custom property has no inline-axis side. The stories contain no directional glyph, ordered prev/next pair, horizontal scroll or drag, side-specific overlay, or directional keyboard behavior.",
     "evidence": {
-      "apps/storybook/stories/Field.stories.tsx": "sha256:714870c578a0f1bb8bfb7dee7e00211542307f4a19654797c456b3792cb7b629",
-      "packages/core/src/Field/Field.tsx": "sha256:72e4858904784add5e5ace8b1c5f85f60e6c7254a6bc003cb95550ae13a00aa8",
+      "apps/storybook/stories/Field.stories.tsx": "sha256:cfd2dc525128b69e74c5257da44b8f364c27a1902e703c16b7f77607d87fcdb0",
+      "packages/core/src/Field/Field.tsx": "sha256:7bbddc35588ad65a46fdb5c63404ea735df5f444bf7c7f5409bd4f3970ed9483",
       "packages/core/src/Field/FieldLabel.tsx": "sha256:b6deb05e43c26b835f4a9ffb91d517fbcd6367354ababf52a002b05934a045d4"
     }
   },
@@ -392,7 +392,7 @@
     "component": "core/FieldLabel",
     "reason": "FieldLabel is a flex row of optional icon, label text, an \"\u2219 Optional/Required\" suffix and an info tooltip, with a description span below it. Its only positioned element is the screen-reader clip box, which is anchored with `insetInlineStart` and carries no transform, and its only placement prop puts the tooltip `above`. The \"\u2219\" suffix separator is a bullet, not a directional mark, and everything else is logical spacing.",
     "evidence": {
-      "apps/storybook/stories/Field.stories.tsx": "sha256:714870c578a0f1bb8bfb7dee7e00211542307f4a19654797c456b3792cb7b629",
+      "apps/storybook/stories/Field.stories.tsx": "sha256:cfd2dc525128b69e74c5257da44b8f364c27a1902e703c16b7f77607d87fcdb0",
       "packages/core/src/Field/FieldLabel.tsx": "sha256:b6deb05e43c26b835f4a9ffb91d517fbcd6367354ababf52a002b05934a045d4"
     }
   },
@@ -400,7 +400,7 @@
     "component": "core/FieldStatus",
     "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior.",
     "evidence": {
-      "packages/core/src/FieldStatus/FieldStatus.tsx": "sha256:08103be6e564986808fdf88e5ee65267f87e05c8aef4bc58dbd69c68802382ce",
+      "packages/core/src/FieldStatus/FieldStatus.tsx": "sha256:558eef2b684fe67d9c5cd20a4ff30d944e2f06df3b35cac4a2bf781343200b18",
       "packages/core/src/FieldStatus/index.ts": "sha256:f086701362cdfc3c878504be6652c4bd43893aa37dfd46530cf2a651f3dd41ab"
     }
   },
@@ -888,7 +888,7 @@
     "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph.",
     "evidence": {
       "apps/storybook/stories/CircularProgress.stories.tsx": "sha256:32c3ef7c36d7056c35d745adb4aa11f09cdec489b7fa56a5e06e593c58256150",
-      "packages/lab/src/CircularProgress/CircularProgress.tsx": "sha256:9050d2755bba053ef285151fe9af9ab5e327fd8e64cfd32434755a8466109ea4"
+      "packages/lab/src/CircularProgress/CircularProgress.tsx": "sha256:1f0f167f7f0e2650903f3acafed11718355575c977d6678a18ef51da3709750d"
     }
   },
   {
