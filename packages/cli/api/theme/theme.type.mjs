@@ -140,7 +140,7 @@
  * xds --json theme palette generate <config>
  * @typedef {object} ThemePaletteGenerateResponse
  * @property {'theme.palette.generate'} type
- * @property {{recipe: 'astryx-oklch-v1', status: 'candidate', familyCount: number, stopCount: number, modes: string[], output: string | null, receipt: string | null, written: boolean, reason: 'exists' | null, candidate: TonalPaletteCandidate, generationReceipt: Record<string, unknown>}} data
+ * @property {{recipe: 'astryx-oklch-v1', status: 'candidate', familyCount: number, stopCount: number, modes: string[], output: string | null, receipt: string | null, preview: string | null, written: boolean, reason: 'exists' | null, candidate: TonalPaletteCandidate, generationReceipt: Record<string, unknown>}} data
  */
 
 // Make this a module so the @typedefs above are importable as types via

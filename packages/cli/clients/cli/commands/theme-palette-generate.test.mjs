@@ -49,6 +49,8 @@ describe('astryx theme palette generate', () => {
         'palette.config.json',
         '--out',
         'ocean.palette.ts',
+        '--preview',
+        'ocean.palette.html',
       ],
       {cwd: temporaryDirectory},
     );
@@ -62,6 +64,7 @@ describe('astryx theme palette generate', () => {
       modes: ['dark'],
       output: 'ocean.palette.ts',
       receipt: 'ocean.palette.receipt.json',
+      preview: 'ocean.palette.html',
       written: true,
     });
     expect(
@@ -69,6 +72,9 @@ describe('astryx theme palette generate', () => {
     ).toBe(true);
     expect(
       fs.existsSync(path.join(temporaryDirectory, response.data.receipt)),
+    ).toBe(true);
+    expect(
+      fs.existsSync(path.join(temporaryDirectory, response.data.preview)),
     ).toBe(true);
   });
 

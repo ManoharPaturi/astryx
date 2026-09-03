@@ -15,7 +15,7 @@ export const doc = {
     'author-owned files untouched unless overwrite is true.',
   importPath: '@astryxdesign/cli/api',
   signature:
-    'themePaletteGenerate(configPath: string, options?: {out?: string, overwrite?: boolean}, ctx?: {cwd?: string}): ThemePaletteGenerateResponse',
+    'themePaletteGenerate(configPath: string, options?: {out?: string, preview?: string, overwrite?: boolean}, ctx?: {cwd?: string}): ThemePaletteGenerateResponse',
   keywords: ['theme', 'palette', 'generate', 'OKLCH', 'candidate', 'color'],
   params: [
     {
@@ -29,6 +29,11 @@ export const doc = {
       type: 'string',
       description:
         'Optional candidate JSON destination. A sibling .receipt.json path is derived from it.',
+    },
+    {
+      name: 'options.preview',
+      type: 'string',
+      description: 'Optional path for a self-contained HTML review artifact.',
     },
     {
       name: 'options.overwrite',
@@ -68,7 +73,7 @@ export const doc = {
     },
     {
       label: 'Write candidate files',
-      code: "themePaletteGenerate('palette.config.json', {out: 'ocean.palette.ts'});",
+      code: "themePaletteGenerate('palette.config.json', {out: 'ocean.palette.ts', preview: 'ocean.palette.html'});",
     },
   ],
   command: 'theme palette generate',

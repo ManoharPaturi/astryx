@@ -81,7 +81,8 @@ function runThemeBuildOnceChild(file, options) {
   const cliBin = resolveCliBin();
   const args = [cliBin, 'theme', 'build', file];
   if (options.out) args.push('--out', options.out);
-  if (options.iconsSpecifier) args.push('--icons-specifier', options.iconsSpecifier);
+  if (options.iconsSpecifier)
+    args.push('--icons-specifier', options.iconsSpecifier);
   return new Promise((/** @type {(code: number) => void} */ resolve) => {
     const child = spawn(process.execPath, args, {
       stdio: 'inherit',
@@ -215,10 +216,19 @@ function formatTargetsTable(targets) {
     props: t.props.join(', ') || '-',
     states: t.states.join(', ') || '-',
   }));
-  const head = {key: 'key', component: 'component', props: 'props', states: 'states'};
+  const head = {
+    key: 'key',
+    component: 'component',
+    props: 'props',
+    states: 'states',
+  };
   const width = (/** @type {'key'|'component'|'props'} */ field) =>
     [head, ...rows].reduce((max, r) => Math.max(max, r[field].length), 0);
-  const w = {key: width('key'), component: width('component'), props: width('props')};
+  const w = {
+    key: width('key'),
+    component: width('component'),
+    props: width('props'),
+  };
   const line = (/** @type {typeof head} */ r) =>
     [
       r.key.padEnd(w.key),
@@ -299,7 +309,7 @@ export function registerTheme(program) {
     fn: themePaletteGenerateFn,
     action: (
       /** @type {string} */ configPath,
-      /** @type {{out?: string, overwrite?: boolean}} */ options,
+      /** @type {{out?: string, preview?: string, overwrite?: boolean}} */ options,
     ) => {
       const json = program.opts().json || false;
       /** @type {import('../../../api/theme/theme.type.mjs').ThemePaletteGenerateResponse} */
@@ -319,7 +329,7 @@ export function registerTheme(program) {
       }
 
       if (json) return jsonOut(result);
-      if (!result.data.output) {
+      if (!result.data.output && !result.data.preview) {
         emit(
           section(
             'Palette candidate',
@@ -332,15 +342,22 @@ export function registerTheme(program) {
       if (!result.data.written) {
         emit(
           text(
-            `[skip] ${result.data.output} or ${result.data.receipt} already exists — left as is.`,
+            '[skip] One or more requested palette outputs already exist — left as is.',
           ),
           text('Pass --overwrite to replace both generated candidate files.'),
         );
         return;
       }
       emit(
-        text(`[ok] Wrote ${result.data.output}`),
-        text(`[ok] Wrote ${result.data.receipt}`),
+        ...(result.data.output
+          ? [text(`[ok] Wrote ${result.data.output}`)]
+          : []),
+        ...(result.data.receipt
+          ? [text(`[ok] Wrote ${result.data.receipt}`)]
+          : []),
+        ...(result.data.preview
+          ? [text(`[ok] Wrote ${result.data.preview}`)]
+          : []),
         text(
           'Review and edit the candidate before adopting it as theme-owned palette data.',
         ),

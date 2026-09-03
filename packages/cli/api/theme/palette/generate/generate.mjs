@@ -11,6 +11,7 @@ import {
 import {ERROR_CODES} from '../../../../foundation/response/error-codes.mjs';
 import {AstryxError} from '../../../error.mjs';
 import {generatePaletteSet, serializeGenerationResult} from './generator.mjs';
+import {PALETTE_PREVIEW_VERSION, renderPalettePreview} from './preview.mjs';
 
 function paletteSnapshot(result) {
   return {
@@ -45,11 +46,19 @@ function serializeCandidate(candidate, outputPath) {
   );
 }
 
-function receiptFor(result, candidateText) {
+function receiptFor(result, candidateText, previewText = null) {
   return {
     schemaVersion: 1,
     recipe: result.recipe,
     candidateSha256: createHash('sha256').update(candidateText).digest('hex'),
+    ...(previewText
+      ? {
+          preview: {
+            version: PALETTE_PREVIEW_VERSION,
+            sha256: createHash('sha256').update(previewText).digest('hex'),
+          },
+        }
+      : {}),
     request: result.request,
     diagnostics: {
       families: Object.fromEntries(
@@ -88,7 +97,7 @@ function resolveSafe(targetPath, cwd, label) {
   }
 }
 
-function writePairAtomically(files) {
+function writeFilesAtomically(files) {
   const originals = files.map(file => ({
     ...file,
     existed: fs.existsSync(file.path),
@@ -119,7 +128,7 @@ function writePairAtomically(files) {
  * Generate an author-reviewable palette candidate from a JSON request.
  *
  * @param {string} configPath
- * @param {{out?: string, overwrite?: boolean}} [options]
+ * @param {{out?: string, preview?: string, overwrite?: boolean}} [options]
  * @param {{cwd?: string}} [ctx]
  * @returns {import('../../theme.type.mjs').ThemePaletteGenerateResponse}
  */
@@ -170,18 +179,22 @@ export function themePaletteGenerate(
 
   const candidate = paletteSnapshot(result);
   let candidateText = `${JSON.stringify(candidate, null, 2)}\n`;
-  let receipt = receiptFor(result, candidateText);
+  const previewText = options.preview ? renderPalettePreview(candidate) : null;
+  let receipt = receiptFor(result, candidateText, previewText);
   let receiptText = serializeGenerationResult(receipt);
   let output = null;
   let receiptOutput = null;
+  let previewOutput = null;
   let written = false;
   let reason = null;
+  const files = [];
+  const resolvedTargets = new Set();
 
   if (options.out) {
     const resolvedOutput = resolveSafe(options.out, cwd, 'palette output path');
     const resolvedReceipt = receiptPathFor(resolvedOutput);
     candidateText = serializeCandidate(candidate, resolvedOutput);
-    receipt = receiptFor(result, candidateText);
+    receipt = receiptFor(result, candidateText, previewText);
     receiptText = serializeGenerationResult(receipt);
     if (
       resolvedOutput === resolvedConfig ||
@@ -195,17 +208,48 @@ export function themePaletteGenerate(
     }
     output = path.relative(cwd, resolvedOutput);
     receiptOutput = path.relative(cwd, resolvedReceipt);
+    files.push(
+      {path: resolvedOutput, next: candidateText},
+      {path: resolvedReceipt, next: receiptText},
+    );
+    resolvedTargets.add(resolvedOutput);
+    resolvedTargets.add(resolvedReceipt);
+  }
+
+  if (options.preview) {
+    const resolvedPreview = resolveSafe(
+      options.preview,
+      cwd,
+      'palette preview path',
+    );
+    if (!resolvedPreview.endsWith('.html')) {
+      throw new AstryxError(
+        'Palette preview output must end in .html.',
+        undefined,
+        ERROR_CODES.ERR_PALETTE_GENERATION,
+      );
+    }
     if (
-      !options.overwrite &&
-      (fs.existsSync(resolvedOutput) || fs.existsSync(resolvedReceipt))
+      resolvedPreview === resolvedConfig ||
+      resolvedTargets.has(resolvedPreview)
     ) {
+      throw new AstryxError(
+        'Palette preview must not replace an input or another output.',
+        undefined,
+        ERROR_CODES.ERR_PATH_TRAVERSAL,
+      );
+    }
+    previewOutput = path.relative(cwd, resolvedPreview);
+    files.push({path: resolvedPreview, next: previewText});
+    resolvedTargets.add(resolvedPreview);
+  }
+
+  if (files.length > 0) {
+    if (!options.overwrite && files.some(file => fs.existsSync(file.path))) {
       reason = 'exists';
     } else {
       try {
-        writePairAtomically([
-          {path: resolvedOutput, next: candidateText},
-          {path: resolvedReceipt, next: receiptText},
-        ]);
+        writeFilesAtomically(files);
         written = true;
       } catch (error) {
         throw new AstryxError(
@@ -230,6 +274,7 @@ export function themePaletteGenerate(
           : [result.request.modeStrategy === 'light-only' ? 'light' : 'dark'],
       output,
       receipt: receiptOutput,
+      preview: previewOutput,
       written,
       reason,
       candidate,

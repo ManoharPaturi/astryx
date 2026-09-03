@@ -92,6 +92,30 @@ describe('themePaletteGenerate', () => {
     expect(result.data.receipt).toBe('ocean.palette.receipt.json');
   });
 
+  it('writes a standardized preview without requiring palette output', () => {
+    const cwd = fixture();
+    const result = themePaletteGenerate(
+      'palette.config.json',
+      {preview: 'palette-preview.html'},
+      {cwd},
+    );
+
+    expect(result.data).toMatchObject({
+      output: null,
+      receipt: null,
+      preview: 'palette-preview.html',
+      written: true,
+    });
+    const preview = fs.readFileSync(
+      path.join(cwd, 'palette-preview.html'),
+      'utf-8',
+    );
+    expect(preview).toContain('palette-preview-v1');
+    expect(preview).toContain('Generated candidate');
+    expect(preview).toContain('does not certify accessibility');
+    expect(preview).not.toMatch(/https?:\/\//);
+  });
+
   it('rejects output formats that cannot preserve the palette contract', () => {
     const cwd = fixture();
     expect(() =>
@@ -101,6 +125,22 @@ describe('themePaletteGenerate', () => {
         {cwd},
       ),
     ).toThrow('must end in .ts or .json');
+  });
+
+  it('does not overwrite an existing preview implicitly', () => {
+    const cwd = fixture();
+    fs.writeFileSync(path.join(cwd, 'palette-preview.html'), 'author edit\n');
+
+    const result = themePaletteGenerate(
+      'palette.config.json',
+      {preview: 'palette-preview.html'},
+      {cwd},
+    );
+
+    expect(result.data).toMatchObject({written: false, reason: 'exists'});
+    expect(
+      fs.readFileSync(path.join(cwd, 'palette-preview.html'), 'utf-8'),
+    ).toBe('author edit\n');
   });
 
   it('leaves author-owned output untouched unless overwrite is explicit', () => {
