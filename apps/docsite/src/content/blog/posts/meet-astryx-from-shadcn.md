@@ -30,7 +30,7 @@ shadcn has a [Registry protocol](https://ui.shadcn.com/docs/registry). A registr
 Astryx can do the same thing.
 
 ```bash
-npx shadcn@latest add <registry-origin>/astryx-page-dashboard.json
+npx shadcn@latest add <registry-origin>/templates/dashboard.json
 ```
 
 The important bit is what happens after that command. Astryx does not become a pile of copied component source. The command installs the real `@astryxdesign/core` package. The dashboard code it copies imports `Card`, `Table`, `Button`, `ProgressBar`, and everything else from that package.
@@ -66,7 +66,7 @@ The two paths can sit next to each other:
 
 ```bash
 # I know the exact item and already use shadcn
-npx shadcn@latest add <registry-origin>/astryx-example-button-variants.json
+npx shadcn@latest add <registry-origin>/examples/button/variants.json
 
 # I need help finding and maintaining the right pieces
 astryx build "analytics dashboard with filters"

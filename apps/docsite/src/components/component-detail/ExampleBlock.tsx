@@ -106,7 +106,7 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
             <TabList value={tab} onChange={setTab} size="sm">
               <Tab value="description" label="Description" />
               <Tab value="code" label="Code" />
-              {entry.registryItemName && (
+              {entry.registryItemPath && (
                 <Tab value="install" label="Install" />
               )}
             </TabList>
@@ -139,7 +139,7 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
               container="section"
               width="100%"
             />
-          ) : entry.registryItemName ? (
+          ) : entry.registryItemPath ? (
             <VStack gap={2}>
               {shadcnRegistryIsPreview && (
                 <Text type="supporting" color="secondary">
@@ -148,7 +148,7 @@ export function ExampleBlock({entry, componentName}: ExampleBlockProps) {
               )}
               <CodeExampleBlock
                 code={shadcnInstallCommand(
-                  entry.registryItemName,
+                  entry.registryItemPath,
                   shadcnRegistryOrigin,
                 )}
                 language="bash"

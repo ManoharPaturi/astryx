@@ -19,8 +19,16 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {promisify} from 'node:util';
 import {describe, expect, it} from 'vitest';
-import {buildShadcnRegistry} from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
-import {resolveShadcnRegistryOrigin} from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
+import {
+  buildShadcnRegistry,
+  generateShadcnRegistry,
+} from '../../apps/docsite/scripts/generate-shadcn-registry.mjs';
+import {
+  blockRegistryIdentity,
+  componentRegistryIdentity,
+  pageRegistryIdentity,
+  resolveShadcnRegistryOrigin,
+} from '../../apps/docsite/src/lib/shadcnRegistry.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -44,8 +52,8 @@ function fixture(overrides = {}) {
     blocks: [
       {
         dirName: 'ButtonShowcase',
-        name: 'Button showcase',
-        displayName: 'Button Showcase',
+        name: 'Button — Variants',
+        displayName: 'Button — Variants',
         description: 'Shows a primary button.',
         exampleFor: 'Button',
         isShowcase: true,
@@ -95,6 +103,57 @@ describe('resolveShadcnRegistryOrigin', () => {
   });
 });
 
+describe('registry identities', () => {
+  it('derives organized paths from stable doc identity', () => {
+    expect(
+      componentRegistryIdentity('@astryxdesign/core', 'Button'),
+    ).toMatchObject({name: 'component-button', path: 'components/button'});
+    expect(
+      componentRegistryIdentity(
+        '@astryxdesign/core',
+        'useAppShellMobile',
+        true,
+      ),
+    ).toMatchObject({
+      name: 'hook-use-app-shell-mobile',
+      path: 'hooks/use-app-shell-mobile',
+    });
+    expect(
+      blockRegistryIdentity('Button — Leading Icon', 'Button', false),
+    ).toMatchObject({
+      name: 'example-button-leading-icon',
+      path: 'examples/button/leading-icon',
+    });
+    expect(pageRegistryIdentity('analytics-dashboard')).toMatchObject({
+      name: 'template-analytics-dashboard',
+      path: 'templates/analytics-dashboard',
+    });
+  });
+
+  it('supports an explicit stable slug and prior path aliases', () => {
+    expect(
+      blockRegistryIdentity('Button — Icon', 'Button', false, {
+        slug: 'leading-icon',
+        aliases: ['button/icon'],
+      }),
+    ).toEqual({
+      kind: 'example',
+      name: 'example-button-leading-icon',
+      path: 'examples/button/leading-icon',
+      aliases: ['examples/button/icon'],
+    });
+  });
+
+  it('rejects malformed or unknown registry identity fields', () => {
+    expect(() =>
+      pageRegistryIdentity('dashboard', {slug: 'Dashboard'}),
+    ).toThrow(/lowercase kebab-case/);
+    expect(() => pageRegistryIdentity('dashboard', {owner: 'docs'})).toThrow(
+      /unknown field/,
+    );
+  });
+});
+
 describe('buildShadcnRegistry', () => {
   it('creates standard component, showcase, and page items', () => {
     const {registry, items, counts} = buildShadcnRegistry(fixture());
@@ -110,17 +169,54 @@ describe('buildShadcnRegistry', () => {
     });
     expect(registry.items).toHaveLength(3);
     expect(items.map(item => item.name)).toEqual([
-      'astryx-component-button',
-      'astryx-showcase-button-showcase',
-      'astryx-page-dashboard',
+      'component-button',
+      'showcase-button-variants',
+      'template-dashboard',
     ]);
+    expect(items.map(item => item.astryx.path)).toEqual([
+      'components/button',
+      'showcases/button/variants',
+      'templates/dashboard',
+    ]);
+  });
+
+  it('writes canonical nested paths and compatibility aliases', () => {
+    const outDir = mkdtempSync(path.join(tmpdir(), 'astryx-shadcn-routes-'));
+    try {
+      const input = fixture();
+      input.blocks[0].registry = {
+        slug: 'button-styles',
+        aliases: ['button/variants'],
+      };
+      const result = generateShadcnRegistry({
+        ...input,
+        outDir,
+        cliRoot: outDir,
+      });
+
+      expect(
+        existsSync(path.join(outDir, 'components', 'button.json')),
+      ).toBe(true);
+      expect(
+        existsSync(
+          path.join(outDir, 'showcases', 'button', 'button-styles.json'),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(path.join(outDir, 'showcases', 'button', 'variants.json')),
+      ).toBe(true);
+      expect(
+        existsSync(path.join(outDir, 'templates', 'dashboard.json')),
+      ).toBe(true);
+      expect(result.routes).toContain('showcases/button/variants');
+    } finally {
+      rmSync(outDir, {recursive: true, force: true});
+    }
   });
 
   it('keeps component implementation inside the package', () => {
     const {items} = buildShadcnRegistry(fixture());
-    const component = items.find(
-      item => item.name === 'astryx-component-button',
-    );
+    const component = items.find(item => item.name === 'component-button');
 
     expect(component.dependencies).toEqual([
       '@astryxdesign/core@^0.5.2',
@@ -140,7 +236,7 @@ describe('buildShadcnRegistry', () => {
 
   it('uses the shadcn page-file workaround without changing item semantics', () => {
     const {items} = buildShadcnRegistry(fixture());
-    const page = items.find(item => item.name === 'astryx-page-dashboard');
+    const page = items.find(item => item.name === 'template-dashboard');
 
     expect(page.type).toBe('registry:page');
     expect(page.files[0].type).toBe('registry:block');
@@ -244,9 +340,7 @@ describe('buildShadcnRegistry', () => {
       ...fixture(),
       dependencyTag: 'canary',
     });
-    const component = items.find(
-      item => item.name === 'astryx-component-button',
-    );
+    const component = items.find(item => item.name === 'component-button');
     expect(component.dependencies).toEqual([
       '@astryxdesign/core@canary',
       '@stylexjs/stylex@0.19.0',
@@ -268,7 +362,7 @@ describe('buildShadcnRegistry', () => {
     });
 
     const {items} = buildShadcnRegistry(styled);
-    const block = items.find(item => item.name.includes('button-showcase'));
+    const block = items.find(item => item.name === 'showcase-button-variants');
     expect(block.files[0].content).toContain('stylex-inject');
     expect(block.files[0].content).not.toContain('stylex.create');
     expect(block.files[0].target).toMatch(/\.jsx$/);

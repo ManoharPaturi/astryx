@@ -36,7 +36,7 @@ import type {ComponentEntry} from '../../generated/componentRegistry';
 import type {BlockEntry} from '../../generated/blockRegistry';
 import {
   showcaseRegistry,
-  showcaseRegistryItemNames,
+  showcaseRegistryItemPaths,
 } from '../../generated/showcaseRegistry';
 import {exampleRegistry} from '../../generated/exampleRegistry';
 import {
@@ -45,7 +45,7 @@ import {
 } from '../../generated/shadcnRegistry';
 import {trackNavigate} from '../../lib/analytics';
 import {
-  shadcnComponentItemName,
+  shadcnComponentItemPath,
   shadcnInstallCommand,
 } from '../../lib/shadcnRegistry.mjs';
 
@@ -194,21 +194,21 @@ function OverviewContent({
             )}
             <CodeExampleBlock
               code={shadcnInstallCommand(
-                shadcnComponentItemName(pkg, comp.name),
+                shadcnComponentItemPath(pkg, comp.name, isHook, comp.registry),
                 shadcnRegistryOrigin,
               )}
               language="bash"
               width="100%"
               hasCopyButton
             />
-            {showcaseRegistryItemNames[comp.name] && (
+            {showcaseRegistryItemPaths[comp.name] && (
               <>
                 <Text type="supporting" color="secondary">
                   Install the editable showcase composition
                 </Text>
                 <CodeExampleBlock
                   code={shadcnInstallCommand(
-                    showcaseRegistryItemNames[comp.name],
+                    showcaseRegistryItemPaths[comp.name],
                     shadcnRegistryOrigin,
                   )}
                   language="bash"

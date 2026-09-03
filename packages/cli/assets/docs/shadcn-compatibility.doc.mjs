@@ -28,6 +28,29 @@ export const docs = {
       ],
     },
     {
+      title: 'Naming and URL Stability',
+      content: [
+        {
+          type: 'prose',
+          text: 'Registry URLs are organized by item kind and derived from stable Astryx doc identity: component and hook `name`, block `name` plus `exampleFor`, and the existing page-template slug. `displayName` remains free to change without changing an install URL.',
+        },
+        {
+          type: 'code',
+          lang: 'text',
+          label: 'Registry path families',
+          code: `/r/components/button.json
+/r/hooks/use-app-shell-mobile.json
+/r/showcases/button/variants.json
+/r/examples/button/icon.json
+/r/templates/dashboard.json`,
+        },
+        {
+          type: 'prose',
+          text: 'A doc may set `registry.slug` when the derived slug is not the intended public name. After publication, keep prior relative paths in `registry.aliases`. Generation compares every name and path with a reviewed route lock, so an accidental rename fails instead of silently breaking old commands.',
+        },
+      ],
+    },
+    {
       title: 'What Gets Installed',
       content: [
         {
@@ -73,19 +96,19 @@ export const docs = {
           type: 'code',
           lang: 'bash',
           label: 'Install the Button package entry',
-          code: 'npx shadcn@latest add <registry-origin>/astryx-component-button.json',
+          code: 'npx shadcn@latest add <registry-origin>/components/button.json',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Install the editable Button showcase',
-          code: 'npx shadcn@latest add <registry-origin>/astryx-showcase-button-showcase.json',
+          code: 'npx shadcn@latest add <registry-origin>/showcases/button/variants.json',
         },
         {
           type: 'code',
           lang: 'bash',
           label: 'Install the complete dashboard page',
-          code: 'npx shadcn@latest add <registry-origin>/astryx-page-dashboard.json',
+          code: 'npx shadcn@latest add <registry-origin>/templates/dashboard.json',
         },
       ],
     },

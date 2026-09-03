@@ -4,6 +4,8 @@
  * @file Template doc types.
  */
 
+import type {RegistryDocIdentity} from '../base/type';
+
 export interface BaseTemplateDoc {
   /** Identifier name for the template. For block templates this matches
    *  the React component import name (e.g. `"ChatMessageMetadata"`); for
@@ -21,6 +23,8 @@ export interface BaseTemplateDoc {
   /** One-sentence description of what the template provides. */
   description?: string;
 
+  /** Optional stable slug override and prior aliases for registry output. */
+  registry?: RegistryDocIdentity;
   /** Whether this template is ready for use. Templates with
    *  isReady: false show as "(WIP)" in the gallery and CLI. */
   isReady?: boolean;

@@ -30,8 +30,8 @@ import {
 } from '../src/lib/typeDefinitions.mjs';
 import {generateShadcnRegistry} from './generate-shadcn-registry.mjs';
 import {
+  blockRegistryIdentity,
   resolveShadcnRegistryOrigin,
-  shadcnBlockItemName,
 } from '../src/lib/shadcnRegistry.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -494,6 +494,7 @@ async function generateComponentRegistry() {
         const topDescription = doc.usage?.description || doc.description || '';
         const usage = doc.usage ? sanitizeForJson(doc.usage) : null;
         const theming = doc.theming ? sanitizeForJson(doc.theming) : null;
+        const registry = doc.registry ? sanitizeForJson(doc.registry) : null;
         const playground = doc.playground
           ? sanitizeForJson(doc.playground)
           : null;
@@ -532,6 +533,7 @@ async function generateComponentRegistry() {
               description: doc.description || parentMeta.topDescription || '',
               keywords: parentMeta.keywords ?? keywords,
               hidden: parentMeta.hidden ?? hidden,
+              registry,
               parentDoc: doc.subComponentOf,
               props: isHookEntry
                 ? []
@@ -595,6 +597,7 @@ async function generateComponentRegistry() {
               description: doc.description || topDescription,
               keywords,
               hidden,
+              registry,
               parentDoc: name,
               props: sanitizeForJson(doc.props),
               usage,
@@ -662,6 +665,7 @@ async function generateComponentRegistry() {
               description: sub.description || topDescription,
               keywords,
               hidden,
+              registry: sub.registry ? sanitizeForJson(sub.registry) : null,
               parentDoc: doc.name,
               props: isHookEntry
                 ? []
@@ -706,6 +710,7 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
+            registry,
             parentDoc: dirPrimaryDoc,
             props: [],
             usage,
@@ -740,6 +745,7 @@ async function generateComponentRegistry() {
             description: topDescription,
             keywords,
             hidden,
+            registry,
             parentDoc: null,
             props: Array.isArray(doc.props) ? sanitizeForJson(doc.props) : [],
             usage,
@@ -979,6 +985,7 @@ export interface ComponentEntry {
   description: string;
   keywords: string[];
   hidden: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   parentDoc: string | null;
   props: PropDoc[];
   /** Declarations for every type referenced from \`props[]\`, \`params[]\`, or
@@ -1239,6 +1246,9 @@ async function generateBlockRegistry() {
     let aspectRatio = 1;
     let componentsUsed = [];
     let exampleFor = '';
+    let alsoExampleFor = [];
+    let alsoShowcaseFor = [];
+    let registry = null;
     try {
       const content = fs.readFileSync(docPath, 'utf-8');
       isShowcase = /isShowcase:\s*true/.test(content);
@@ -1259,6 +1269,12 @@ async function generateBlockRegistry() {
       if (efMatch) {
         exampleFor = efMatch[1];
       }
+      alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
+      alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
+      const module = await import(pathToFileURL(docPath).href);
+      registry = module.doc?.registry
+        ? sanitizeForJson(module.doc.registry)
+        : null;
     } catch {
       /* ignore */
     }
@@ -1284,7 +1300,10 @@ async function generateBlockRegistry() {
       ),
       description: meta.description,
       exampleFor,
+      alsoExampleFor,
+      alsoShowcaseFor,
       isShowcase,
+      registry,
       aspectRatio,
       componentsUsed,
       category: relCategory,
@@ -1312,7 +1331,10 @@ export interface BlockEntry {
   description: string;
   /** The component this block is an example of (e.g. 'Button', 'Dialog') */
   exampleFor: string;
+  alsoExampleFor: string[];
+  alsoShowcaseFor: string[];
   isShowcase: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   aspectRatio: number;
   componentsUsed: string[];
   /** Category path, e.g. 'components/Button' */
@@ -1387,6 +1409,7 @@ async function generateTemplateRegistry() {
       isReady: doc.isReady ?? true,
       category: doc.category || '',
       isHiddenFromOverview: doc.isHiddenFromOverview ?? false,
+      registry: doc.registry ? sanitizeForJson(doc.registry) : null,
       source,
     });
   }
@@ -1405,6 +1428,7 @@ export interface TemplateEntry {
   category: string;
   /** When true, hide from the Templates overview gallery (still CLI-available). */
   isHiddenFromOverview: boolean;
+  registry: {slug?: string; aliases?: string[]} | null;
   source: string;
 }
 
@@ -1660,68 +1684,70 @@ function importsPackageMissingFromDocsite(tsxSource) {
   return imports.some(pkg => _docsiteDeps[pkg] == null);
 }
 
-function generateShowcaseRegistry(availableRegistryItems) {
+function blockSourcePath(block) {
+  return path.join(
+    CLI_ROOT,
+    'assets',
+    'templates',
+    'blocks',
+    block.category,
+    `${block.dirName}.tsx`,
+  );
+}
+
+function generateShowcaseRegistry(blocks, availableRegistryPaths) {
   console.log('Generating showcase registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const SHOWCASE_OUT = path.join(OUT_DIR, 'showcases');
 
-  // Clean and recreate
   if (fs.existsSync(SHOWCASE_OUT)) {
     fs.rmSync(SHOWCASE_OUT, {recursive: true});
   }
   fs.mkdirSync(SHOWCASE_OUT, {recursive: true});
 
-  const docFiles = findDocFilesRecursive(BLOCKS_DIR);
   const entries = [];
 
-  for (const docPath of docFiles) {
-    const content = fs.readFileSync(docPath, 'utf-8');
-    const isShowcase = /isShowcase:\s*true/.test(content);
-
-    const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
-    if (!efMatch) continue;
-
-    const exampleFor = efMatch[1];
-    const basename = path.basename(docPath, '.doc.mjs');
-    const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
+  for (const block of blocks) {
+    const tsxSrc = blockSourcePath(block);
     if (!fs.existsSync(tsxSrc)) continue;
 
-    // Skip blocks that reference a package the docsite cannot resolve.
-    const tsxContent = fs.readFileSync(tsxSrc, 'utf-8');
-    if (importsPackageMissingFromDocsite(tsxContent)) {
+    if (importsPackageMissingFromDocsite(block.source)) {
       console.log(
-        `  skipping showcase ${basename} — imports a package not installed in the docsite`,
+        `  skipping showcase ${block.dirName} — imports a package not installed in the docsite`,
       );
       continue;
     }
 
-    const alsoShowcaseFor = extractStringArrayField(content, 'alsoShowcaseFor');
+    const identity = blockRegistryIdentity(
+      block.name,
+      block.exampleFor,
+      block.isShowcase,
+      block.registry,
+    );
+    const registryItemPath = availableRegistryPaths?.has(identity.path)
+      ? identity.path
+      : null;
 
-    if (isShowcase) {
-      // Copy the TSX file into generated/showcases/
-      const destFile = `${basename}.tsx`;
+    if (block.isShowcase) {
+      const destFile = `${block.dirName}.tsx`;
       fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
       entries.push({
-        exampleFor,
-        basename,
+        exampleFor: block.exampleFor,
+        basename: block.dirName,
         destFile,
-        registryItemName: shadcnBlockItemName(basename, isShowcase),
+        registryItemPath,
       });
     }
 
-    // Blocks can opt into serving as the visual showcase for additional
-    // component or hook pages. This is explicit metadata instead of source
-    // inspection so authors control where examples appear.
-    for (const target of alsoShowcaseFor) {
-      const aliasBasename = `${basename}__${target}`;
+    for (const target of block.alsoShowcaseFor) {
+      const aliasBasename = `${block.dirName}__${target}`;
       const destFile = `${aliasBasename}.tsx`;
       fs.copyFileSync(tsxSrc, path.join(SHOWCASE_OUT, destFile));
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
         destFile,
-        registryItemName: shadcnBlockItemName(basename, isShowcase),
+        registryItemPath,
       });
     }
   }
@@ -1734,13 +1760,12 @@ function generateShowcaseRegistry(availableRegistryItems) {
     return true;
   });
 
-  // Generate the registry with dynamic imports
   const importLines = uniqueEntries
     .map(e => `  '${e.exampleFor}': () => import('./showcases/${e.basename}'),`)
     .join('\n');
-  const itemNameLines = uniqueEntries
-    .filter(e => availableRegistryItems?.has(e.registryItemName))
-    .map(e => `  '${e.exampleFor}': ${JSON.stringify(e.registryItemName)},`)
+  const itemPathLines = uniqueEntries
+    .filter(e => e.registryItemPath)
+    .map(e => `  '${e.exampleFor}': ${JSON.stringify(e.registryItemPath)},`)
     .join('\n');
 
   const registryContent = `// Auto-generated by scripts/generate-data.mjs — do not edit
@@ -1752,8 +1777,8 @@ export const showcaseRegistry: Record<string, ShowcaseLoader> = {
 ${importLines}
 };
 
-export const showcaseRegistryItemNames: Record<string, string> = {
-${itemNameLines}
+export const showcaseRegistryItemPaths: Record<string, string> = {
+${itemPathLines}
 };
 `;
 
@@ -1766,10 +1791,9 @@ ${itemNameLines}
 
 // ── Main
 
-function generateExampleRegistry(availableRegistryItems) {
+function generateExampleRegistry(blocks, availableRegistryPaths) {
   console.log('Generating example registry...');
 
-  const BLOCKS_DIR = path.join(CLI_ROOT, 'assets', 'templates', 'blocks');
   const EXAMPLES_OUT = path.join(OUT_DIR, 'examples');
 
   if (fs.existsSync(EXAMPLES_OUT)) {
@@ -1777,96 +1801,67 @@ function generateExampleRegistry(availableRegistryItems) {
   }
   fs.mkdirSync(EXAMPLES_OUT, {recursive: true});
 
-  const docFiles = findDocFilesRecursive(BLOCKS_DIR);
   const entries = [];
 
-  for (const docPath of docFiles) {
-    const content = fs.readFileSync(docPath, 'utf-8');
-    const isShowcase = /isShowcase:\s*true/.test(content);
-
-    const efMatch = content.match(/exampleFor:\s*['"]([^'"]+)['"]/);
-    if (!efMatch) continue;
-
-    const exampleFor = efMatch[1];
-    const basename = path.basename(docPath, '.doc.mjs');
-    const tsxSrc = path.join(path.dirname(docPath), basename + '.tsx');
+  for (const block of blocks) {
+    const tsxSrc = blockSourcePath(block);
     if (!fs.existsSync(tsxSrc)) continue;
 
-    // Read name and description from doc meta
-    const name = extractQuotedField(content, 'name');
-    const description = extractQuotedField(content, 'description');
-
-    let source = '';
-    try {
-      source = fs.readFileSync(tsxSrc, 'utf-8');
-    } catch {
-      /* ignore */
-    }
-
-    // Skip live-preview entries for blocks the docsite cannot resolve — they'd
-    // break `next build`. The block's code is still shown via the block
-    // registry; only the rendered preview is withheld until the package is a
-    // docsite dependency.
-    if (importsPackageMissingFromDocsite(source)) {
+    if (importsPackageMissingFromDocsite(block.source)) {
       console.log(
-        `  skipping example ${basename} — imports a package not installed in the docsite`,
+        `  skipping example ${block.dirName} — imports a package not installed in the docsite`,
       );
       continue;
     }
 
-    const alsoExampleFor = extractStringArrayField(content, 'alsoExampleFor');
+    const identity = blockRegistryIdentity(
+      block.name,
+      block.exampleFor,
+      block.isShowcase,
+      block.registry,
+    );
+    const registryItemPath = availableRegistryPaths?.has(identity.path)
+      ? identity.path
+      : null;
 
-    if (!isShowcase) {
-      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${basename}.tsx`));
+    if (!block.isShowcase) {
+      fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${block.dirName}.tsx`));
       entries.push({
-        exampleFor,
-        basename,
-        registryItemName: availableRegistryItems?.has(
-          shadcnBlockItemName(basename, isShowcase),
-        )
-          ? shadcnBlockItemName(basename, isShowcase)
-          : null,
-        name: name || basename,
-        description: description || '',
-        source,
+        exampleFor: block.exampleFor,
+        basename: block.dirName,
+        registryItemPath,
+        name: block.name || block.dirName,
+        description: block.description || '',
+        source: block.source,
       });
     }
 
-    // Blocks can explicitly appear as examples for additional component or
-    // hook pages. This supports component examples doubling as hook examples
-    // without inferring intent from the TSX source.
-    for (const target of alsoExampleFor) {
-      const aliasBasename = `${basename}__${target}`;
+    for (const target of block.alsoExampleFor) {
+      const aliasBasename = `${block.dirName}__${target}`;
       fs.copyFileSync(tsxSrc, path.join(EXAMPLES_OUT, `${aliasBasename}.tsx`));
       entries.push({
         exampleFor: target,
         basename: aliasBasename,
-        registryItemName: availableRegistryItems?.has(
-          shadcnBlockItemName(basename, isShowcase),
-        )
-          ? shadcnBlockItemName(basename, isShowcase)
-          : null,
-        name: name || basename,
-        description: description || `Example using ${target}.`,
-        source,
+        registryItemPath,
+        name: block.name || block.dirName,
+        description: block.description || `Example using ${target}.`,
+        source: block.source,
       });
     }
   }
 
-  // Group by component
   const grouped = {};
   for (const e of entries) {
     if (!grouped[e.exampleFor]) grouped[e.exampleFor] = [];
     grouped[e.exampleFor].push(e);
   }
 
-  // Generate registry: component name → array of example metadata + loaders
   const componentLines = Object.entries(grouped)
     .map(([comp, examples]) => {
       const exampleLines = examples
         .map(
           e =>
-            `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, registryItemName: ${JSON.stringify(e.registryItemName)}, source: ${JSON.stringify(e.source)}, load: () => import('./examples/${e.basename}')},`,
+            `    {name: ${JSON.stringify(e.name)}, description: ${JSON.stringify(e.description)}, registryItemPath: ${JSON.stringify(e.registryItemPath)}, source: ${JSON.stringify(e.source)}, load: () => import('./examples/${e.basename}')},`,
         )
         .join('\n');
       return `  '${comp}': [\n${exampleLines}\n  ],`;
@@ -1879,7 +1874,7 @@ import type {ComponentType} from 'react';
 export interface ExampleEntry {
   name: string;
   description: string;
-  registryItemName: string | null;
+  registryItemPath: string | null;
   source: string;
   load: () => Promise<{default: ComponentType}>;
 }
@@ -1960,6 +1955,35 @@ export const blogDarkImages: string[] = ${JSON.stringify(darkImages, null, 2)};
   return {blogPostCount: posts.length, blogTypeCount: types.length};
 }
 
+function checkShadcnRouteLock(contracts) {
+  const lockPath = path.join(
+    REPO_ROOT,
+    'internal',
+    'shadcn-registry',
+    'routes.lock.json',
+  );
+  const lock = {version: 1, items: contracts};
+  const serialized = `${JSON.stringify(lock, null, 2)}\n`;
+
+  if (process.env.UPDATE_SHADCN_ROUTE_LOCK === '1') {
+    fs.writeFileSync(lockPath, serialized, 'utf8');
+    console.log(`  updated ${path.relative(REPO_ROOT, lockPath)}`);
+    return;
+  }
+
+  if (!fs.existsSync(lockPath)) {
+    throw new Error(
+      `Missing ${path.relative(REPO_ROOT, lockPath)}. Run UPDATE_SHADCN_ROUTE_LOCK=1 node apps/docsite/scripts/generate-data.mjs and review the public route contract.`,
+    );
+  }
+  const current = fs.readFileSync(lockPath, 'utf8');
+  if (current !== serialized) {
+    throw new Error(
+      `Generated shadcn names or routes changed. Preserve old paths with doc.registry.aliases, or intentionally refresh the reviewed lock with UPDATE_SHADCN_ROUTE_LOCK=1 node apps/docsite/scripts/generate-data.mjs.`,
+    );
+  }
+}
+
 async function main() {
   console.log('Generating docsite data...\n');
 
@@ -1985,14 +2009,23 @@ async function main() {
           externalDependencySpecs: registryExternalDependencySpecs(),
         })
       : null;
+  if (shadcnCounts) {
+    checkShadcnRouteLock(shadcnCounts.contracts);
+  }
   if (!shadcnCounts) {
     fs.rmSync(path.join(DOCSITE_ROOT, 'public', 'r'), {
       recursive: true,
       force: true,
     });
   }
-  const showcaseCopied = generateShowcaseRegistry(shadcnCounts?.itemNames);
-  const examplesCopied = generateExampleRegistry(shadcnCounts?.itemNames);
+  const showcaseCopied = generateShowcaseRegistry(
+    blocks,
+    shadcnCounts?.itemPaths,
+  );
+  const examplesCopied = generateExampleRegistry(
+    blocks,
+    shadcnCounts?.itemPaths,
+  );
   const registryOrigin = resolveShadcnRegistryOrigin(process.env);
   const registryIsPreview =
     DOCSITE_TARGET === 'canary' &&

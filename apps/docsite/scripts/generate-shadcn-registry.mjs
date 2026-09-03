@@ -19,9 +19,9 @@ import stylexPlugin from '@stylexjs/babel-plugin';
 import ts from 'typescript';
 import {registryItemSchema, registrySchema} from 'shadcn/schema';
 import {
-  shadcnBlockItemName,
-  shadcnComponentItemName,
-  shadcnPageItemName,
+  blockRegistryIdentity,
+  componentRegistryIdentity,
+  pageRegistryIdentity,
 } from '../src/lib/shadcnRegistry.mjs';
 
 const REGISTRY_SCHEMA = 'https://ui.shadcn.com/schema/registry.json';
@@ -171,7 +171,13 @@ function componentItem(packageName, component, packageDependencies) {
   const isHook = component.name.startsWith('use') || component.params != null;
   const type = isHook ? 'registry:hook' : 'registry:component';
   const targetRoot = isHook ? 'hooks/astryx' : 'components/astryx';
-  const itemName = shadcnComponentItemName(packageName, component.name);
+  const identity = componentRegistryIdentity(
+    packageName,
+    component.name,
+    isHook,
+    component.registry,
+  );
+  const itemName = identity.name;
   const content = `export * from '${component.importPath}';\n`;
 
   return {
@@ -198,6 +204,8 @@ function componentItem(packageName, component, packageDependencies) {
     ],
     astryx: {
       kind: isHook ? 'hook' : 'component',
+      path: identity.path,
+      aliases: identity.aliases,
       packageName,
       importPath: component.importPath,
       hidden: component.hidden === true,
@@ -207,7 +215,13 @@ function componentItem(packageName, component, packageDependencies) {
 
 function blockItem(block, packageDependencies, cliRoot) {
   const kind = block.isShowcase ? 'showcase' : 'example';
-  const itemName = shadcnBlockItemName(block.dirName, block.isShowcase);
+  const identity = blockRegistryIdentity(
+    block.name,
+    block.exampleFor,
+    block.isShowcase,
+    block.registry,
+  );
+  const itemName = identity.name;
   const fileName = path.join(
     cliRoot,
     'assets',
@@ -239,6 +253,8 @@ function blockItem(block, packageDependencies, cliRoot) {
     ],
     astryx: {
       kind,
+      path: identity.path,
+      aliases: identity.aliases,
       exampleFor: block.exampleFor || null,
       category: block.category,
       componentsUsed: block.componentsUsed,
@@ -248,7 +264,8 @@ function blockItem(block, packageDependencies, cliRoot) {
 }
 
 function pageItem(template, packageDependencies, cliRoot) {
-  const itemName = shadcnPageItemName(template.slug);
+  const identity = pageRegistryIdentity(template.slug, template.registry);
+  const itemName = identity.name;
   const fileName = path.join(
     cliRoot,
     'assets',
@@ -282,6 +299,8 @@ function pageItem(template, packageDependencies, cliRoot) {
     ],
     astryx: {
       kind: 'page',
+      path: identity.path,
+      aliases: identity.aliases,
       category: template.category,
       isReady: template.isReady,
       isHiddenFromOverview: template.isHiddenFromOverview,
@@ -297,6 +316,21 @@ function assertUniqueItemNames(items) {
       throw new Error(`Duplicate shadcn registry item name: ${item.name}`);
     }
     names.add(item.name);
+  }
+}
+
+function assertUniqueItemPaths(items) {
+  const paths = new Map();
+  for (const item of items) {
+    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+      const existing = paths.get(itemPath);
+      if (existing) {
+        throw new Error(
+          `Duplicate shadcn registry path ${itemPath}: ${existing} and ${item.name}`,
+        );
+      }
+      paths.set(itemPath, item.name);
+    }
   }
 }
 
@@ -371,6 +405,7 @@ export function buildShadcnRegistry({
   const items = [...componentItems, ...blockItems, ...pageItems];
 
   assertUniqueItemNames(items);
+  assertUniqueItemPaths(items);
   for (const item of items) validateItem(item);
 
   const registry = {
@@ -405,6 +440,7 @@ export function buildShadcnRegistry({
 }
 
 function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), {recursive: true});
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
@@ -431,10 +467,24 @@ export function generateShadcnRegistry({
   fs.mkdirSync(outDir, {recursive: true});
   writeJson(path.join(outDir, 'registry.json'), result.registry);
   for (const item of result.items) {
-    writeJson(path.join(outDir, `${item.name}.json`), item);
+    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+      writeJson(path.join(outDir, `${itemPath}.json`), item);
+    }
   }
   return {
     ...result.counts,
     itemNames: new Set(result.items.map(item => item.name)),
+    itemPaths: new Set(result.items.map(item => item.astryx.path)),
+    routes: result.items.flatMap(item => [
+      item.astryx.path,
+      ...item.astryx.aliases,
+    ]),
+    contracts: result.items
+      .map(item => ({
+        name: item.name,
+        path: item.astryx.path,
+        aliases: item.astryx.aliases,
+      }))
+      .sort((a, b) => a.path.localeCompare(b.path)),
   };
 }

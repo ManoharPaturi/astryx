@@ -23,12 +23,29 @@ const previewSchema = z
   })
   .strict();
 
+const registryIdentitySchema = z
+  .object({
+    slug: z
+      .string()
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .optional(),
+    aliases: z
+      .array(
+        z
+          .string()
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/),
+      )
+      .optional(),
+  })
+  .strict();
+
 const baseTemplateFields = {
   name: z.string().min(1, 'name is required'),
   description: z.string().min(1, 'description is required'),
   category: z.string().optional(),
   componentsUsed: z.array(z.string()).optional(),
   preview: previewSchema.optional(),
+  registry: registryIdentitySchema.optional(),
 };
 
 const templateEnvelopeSchema = z.discriminatedUnion('type', [

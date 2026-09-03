@@ -31,7 +31,7 @@ export const doc = {
       name: 'name',
       type: 'string',
       description:
-        'Identifier. For block templates it matches the React component import name; for page templates it is a human-readable label.',
+        'Stable identifier for block templates; change `displayName`, not `name`, to edit their visible label. For page templates it is a human-readable label, while the existing template-directory/CLI slug owns the default registry path.',
       required: true,
     },
     {
@@ -40,6 +40,12 @@ export const doc = {
       description:
         "Human-readable label for the gallery/CLI. Spaces out block names that mirror a PascalCase component ('ChatMessageMetadata' → 'Chat Message Metadata').",
       required: true,
+    },
+    {
+      name: 'registry',
+      type: 'RegistryDocIdentity',
+      description:
+        'Optional public registry identity. The converter derives a stable kebab-case slug from `name` (or the existing page-template slug); set `slug` only to override it, and keep prior relative paths in `aliases` after a published rename.',
     },
     {
       name: 'description',

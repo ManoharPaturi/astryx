@@ -1,11 +1,17 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
 /**
- * @file Shared names and commands for Astryx shadcn Registry items.
- * @input Package, component, block, and page identifiers.
- * @output Deterministic item names and install commands.
+ * @file Shared identities, paths, and commands for Astryx shadcn Registry items.
+ * @input Stable doc names, template slugs, and optional registry overrides.
+ * @output Deterministic global item names, organized paths, aliases, and commands.
  * @position Shared contract between registry generation and docsite UI.
  */
+
+const CORE_PACKAGE = '@astryxdesign/core';
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const RELATIVE_PATH_PATTERN =
+  /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
+const REGISTRY_IDENTITY_KEYS = new Set(['slug', 'aliases']);
 
 export function resolveShadcnRegistryOrigin(env = process.env) {
   const explicitOrigin = env.NEXT_PUBLIC_ASTRYX_REGISTRY_ORIGIN;
@@ -27,7 +33,7 @@ export const SHADCN_REGISTRY_IS_PREVIEW =
   SHADCN_REGISTRY_ORIGIN !== 'https://astryx.atmeta.com/r';
 
 export function slugifyRegistryName(value) {
-  return value
+  return String(value)
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
     .replace(/[^a-zA-Z0-9]+/g, '-')
@@ -35,25 +41,206 @@ export function slugifyRegistryName(value) {
     .toLowerCase();
 }
 
-export function shadcnComponentItemName(packageName, componentName) {
+function assertSlug(value, label) {
+  if (!SLUG_PATTERN.test(value)) {
+    throw new Error(
+      `${label} must be a lowercase kebab-case slug; received ${JSON.stringify(value)}`,
+    );
+  }
+  return value;
+}
+
+function registrySlug(registry, fallback, label) {
+  if (registry == null) {
+    return assertSlug(slugifyRegistryName(fallback), label);
+  }
+  if (typeof registry !== 'object' || Array.isArray(registry)) {
+    throw new Error(`${label} registry metadata must be an object`);
+  }
+  const unknownKeys = Object.keys(registry).filter(
+    key => !REGISTRY_IDENTITY_KEYS.has(key),
+  );
+  if (unknownKeys.length > 0) {
+    throw new Error(
+      `${label} registry metadata has unknown field(s): ${unknownKeys.join(', ')}`,
+    );
+  }
+  return assertSlug(
+    registry.slug ?? slugifyRegistryName(fallback),
+    `${label} registry.slug`,
+  );
+}
+
+function registryAliases(registry, root, defaultParent, canonicalPath, label) {
+  if (registry?.aliases == null) {
+    return [];
+  }
+  if (!Array.isArray(registry.aliases)) {
+    throw new Error(`${label} registry.aliases must be an array`);
+  }
+  const aliases = registry.aliases.map(alias => {
+    if (typeof alias !== 'string' || !RELATIVE_PATH_PATTERN.test(alias)) {
+      throw new Error(
+        `${label} registry alias must be a lowercase kebab-case relative path; received ${JSON.stringify(alias)}`,
+      );
+    }
+    const relativePath = alias.includes('/')
+      ? alias
+      : defaultParent
+        ? `${defaultParent}/${alias}`
+        : alias;
+    return `${root}/${relativePath}`;
+  });
+  if (aliases.includes(canonicalPath)) {
+    throw new Error(`${label} registry.aliases contains its canonical path`);
+  }
+  return [...new Set(aliases)].sort();
+}
+
+function packageSlug(packageName) {
+  return slugifyRegistryName(packageName.replace(/^@astryxdesign\//, ''));
+}
+
+export function componentRegistryIdentity(
+  packageName,
+  componentName,
+  isHook = false,
+  registry = null,
+) {
+  const kind = isHook ? 'hook' : 'component';
+  const root = isHook ? 'hooks' : 'components';
+  const slug = registrySlug(
+    registry,
+    componentName,
+    `${kind} ${componentName}`,
+  );
   const packagePart =
-    packageName === '@astryxdesign/core'
-      ? ''
-      : `${slugifyRegistryName(packageName.replace(/^@astryxdesign\//, ''))}-`;
-  return `astryx-${packagePart}component-${slugifyRegistryName(componentName)}`;
+    packageName === CORE_PACKAGE ? '' : `${packageSlug(packageName)}/`;
+  const namePackagePart =
+    packageName === CORE_PACKAGE ? '' : `${packageSlug(packageName)}-`;
+  const path = `${root}/${packagePart}${slug}`;
+  return {
+    kind,
+    name: `${kind}-${namePackagePart}${slug}`,
+    path,
+    aliases: registryAliases(
+      registry,
+      root,
+      packagePart.replace(/\/$/, ''),
+      path,
+      `${kind} ${componentName}`,
+    ),
+  };
 }
 
-export function shadcnBlockItemName(dirName, isShowcase) {
-  return `astryx-${isShowcase ? 'showcase' : 'example'}-${slugifyRegistryName(dirName)}`;
+function blockLeafSlug(blockName, exampleFor, registry, kind) {
+  const fullSlug = slugifyRegistryName(blockName);
+  const parentSlug = slugifyRegistryName(exampleFor);
+  const derived = fullSlug.startsWith(`${parentSlug}-`)
+    ? fullSlug.slice(parentSlug.length + 1)
+    : fullSlug === parentSlug
+      ? 'default'
+      : fullSlug;
+  const fallback = derived === kind ? 'default' : derived;
+  return registrySlug(registry, fallback, `${kind} ${blockName}`);
 }
 
-export function shadcnPageItemName(slug) {
-  return `astryx-page-${slugifyRegistryName(slug)}`;
+export function blockRegistryIdentity(
+  blockName,
+  exampleFor,
+  isShowcase,
+  registry = null,
+) {
+  const kind = isShowcase ? 'showcase' : 'example';
+  const root = isShowcase ? 'showcases' : 'examples';
+  const parentSlug = assertSlug(
+    slugifyRegistryName(exampleFor),
+    `${kind} ${blockName} exampleFor`,
+  );
+  const slug = blockLeafSlug(blockName, exampleFor, registry, kind);
+  const path = `${root}/${parentSlug}/${slug}`;
+  return {
+    kind,
+    name: `${kind}-${parentSlug}-${slug}`,
+    path,
+    aliases: registryAliases(
+      registry,
+      root,
+      parentSlug,
+      path,
+      `${kind} ${blockName}`,
+    ),
+  };
+}
+
+export function pageRegistryIdentity(templateSlug, registry = null) {
+  const slug = registrySlug(registry, templateSlug, `template ${templateSlug}`);
+  const path = `templates/${slug}`;
+  return {
+    kind: 'page',
+    name: `template-${slug}`,
+    path,
+    aliases: registryAliases(
+      registry,
+      'templates',
+      '',
+      path,
+      `template ${templateSlug}`,
+    ),
+  };
+}
+
+export function shadcnComponentItemName(
+  packageName,
+  componentName,
+  isHook = false,
+  registry = null,
+) {
+  return componentRegistryIdentity(packageName, componentName, isHook, registry)
+    .name;
+}
+
+export function shadcnComponentItemPath(
+  packageName,
+  componentName,
+  isHook = false,
+  registry = null,
+) {
+  return componentRegistryIdentity(packageName, componentName, isHook, registry)
+    .path;
+}
+
+export function shadcnBlockItemName(
+  blockName,
+  exampleFor,
+  isShowcase,
+  registry = null,
+) {
+  return blockRegistryIdentity(blockName, exampleFor, isShowcase, registry)
+    .name;
+}
+
+export function shadcnBlockItemPath(
+  blockName,
+  exampleFor,
+  isShowcase,
+  registry = null,
+) {
+  return blockRegistryIdentity(blockName, exampleFor, isShowcase, registry)
+    .path;
+}
+
+export function shadcnPageItemName(templateSlug, registry = null) {
+  return pageRegistryIdentity(templateSlug, registry).name;
+}
+
+export function shadcnPageItemPath(templateSlug, registry = null) {
+  return pageRegistryIdentity(templateSlug, registry).path;
 }
 
 export function shadcnInstallCommand(
-  itemName,
+  itemPath,
   registryOrigin = SHADCN_REGISTRY_ORIGIN,
 ) {
-  return `npx shadcn@latest add ${registryOrigin}/${itemName}.json`;
+  return `npx shadcn@latest add ${registryOrigin}/${itemPath}.json`;
 }

@@ -60,9 +60,11 @@ and does not authorize publishing a production registry.
   copy application-level composition source. That source MUST import Astryx
   through published package paths, declare all non-React package dependencies,
   and contain no relative import that escapes the copied item.
-- **FR5 — Deterministic identity.** Item names, target paths, dependency lists,
-  and JSON output MUST be deterministic. Component, block, and page names MUST
-  not collide.
+- **FR5 — Deterministic, stable identity.** Item names, organized URL paths,
+  target paths, dependency lists, and JSON output MUST be deterministic and
+  collision-free. Identity MUST derive from stable doc/catalog fields, not
+  display labels or source filenames. Display-name changes MUST NOT change
+  install URLs. Published renames MUST preserve prior routes as aliases.
 - **FR6 — One catalog, two clients.** The shadcn client consumes standard fields.
   The Astryx CLI MAY read optional `astryx` metadata from the raw JSON for
   integration, provenance, and upgrade guidance. Standard clients may discard
@@ -87,6 +89,10 @@ and does not authorize publishing a production registry.
   component, showcase, block, and page items into a clean shadcn-style app and
   build that app. The full catalog MUST receive schema, uniqueness, dependency,
   and source-boundary checks.
+- **IR5 — Stable route contract.** Generated item names and canonical paths MUST
+  match the reviewed route lock. Display-name edits MUST NOT change them. An
+  intentional rename MUST retain old paths through `registry.aliases` unless a
+  separately reviewed breaking change approves removal.
 
 ### Platform support
 
@@ -161,6 +167,22 @@ upgrades and crosses private-import and uncompiled-StyleX boundaries.
 Build and test the complete shape in a draft before making a public support
 promise. The experiment may use local or draft-preview URLs but does not publish
 a stable production registry.
+
+### DEC-4 — Derive stable IDs from docs and organize URLs by item kind
+
+**Reference:** `spec:AST-018/DEC-4`
+**Decider:** `josephfarina`, `2026-09-03`
+
+Treat registry names and paths as public API before publication. Derive them
+from stable component/hook names, block `name` plus `exampleFor`, and the
+existing template slug. Keep `displayName` editorial. Use these path families:
+`components`, `hooks`, `showcases/<component>`, `examples/<component>`, and
+`templates`. Reserve `blocks` for a future standalone-block doc kind; current
+`type: 'block'` records require `exampleFor` and are component examples.
+
+Allow a doc to override its leaf with `registry.slug` and retain old relative
+paths with `registry.aliases`. Check all names and paths against a reviewed lock
+so a rename cannot silently break existing install commands.
 
 ## Open questions
 
