@@ -1035,7 +1035,8 @@ export const styles = stylex.create({
     borderTopWidth: '2px',
     borderTopStyle: 'solid',
     borderTopColor: colorVars['--color-border-orange'],
-    zIndex: appearanceVars['--appearance-layer-nesting'],
+    zIndex:
+      `calc(${appearanceVars['--appearance-container-nesting']} + 19)` as unknown as number,
     pointerEvents: 'none',
     '::before': {
       content: '""',

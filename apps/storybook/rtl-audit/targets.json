@@ -22,6 +22,20 @@
     }
   },
   {
+    "component": "CheckboxInput",
+    "storyId": "core-checkboxinput--size-comparison",
+    "dims": [
+      "D7"
+    ],
+    "sizes": ["sm", "md"],
+    "selectors": {
+      "inputSelectorBySize": {
+        "sm": "[data-testid=\"checkbox-sm\"]",
+        "md": "[data-testid=\"checkbox-md\"]"
+      }
+    }
+  },
+  {
     "component": "CheckboxList",
     "storyId": "core-checkboxlist--rich-descriptions",
     "dims": [
@@ -36,11 +50,25 @@
     "component": "RadioList",
     "storyId": "core-radiolist--rich-content",
     "dims": [
-      "D2"
+      "D2",
+      "D7"
     ],
+    "sizes": ["sm", "md"],
     "selectors": {
       "prev": "input[aria-label=\"Pro\"]",
-      "next": "[data-testid=\"radio-end-content\"]"
+      "next": "[data-testid=\"radio-end-content\"]",
+      "inputSelector": "input[type=\"radio\"]"
+    }
+  },
+  {
+    "component": "Switch",
+    "storyId": "core-switch--default",
+    "dims": [
+      "D7"
+    ],
+    "sizes": ["sm", "md"],
+    "selectors": {
+      "inputSelector": "input[type=\"checkbox\"]"
     }
   },
   {
