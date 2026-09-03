@@ -264,6 +264,75 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('gives PowerSearch a renderable controlled filter fixture', () => {
+    const knobs = pickPrimaryProps('PowerSearch', [
+      prop({name: 'config', type: 'PowerSearchConfig', required: true}),
+      prop({
+        name: 'filters',
+        type: 'ReadonlyArray<PowerSearchFilter>',
+        required: true,
+      }),
+      prop({
+        name: 'onChange',
+        type: "(filters: ReadonlyArray<PowerSearchFilter>, changeType: 'add' | 'edit' | 'remove', index: number) => void",
+        required: true,
+      }),
+    ]);
+    const initialFilters = [
+      {
+        field: 'status',
+        operator: 'is',
+        value: {type: 'enum', value: 'open'},
+      },
+    ];
+    const state = buildInitialState(knobs, {
+      defaults: {
+        config: {
+          name: 'IssueSearch',
+          fields: [
+            {
+              key: 'status',
+              label: 'Status',
+              defaultOperator: 'is',
+              operators: [
+                {
+                  key: 'is',
+                  label: 'is',
+                  value: {
+                    type: 'enum',
+                    values: [
+                      {value: 'open', label: 'Open'},
+                      {value: 'closed', label: 'Closed'},
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        },
+        filters: initialFilters,
+      },
+    });
+
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+    expect(state.filters).toEqual(initialFilters);
+
+    const onPropChange = vi.fn();
+    const runtimeState = buildRuntimePreviewState(state, onPropChange, {
+      knobs,
+    });
+    const changedFilters = [
+      ...initialFilters,
+      {
+        field: 'status',
+        operator: 'is',
+        value: {type: 'enum', value: 'closed'},
+      },
+    ];
+    (runtimeState.onChange as (filters: unknown) => void)(changedFilters);
+    expect(onPropChange).toHaveBeenCalledWith('filters', changedFilters);
+  });
+
   it('gives Timestamp a valid date value via playground defaults', () => {
     const knobs = pickPrimaryProps('Timestamp', [
       prop({name: 'value', type: 'string | number', required: true}),

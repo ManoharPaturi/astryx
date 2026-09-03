@@ -298,6 +298,42 @@ describe('componentRegistry', () => {
     });
   });
 
+  it('PowerSearch supplies representative config and filters playground defaults', () => {
+    const core = components['@astryxdesign/core'];
+    const powerSearch = core.find(c => c.name === 'PowerSearch');
+    expect(powerSearch).toBeDefined();
+    expect(powerSearch!.playground?.defaults).toMatchObject({
+      config: {
+        name: 'IssueSearch',
+        fields: [
+          {
+            key: 'status',
+            operators: [
+              {
+                key: 'is',
+                value: {
+                  type: 'enum',
+                  values: [
+                    {value: 'open', label: 'Open'},
+                    {value: 'closed', label: 'Closed'},
+                  ],
+                },
+              },
+            ],
+          },
+          {key: 'title'},
+        ],
+      },
+      filters: [
+        {
+          field: 'status',
+          operator: 'is',
+          value: {type: 'enum', value: 'open'},
+        },
+      ],
+    });
+  });
+
   it('MetadataListItem declares a playground wrapper for realistic preview structure', () => {
     const core = components['@astryxdesign/core'];
     const metadataListItem = core.find(c => c.name === 'MetadataListItem');
