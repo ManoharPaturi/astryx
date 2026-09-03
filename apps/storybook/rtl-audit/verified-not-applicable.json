@@ -398,7 +398,7 @@
   },
   {
     "component": "core/FieldStatus",
-    "reason": "FieldStatus renders one message box under a form control \u2014 the attached variant is bare text, the detached variant a leading warning/error/success glyph beside the message. Its two variants differ only on the block axis (an overlap above versus a gap below), and its rounded corners are already expressed as `border-end-start-radius`/`border-end-end-radius`, so they follow the writing direction. Nothing it draws has an inline-axis side, order, or motion that could differ between LTR and RTL.",
+    "reason": "FieldStatus uses block-flow message layout and logical padding and corner radii. Its status glyphs are non-directional, and it has no side-specific placement, order, scrolling, dragging, overlays, or directional keyboard behavior.",
     "evidence": {
       "packages/core/src/FieldStatus/FieldStatus.tsx": "sha256:08103be6e564986808fdf88e5ee65267f87e05c8aef4bc58dbd69c68802382ce",
       "packages/core/src/FieldStatus/index.ts": "sha256:f086701362cdfc3c878504be6652c4bd43893aa37dfd46530cf2a651f3dd41ab"
@@ -885,7 +885,7 @@
   },
   {
     "component": "lab/CircularProgress",
-    "reason": "CircularProgress draws a radial indicator: a track circle and a fill circle sharing one centre, with completion expressed as `stroke-dasharray`/`stroke-dashoffset` on the fill and the whole svg rotated \u221290\u00b0 so the arc starts at twelve o'clock. A ring is radially symmetric about the vertical axis and its sweep is clockwise in every locale, so there is no leading or trailing edge to mirror. The centre slot is an `inset: 0` overlay that centres its content on both axes, and the label sits above or below the ring on the block axis.",
+    "reason": "No direction-sensitive visual, layout, or behavior. The track and fill are concentric SVG circles sharing one center; size, stroke, dash, and clockwise rotation are intentionally identical in LTR and RTL. The optional label is vertically stacked and centered, with no inline positioning or directional glyph.",
     "evidence": {
       "apps/storybook/stories/CircularProgress.stories.tsx": "sha256:32c3ef7c36d7056c35d745adb4aa11f09cdec489b7fa56a5e06e593c58256150",
       "packages/lab/src/CircularProgress/CircularProgress.tsx": "sha256:9050d2755bba053ef285151fe9af9ab5e327fd8e64cfd32434755a8466109ea4"
