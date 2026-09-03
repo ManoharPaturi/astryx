@@ -1990,6 +1990,34 @@ async function main() {
   }
   const showcaseCopied = generateShowcaseRegistry(shadcnCounts?.itemNames);
   const examplesCopied = generateExampleRegistry(shadcnCounts?.itemNames);
+  const registryEntries = shadcnCounts?.entries ?? [];
+  const registryCounts = shadcnCounts
+    ? {
+        components: shadcnCounts.components,
+        blocks: shadcnCounts.blocks,
+        pages: shadcnCounts.pages,
+        total: shadcnCounts.total,
+      }
+    : {components: 0, blocks: 0, pages: 0, total: 0};
+  writeRegistry(
+    'shadcnRegistry.ts',
+    `// Auto-generated — do not edit
+export type ShadcnRegistryKind = 'component' | 'hook' | 'showcase' | 'example' | 'page';
+
+export interface ShadcnRegistryEntry {
+  name: string;
+  type: string;
+  kind: ShadcnRegistryKind;
+  title: string;
+  description: string;
+  href: string;
+  hidden: boolean;
+}
+
+export const shadcnRegistryEntries: ShadcnRegistryEntry[] = ${JSON.stringify(registryEntries, null, 2)};
+export const shadcnRegistryCounts = ${JSON.stringify(registryCounts, null, 2)} as const;
+`,
+  );
 
   console.log(`\nSummary:`);
   console.log(`  ${packages.length} packages`);

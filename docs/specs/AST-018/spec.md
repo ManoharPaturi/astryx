@@ -68,17 +68,19 @@ and does not authorize publishing a production registry.
   integration, provenance, and upgrade guidance. Standard clients may discard
   that metadata without changing the install.
 - **FR7 — Discoverable compatibility.** The public docsite MUST describe the
-  compatibility boundary and show copyable install commands on the applicable
-  component, block, and page surfaces before the feature is considered for
-  publication.
+  compatibility boundary, provide a human `/registry` browse and search page,
+  and show copyable install commands on the applicable component, block, and
+  page surfaces before the feature is considered for publication. Raw `/r/`
+  paths remain machine endpoints, not the primary human entry point.
 - **FR8 — Experimental boundary.** Every implementation and content change MUST
   remain draft-only until the owners explicitly approve the public URL, naming,
   support level, and publication plan.
 - **IR1 — Generated from current sources.** Registry output MUST come from the
   existing docsite and CLI catalogs, never a parallel handwritten item list.
 - **IR2 — Build-time static output.** The docsite build MUST generate static JSON
-  under one registry root. Generated JSON MUST NOT be committed when a clean
-  build can reproduce it.
+  under one registry root and a generated summary for the human `/registry`
+  page. Generated JSON and summary data MUST NOT be committed when a clean build
+  can reproduce them.
 - **IR3 — Failure is loud.** Missing source, duplicate names, invalid schemas,
   unresolved package versions, escaping relative imports, and stale generated
   output MUST fail generation or verification.
