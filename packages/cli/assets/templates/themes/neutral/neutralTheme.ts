@@ -442,11 +442,6 @@ export const neutralTheme = defineTheme({
 
   components: {
     button: {
-      // A nested categorical Badge gets its own opaque neutral backing, then
-      // the familiar translucent hue is composited on top. The inherited
-      // variables keep the result stable across every Button surface without
-      // changing standalone Badges. Light mode only opts in combinations that
-      // otherwise merge with their parent surface.
       base: {
         '--astryx-theme-neutral-badge-context-neutral-surface':
           'light-dark(var(--color-background-gray), #1b1b1b)',
