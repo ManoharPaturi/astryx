@@ -39,6 +39,10 @@ runtime CSS. Neutral currently uses 21 numbered stops in each light and dark
 ramp, but that layout is a Neutral decision rather than a requirement for other
 themes.
 
+Neutral is the reference implementation for palette-aware theme templates.
+Templates may follow its ownership, review, and alignment workflow without
+copying its colors or stop layout.
+
 Use semantic theme tokens in components. When a theme color is selected from the
 palette, retain the reviewed hex value explicitly in the theme so later palette
 edits cannot silently recolor rendered UI.
