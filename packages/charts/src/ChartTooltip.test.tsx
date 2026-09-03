@@ -4,8 +4,8 @@
  * @file ChartTooltip.test.tsx
  * @input Uses vitest, @testing-library/react, ChartTooltip, ChartProvider,
  *        d3-scale
- * @output Functional tests for the grouped tooltip — portal lifecycle, pointer
- *         subscription, card content/visibility, hover dots, crosshair vs band
+ * @output Functional tests for the grouped tooltip — owner-local popover
+ *         lifecycle, pointer subscription, card content/visibility, hover dots, crosshair vs band
  *         highlight, and the custom render contract
  * @position Colocated test for ChartTooltip.tsx (issue #4295 viz coverage).
  *           Renders under a hand-built ChartProvider so the pointer stream can
@@ -97,7 +97,7 @@ function renderTooltip(
 ) {
   return render(
     <ChartProvider value={harness.ctx}>
-      <svg>
+      <svg ref={harness.ctx.svgRef}>
         <g>
           <ChartTooltip series={[makeSeries()]} {...props} />
         </g>
@@ -123,13 +123,12 @@ const pointerLeave: ChartPointerEvent = {
 const card = () => document.querySelector('[role="tooltip"]') as HTMLElement;
 
 describe('ChartTooltip card', () => {
-  it('portals an initially empty tooltip card into document.body', () => {
+  it('hosts the manual popover beside its owning chart', () => {
     const harness = makeHarness();
     const {container} = renderTooltip(harness);
     expect(card()).not.toBeNull();
-    expect(card().parentElement).toBe(document.body);
-    // The card lives outside the chart subtree.
-    expect(container.querySelector('[role="tooltip"]')).toBeNull();
+    expect(card().parentElement).toBe(container);
+    expect(card()).toHaveAttribute('popover', 'manual');
     expect(card().textContent).toBe('');
   });
 
