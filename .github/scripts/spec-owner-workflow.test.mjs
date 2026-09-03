@@ -175,6 +175,7 @@ describe('spec-only workflow contract', () => {
     expect(reconciler).toContain('expectedCount: after.changed_files');
     expect(reconciler).toContain('scope.touchesKnowledgeRecords');
     expect(reconciler).toContain('scope.touchesDesignAssets');
+    expect(reconciler).toContain('isOwnerAuthorizableRecordPath');
     expect(reconciler).toContain('requiredApprovalGroups(records');
     expect(reconciler).toContain("'.github/DESIGNOWNERS'");
     expect(reconciler).toContain("'.github/ENGOWNERS'");

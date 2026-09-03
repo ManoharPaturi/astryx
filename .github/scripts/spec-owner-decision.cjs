@@ -5,9 +5,11 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const {
+  normalizeGitHubLogin,
   parseAuthority,
   parseKind,
   parseOwnerFile,
+  parseRecordOwnership,
 } = require('./knowledge-frontmatter.cjs');
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -239,9 +241,84 @@ function requiresOwnerApproval(records, options = {}) {
   return groups.spec || groups.design || groups.theme;
 }
 
+function authorOwnsAllChangedRecords(records, author) {
+  const normalizedAuthor = normalizeGitHubLogin(author);
+  const rejected = reason => ({
+    approved: false,
+    author: normalizedAuthor,
+    reason,
+    recordIds: [],
+  });
+
+  if (!normalizedAuthor)
+    return rejected('missing or invalid pull request author');
+  if (!Array.isArray(records) || records.length === 0) {
+    return rejected('no changed knowledge records');
+  }
+
+  const recordIds = new Set();
+  const orderedRecords = [...records].sort((left, right) =>
+    (left.path ?? '').localeCompare(right.path ?? ''),
+  );
+  for (const record of orderedRecords) {
+    const basePath = record.previousPath ?? record.path;
+    if (!record.baseIsAuthorizableRecord || record.baseContent == null) {
+      return rejected(`${record.path}: no trusted base record`);
+    }
+
+    let baseOwnership;
+    try {
+      baseOwnership = parseRecordOwnership(record.baseContent, basePath);
+    } catch (error) {
+      return rejected(error.message);
+    }
+    if (!baseOwnership.owners.includes(normalizedAuthor)) {
+      return rejected(`${basePath}: author is not a base owner`);
+    }
+
+    let recordId = baseOwnership.id;
+    if (record.headIsKnowledgeRecord && !record.headIsAuthorizableRecord) {
+      return rejected(`${record.path}: head path is not author-authorizable`);
+    }
+    if (record.headIsAuthorizableRecord) {
+      if (record.headContent == null) {
+        return rejected(`${record.path}: head record could not be read`);
+      }
+      let headOwnership;
+      try {
+        headOwnership = parseRecordOwnership(record.headContent, record.path);
+      } catch (error) {
+        return rejected(error.message);
+      }
+      if (headOwnership.id !== baseOwnership.id) {
+        return rejected(`${record.path}: record identity changed`);
+      }
+      if (!headOwnership.owners.includes(normalizedAuthor)) {
+        return rejected(`${record.path}: author is not a head owner`);
+      }
+      recordId = headOwnership.id;
+    }
+
+    if (recordIds.has(recordId)) {
+      return rejected(
+        `${record.path}: duplicate changed record id ${recordId}`,
+      );
+    }
+    recordIds.add(recordId);
+  }
+
+  return {
+    approved: true,
+    author: normalizedAuthor,
+    reason: null,
+    recordIds: [...recordIds].sort(),
+  };
+}
+
 module.exports = {
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
+  authorOwnsAllChangedRecords,
   canonicalRunUrl,
   newestGateRun,
   parseAuthority,

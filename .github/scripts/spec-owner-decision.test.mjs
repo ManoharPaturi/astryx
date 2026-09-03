@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 
 const require = createRequire(import.meta.url);
 const {
+  authorOwnsAllChangedRecords,
   canonicalRunUrl,
   newestGateRun,
   parseCanonicalRunId,
@@ -489,5 +490,173 @@ describe('spec owner decision', () => {
       9007199254740993n,
     );
     expect(newestGateRun(statuses, repository)?.runId).toBe(9007199254740993n);
+  });
+});
+
+function recordContent(id, owners) {
+  return `---\nid: ${id}\nowners: ${owners}\n---\n`;
+}
+
+function changedRecord({
+  id = 'component:Button',
+  baseOwners = '[cixzhang]',
+  headId = id,
+  headOwners = baseOwners,
+  path = 'packages/core/src/Button/Button.spec.md',
+  previousPath = path,
+  baseIsAuthorizableRecord = true,
+  headIsAuthorizableRecord = true,
+  baseIsKnowledgeRecord = baseIsAuthorizableRecord,
+  headIsKnowledgeRecord = headIsAuthorizableRecord,
+} = {}) {
+  return {
+    path,
+    previousPath,
+    baseIsKnowledgeRecord,
+    headIsKnowledgeRecord,
+    baseIsAuthorizableRecord,
+    headIsAuthorizableRecord,
+    baseContent: baseIsAuthorizableRecord
+      ? recordContent(id, baseOwners)
+      : null,
+    headContent: headIsAuthorizableRecord
+      ? recordContent(headId, headOwners)
+      : null,
+  };
+}
+
+describe('record owner author decision', () => {
+  it('accepts one existing record owner case-insensitively', () => {
+    expect(
+      authorOwnsAllChangedRecords(
+        [changedRecord({baseOwners: '[CiXzHaNg]'})],
+        'CIXZHANG',
+      ),
+    ).toEqual({
+      approved: true,
+      author: 'cixzhang',
+      reason: null,
+      recordIds: ['component:Button'],
+    });
+  });
+
+  it('accepts validator-supported multiline owner arrays', () => {
+    const multilineOwners = '\n  [\n    cixzhang,\n  ]';
+    expect(
+      authorOwnsAllChangedRecords(
+        [
+          changedRecord({
+            baseOwners: multilineOwners,
+            headOwners: multilineOwners,
+          }),
+        ],
+        'cixzhang',
+      ).approved,
+    ).toBe(true);
+  });
+
+  it('requires the author to own every changed record and sorts record ids', () => {
+    const records = [
+      changedRecord({
+        id: 'family:inputs',
+        path: 'docs/families/inputs.md',
+      }),
+      changedRecord({
+        id: 'architecture:buttons',
+        path: 'docs/architecture/buttons.md',
+      }),
+    ];
+    expect(authorOwnsAllChangedRecords(records, 'cixzhang')).toMatchObject({
+      approved: true,
+      recordIds: ['architecture:buttons', 'family:inputs'],
+    });
+
+    records[1] = changedRecord({
+      id: 'architecture:buttons',
+      baseOwners: '[imdreamrunner]',
+      headOwners: '[imdreamrunner]',
+      path: 'docs/architecture/buttons.md',
+    });
+    expect(authorOwnsAllChangedRecords(records, 'cixzhang')).toMatchObject({
+      approved: false,
+      reason: expect.stringContaining('author is not a base owner'),
+    });
+  });
+
+  it('does not let a new record self-admit its author', () => {
+    const record = changedRecord({baseIsAuthorizableRecord: false});
+    expect(authorOwnsAllChangedRecords([record], 'cixzhang')).toMatchObject({
+      approved: false,
+      reason: expect.stringContaining('no trusted base record'),
+    });
+  });
+
+  it('handles preserving renames and owner-authored deletions', () => {
+    const renamed = changedRecord({
+      path: 'docs/architecture/new-name.md',
+      previousPath: 'docs/architecture/old-name.md',
+    });
+    const deleted = changedRecord({headIsAuthorizableRecord: false});
+
+    expect(authorOwnsAllChangedRecords([renamed], 'cixzhang').approved).toBe(
+      true,
+    );
+    expect(authorOwnsAllChangedRecords([deleted], 'cixzhang').approved).toBe(
+      true,
+    );
+  });
+
+  it.each([
+    {
+      name: 'unsafe knowledge-path rename',
+      record: changedRecord({
+        path: 'docs/design/assets/button.md',
+        previousPath: 'docs/design/button.md',
+        headIsKnowledgeRecord: true,
+        headIsAuthorizableRecord: false,
+      }),
+      reason: 'head path is not author-authorizable',
+    },
+    {
+      name: 'changed identity',
+      record: changedRecord({headId: 'component:OtherButton'}),
+      reason: 'record identity changed',
+    },
+    {
+      name: 'missing owners',
+      record: changedRecord({headOwners: '[]'}),
+      reason: 'owners must be non-empty',
+    },
+    {
+      name: 'duplicate owners',
+      record: changedRecord({headOwners: '[cixzhang, CIXZHANG]'}),
+      reason: 'owners must be non-empty and unambiguous',
+    },
+    {
+      name: 'invalid owner login',
+      record: changedRecord({headOwners: '[not a login]'}),
+      reason: 'invalid GitHub login',
+    },
+  ])('fails closed for $name', ({record, reason}) => {
+    expect(authorOwnsAllChangedRecords([record], 'cixzhang')).toMatchObject({
+      approved: false,
+      reason: expect.stringContaining(reason),
+    });
+  });
+
+  it('accepts a bot only when the trusted record names its exact identity', () => {
+    const botOwned = changedRecord({
+      baseOwners: '[dependabot[bot]]',
+      headOwners: '[dependabot[bot]]',
+    });
+    expect(
+      authorOwnsAllChangedRecords([botOwned], 'dependabot[bot]').approved,
+    ).toBe(true);
+    expect(
+      authorOwnsAllChangedRecords([botOwned], 'app/dependabot'),
+    ).toMatchObject({
+      approved: false,
+      reason: 'missing or invalid pull request author',
+    });
   });
 });

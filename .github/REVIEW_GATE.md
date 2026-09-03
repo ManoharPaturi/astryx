@@ -24,14 +24,31 @@ neutral yellow "waiting" signal, not a red failure).
 
 Any PR that creates, changes, or archives a `current` architecture, component,
 family, design, or system spec waits on `spec-owner-approval` for its exact
-current head. `cixzhang` or `imdreamrunner` can approve every record kind.
-Current design records and normative design assets may also be approved by any
-handle in `.github/DESIGNOWNERS`. Mixed PRs still require `cixzhang` or
-`imdreamrunner` for non-design current records. Same-repository owner reviews
-update the exact-head approval automatically. Fork review events cannot write
-with their read-only token, so an approver uses an issue comment containing
-`/approve-spec <full-head-sha>` instead; that command runs from the trusted
-default branch and a new commit invalidates it.
+current head. When the PR author is named in every changed record's valid
+`owners` list on both the trusted base and proposed head, the exact current head
+passes automatically. Deleted records use the trusted base list. A rename must
+preserve the record identity and ownership. Missing, malformed, or ambiguous
+metadata fails closed. Normative design assets and renames into any recognized
+but non-authorizable knowledge path are never eligible for this record-owner
+path because their applicable owner-group approval must remain explicit.
+
+The workflow evaluates one stable base/head snapshot and records success as an
+attestation for that exact head, matching the temporal model of an exact-head
+review or command. A base change during reconciliation aborts the run. A later
+base-owner change does not retroactively revoke an already published exact-head
+attestation; use the existing exact-head revoke path when immediate revocation
+is required.
+
+A newly added record never self-authorizes from its proposed `owners` list. It
+uses the existing exact-head approval path, so an arbitrary contributor cannot
+become trusted by naming themselves. `cixzhang` or `imdreamrunner` can approve
+every record kind. Current design records and normative design assets may also
+be approved by any handle in `.github/DESIGNOWNERS`. Mixed PRs still require
+`cixzhang` or `imdreamrunner` for non-design current records. Same-repository
+owner reviews update the exact-head approval automatically. Fork review events
+cannot write with their read-only token, so an approver uses an issue comment
+containing `/approve-spec <full-head-sha>` instead; that command runs from the
+trusted default branch and a new commit invalidates it.
 
 When a DESIGNOWNER authors a PR, marking it ready for review attests that exact
 head for the design-approval group. That evidence also counts when the PR

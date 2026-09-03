@@ -6,10 +6,15 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('node:fs');
 const path = require('node:path');
-const {classifyChanges} = require('./change-scope.cjs');
+const {
+  classifyChanges,
+  isKnowledgeRecordPath,
+  isOwnerAuthorizableRecordPath,
+} = require('./change-scope.cjs');
 const {
   GATE_STATUS_CONTEXT,
   READY_STATUS_PREFIX,
+  authorOwnsAllChangedRecords,
   canonicalRunUrl,
   newestGateRun,
   parseOwnerCommand,
@@ -43,6 +48,12 @@ function isAuthorizedEvent(eventName, payload, owners) {
 
 function labelNames(pr) {
   return new Set(pr.labels.map(label => label.name));
+}
+
+function authorOwnershipDescription(ownership, prefix = '') {
+  const full = `${prefix}Author @${ownership.author} owns all changed records: ${ownership.recordIds.join(', ')}.`;
+  if (full.length <= 140) return full;
+  return `${prefix}Author @${ownership.author} owns all ${ownership.recordIds.length} changed records; record IDs are in the workflow log.`;
 }
 
 async function reconcileSpecOwnerGate({
@@ -160,9 +171,10 @@ async function reconcileSpecOwnerGate({
     return newest === null || newest.runId <= runId;
   }
 
-  async function currentPullForRun(headSha) {
+  async function currentPullForRun(headSha, baseSha) {
     const current = await getPullRequest();
-    if (current.head.sha !== headSha) return null;
+    if (current.head.sha !== headSha || current.base.sha !== baseSha)
+      return null;
     if (!(await isCurrentRun(headSha))) return null;
     return current;
   }
@@ -259,6 +271,7 @@ async function reconcileSpecOwnerGate({
   async function fetchSnapshot() {
     const before = await getPullRequest();
     const headSha = before.head.sha;
+    const baseSha = before.base.sha;
     const [files, reviews, comments, timeline, statuses] = await Promise.all([
       github.paginate(github.rest.pulls.listFiles, {
         owner,
@@ -287,7 +300,7 @@ async function reconcileSpecOwnerGate({
       listStatuses(headSha),
     ]);
     const after = await getPullRequest();
-    if (after.head.sha !== headSha) return null;
+    if (after.head.sha !== headSha || after.base.sha !== baseSha) return null;
 
     const scope = classifyChanges(files, {expectedCount: after.changed_files});
     const knowledgeChanges = files.filter(
@@ -301,32 +314,44 @@ async function reconcileSpecOwnerGate({
     const records = await Promise.all(
       knowledgeChanges.map(async file => {
         const previousPath = file.previous_filename || file.filename;
-        const baseIsTextRecord = previousPath.endsWith('.md');
-        const headIsTextRecord = file.filename.endsWith('.md');
+        const baseIsKnowledgeRecord =
+          file.status !== 'added' && isKnowledgeRecordPath(previousPath);
+        const headIsKnowledgeRecord =
+          file.status !== 'removed' && isKnowledgeRecordPath(file.filename);
+        const baseIsAuthorizableRecord =
+          baseIsKnowledgeRecord && isOwnerAuthorizableRecordPath(previousPath);
+        const headIsAuthorizableRecord =
+          headIsKnowledgeRecord && isOwnerAuthorizableRecordPath(file.filename);
+        const baseIsTextRecord =
+          baseIsKnowledgeRecord && previousPath.endsWith('.md');
+        const headIsTextRecord =
+          headIsKnowledgeRecord && file.filename.endsWith('.md');
         return {
           path: file.filename,
           previousPath,
-          baseContent:
-            !baseIsTextRecord || file.status === 'added'
-              ? null
-              : await readText(
-                  after.base.repo.full_name,
-                  after.base.sha,
-                  previousPath,
-                ),
-          headContent:
-            !headIsTextRecord || file.status === 'removed'
-              ? null
-              : await readText(
-                  after.head.repo.full_name,
-                  after.head.sha,
-                  file.filename,
-                ),
+          baseIsKnowledgeRecord,
+          headIsKnowledgeRecord,
+          baseIsAuthorizableRecord,
+          headIsAuthorizableRecord,
+          baseContent: !baseIsTextRecord
+            ? null
+            : await readText(
+                after.base.repo.full_name,
+                after.base.sha,
+                previousPath,
+              ),
+          headContent: !headIsTextRecord
+            ? null
+            : await readText(
+                after.head.repo.full_name,
+                after.head.sha,
+                file.filename,
+              ),
         };
       }),
     );
     const latest = await getPullRequest();
-    if (latest.head.sha !== headSha) return null;
+    if (latest.head.sha !== headSha || latest.base.sha !== baseSha) return null;
     return {
       pr: latest,
       files,
@@ -341,6 +366,7 @@ async function reconcileSpecOwnerGate({
 
   const initialPr = await getPullRequest();
   const initialHead = initialPr.head.sha;
+  const initialBase = initialPr.base.sha;
   await createStatus({
     sha: initialHead,
     context: GATE_STATUS_CONTEXT,
@@ -389,9 +415,13 @@ async function reconcileSpecOwnerGate({
   }
 
   const snapshot = await fetchSnapshot();
-  if (snapshot === null || snapshot.pr.head.sha !== initialHead) {
+  if (
+    snapshot === null ||
+    snapshot.pr.head.sha !== initialHead ||
+    snapshot.pr.base.sha !== initialBase
+  ) {
     core.info(
-      'The pull request head changed while this run was reading state.',
+      'The pull request head or base changed while this run was reading state.',
     );
     return;
   }
@@ -439,6 +469,9 @@ async function reconcileSpecOwnerGate({
   }
   const designApprovers = [...new Set([...specOwners, ...designOwners])];
   const themeApprovers = [...new Set([...engineeringOwners, ...designOwners])];
+  const authorOwnership = ownerApprovalRequired
+    ? authorOwnsAllChangedRecords(records, pr.user?.login)
+    : {approved: false, author: null, recordIds: []};
   const readyAttestations = parseReadyAttestations(statuses, {
     repository,
     headSha: initialHead,
@@ -459,8 +492,25 @@ async function reconcileSpecOwnerGate({
   const themeDecision = requiredGroups.theme
     ? resolveOwnerDecision({...decisionInput, owners: themeApprovers})
     : {approved: true, owner: null};
+  const groupDecisions = [specDecision, designDecision, themeDecision];
+  const exactHeadObjection = groupDecisions.some(
+    decision => decision.approved === false && decision.owner !== null,
+  );
+  const authorOwnershipApproved =
+    authorOwnership.approved && !exactHeadObjection;
+  if (authorOwnership.approved) {
+    const detail = authorOwnershipDescription(authorOwnership);
+    core.info(
+      exactHeadObjection
+        ? `${detail} An exact-head owner objection keeps the gate pending.`
+        : `${detail} Trusted base ${initialBase}; attesting exact head ${initialHead}.`,
+    );
+  }
   const approved =
-    specDecision.approved && designDecision.approved && themeDecision.approved;
+    authorOwnershipApproved ||
+    (specDecision.approved &&
+      designDecision.approved &&
+      themeDecision.approved);
   const approvingOwners = [
     specDecision.owner,
     designDecision.owner,
@@ -479,6 +529,14 @@ async function reconcileSpecOwnerGate({
   ]
     .filter(Boolean)
     .join(' and ');
+
+  if (
+    authorOwnershipApproved &&
+    (await currentPullForRun(initialHead, initialBase)) === null
+  ) {
+    core.info('The owner-author snapshot changed before final status.');
+    return;
+  }
 
   if (ownerApprovalRequired && !approved) {
     await disableAutoMerge(pr);
@@ -504,16 +562,20 @@ async function reconcileSpecOwnerGate({
     await setFinalStatus(
       initialHead,
       'success',
-      'Draft PR; owner gate is not blocking.',
+      authorOwnershipApproved
+        ? authorOwnershipDescription(authorOwnership, 'Draft PR; ')
+        : 'Draft PR; owner gate is not blocking.',
     );
     return;
   }
 
-  const successDescription = ownerApprovalRequired
-    ? `Approved by ${approvingOwners
-        .map(name => `@${name}`)
-        .join(' and ')} for ${initialHead.slice(0, 7)}.`
-    : 'Draft-only knowledge change; owner approval is not required.';
+  const successDescription = authorOwnershipApproved
+    ? authorOwnershipDescription(authorOwnership)
+    : ownerApprovalRequired
+      ? `Approved by ${approvingOwners
+          .map(name => `@${name}`)
+          .join(' and ')} for ${initialHead.slice(0, 7)}.`
+      : 'Draft-only knowledge change; owner approval is not required.';
 
   if (!scope.specOnly) {
     await disableAutoMerge(pr);
@@ -533,7 +595,7 @@ async function reconcileSpecOwnerGate({
 
   let enabledAutoMergeByThisRun = false;
   if (!pr.auto_merge) {
-    const beforeEnable = await currentPullForRun(initialHead);
+    const beforeEnable = await currentPullForRun(initialHead, initialBase);
     if (beforeEnable === null || beforeEnable.auto_merge) return;
     await ensureLabel(
       beforeEnable,
@@ -541,7 +603,7 @@ async function reconcileSpecOwnerGate({
       'bfdadc',
       'Auto-merge was enabled by the spec owner gate',
     );
-    const afterLabel = await currentPullForRun(initialHead);
+    const afterLabel = await currentPullForRun(initialHead, initialBase);
     if (afterLabel === null || afterLabel.auto_merge) return;
     try {
       await github.graphql(

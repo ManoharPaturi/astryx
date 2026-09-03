@@ -100,6 +100,8 @@ function createHarness({
   changedFiles,
   headContent = 'kind: architecture\nauthority: current\n',
   baseContent = '',
+  headContents,
+  baseContents,
 } = {}) {
   const files = changedFiles ?? [changedFile];
   const state = {
@@ -199,13 +201,19 @@ function createHarness({
           state.calls.push(`status:${input.context}:${input.state}`);
           return {data: status};
         },
-        getContent: async ({ref}) => ({
-          data: {
-            content: Buffer.from(
-              ref === state.pr.head.sha ? headContent : baseContent,
-            ).toString('base64'),
-          },
-        }),
+        getContent: async ({ref, path: filePath}) => {
+          const contents =
+            ref === state.pr.head.sha ? headContents : baseContents;
+          const fallback =
+            ref === state.pr.head.sha ? headContent : baseContent;
+          const content = contents?.[filePath] ?? fallback;
+          if (content == null) {
+            const error = new Error('Not found');
+            error.status = 404;
+            throw error;
+          }
+          return {data: {content: Buffer.from(content).toString('base64')}};
+        },
       },
     },
     graphql: async query => {
@@ -264,6 +272,10 @@ function hasReadyAttestation(state, owner = 'ernestt') {
   );
 }
 
+function currentRecord(id, owners, kind = 'architecture') {
+  return `---\nkind: ${kind}\nid: ${id}\nauthority: current\nowners: [${owners.join(', ')}]\n---\n`;
+}
+
 describe('spec owner workflow reconciliation', () => {
   it('treats an eligible owner-author ready event as exact-head approval', async () => {
     const harness = createHarness();
@@ -277,6 +289,201 @@ describe('spec owner workflow reconciliation', () => {
     ).toBe(true);
     expect(latestGateStatus(harness.state).state).toBe('success');
     expect(harness.state.calls).toContain('enable-auto-merge');
+  });
+
+  it('auto-approves a fork head when the PR author owns its existing record', async () => {
+    const content = currentRecord('architecture:owned', ['record-owner']);
+    const harness = createHarness({
+      author: 'Record-Owner',
+      headRepository: 'record-owner/astryx',
+      changedFile: {
+        filename: 'docs/architecture/owned.md',
+        status: 'modified',
+      },
+      baseContent: content,
+      headContent: content,
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'github-actions[bot]',
+        author: 'Record-Owner',
+        headRepository: 'record-owner/astryx',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state)).toMatchObject({
+      state: 'success',
+      description:
+        'Author @record-owner owns all changed records: architecture:owned.',
+    });
+    expect(
+      harness.state.calls.some(call =>
+        call.includes(
+          'Author @record-owner owns all changed records: architecture:owned.',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      harness.state.statuses.some(status =>
+        status.context.startsWith('spec-owner-ready/'),
+      ),
+    ).toBe(false);
+  });
+
+  it('auto-approves only when the author owns every changed record', async () => {
+    const firstPath = 'docs/architecture/first.md';
+    const secondPath = 'docs/architecture/second.md';
+    const changedFiles = [
+      {filename: firstPath, status: 'modified'},
+      {filename: secondPath, status: 'modified'},
+    ];
+    const allOwned = createHarness({
+      author: 'record-owner',
+      changedFiles,
+      baseContents: {
+        [firstPath]: currentRecord('architecture:first', ['record-owner']),
+        [secondPath]: currentRecord('architecture:second', ['record-owner']),
+      },
+      headContents: {
+        [firstPath]: currentRecord('architecture:first', ['record-owner']),
+        [secondPath]: currentRecord('architecture:second', ['record-owner']),
+      },
+    });
+
+    await run(
+      allOwned,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'automation',
+        author: 'record-owner',
+      }),
+    );
+    expect(latestGateStatus(allOwned.state)).toMatchObject({
+      state: 'success',
+      description:
+        'Author @record-owner owns all changed records: architecture:first, architecture:second.',
+    });
+
+    const mixed = createHarness({
+      author: 'record-owner',
+      changedFiles,
+      baseContents: {
+        [firstPath]: currentRecord('architecture:first', ['record-owner']),
+        [secondPath]: currentRecord('architecture:second', ['another-owner']),
+      },
+      headContents: {
+        [firstPath]: currentRecord('architecture:first', ['record-owner']),
+        [secondPath]: currentRecord('architecture:second', ['another-owner']),
+      },
+    });
+    await run(
+      mixed,
+      context({
+        runId: 101n,
+        action: 'synchronize',
+        author: 'record-owner',
+      }),
+    );
+    expect(latestGateStatus(mixed.state).state).toBe('pending');
+  });
+
+  it('keeps a new record self-listing on the existing approval path', async () => {
+    const harness = createHarness({
+      author: 'contributor',
+      changedFile: {
+        filename: 'docs/architecture/new-record.md',
+        status: 'added',
+      },
+      headContent: currentRecord('architecture:new-record', ['contributor']),
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        actor: 'contributor',
+        author: 'contributor',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+  });
+
+  it('keeps stale approval stale unless the current author-owner path applies', async () => {
+    const staleReview = {
+      user: {login: 'cixzhang'},
+      state: 'APPROVED',
+      commit_id: nextHead,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const content = currentRecord('architecture:owned', ['record-owner']);
+    const baseOptions = {
+      changedFile: {
+        filename: 'docs/architecture/owned.md',
+        status: 'modified',
+      },
+      baseContent: content,
+      headContent: content,
+      reviews: [staleReview],
+    };
+    const nonOwner = createHarness({...baseOptions, author: 'contributor'});
+    await run(
+      nonOwner,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        author: 'contributor',
+      }),
+    );
+    expect(latestGateStatus(nonOwner.state).state).toBe('pending');
+
+    const ownerAuthor = createHarness({...baseOptions, author: 'record-owner'});
+    await run(
+      ownerAuthor,
+      context({
+        runId: 101n,
+        action: 'synchronize',
+        author: 'record-owner',
+      }),
+    );
+    expect(latestGateStatus(ownerAuthor.state).state).toBe('success');
+  });
+
+  it('keeps an exact-head owner objection blocking an owner-author', async () => {
+    const content = currentRecord('architecture:owned', ['record-owner']);
+    const objection = {
+      user: {login: 'cixzhang'},
+      state: 'CHANGES_REQUESTED',
+      commit_id: head,
+      submitted_at: '2026-08-30T10:00:00Z',
+    };
+    const harness = createHarness({
+      author: 'record-owner',
+      changedFile: {
+        filename: 'docs/architecture/owned.md',
+        status: 'modified',
+      },
+      baseContent: content,
+      headContent: content,
+      reviews: [objection],
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        author: 'record-owner',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
   });
 
   it('lets a DESIGNOWNER author self-attest an exact design-record-only head', async () => {
@@ -369,6 +576,74 @@ describe('spec owner workflow reconciliation', () => {
     });
     expect(harness.state.calls).not.toContain('enable-auto-merge');
   });
+
+  it('does not let record-shaped design assets use the author-owner path', async () => {
+    const content = currentRecord('design:palette', ['asset-owner'], 'design');
+    const harness = createHarness({
+      author: 'asset-owner',
+      changedFile: {
+        filename: 'docs/design/assets/palette.md',
+        status: 'modified',
+      },
+      baseContent: content,
+      headContent: content,
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        author: 'asset-owner',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+  });
+
+  it.each([
+    {
+      name: 'a normative design asset',
+      filename: 'docs/design/assets/palette.md',
+      previousFilename: 'docs/design/palette.md',
+      baseContent: currentRecord('design:palette', ['record-owner'], 'design'),
+      headContent: currentRecord('design:palette', ['record-owner'], 'design'),
+    },
+    {
+      name: 'a misplaced theme candidate',
+      filename: 'docs/themes/neutral.md',
+      previousFilename: 'docs/architecture/neutral.md',
+      baseContent: currentRecord('architecture:neutral', ['record-owner']),
+      headContent: currentRecord('theme:neutral', ['record-owner'], 'theme'),
+    },
+  ])(
+    'keeps an owner-authored rename into $name on the explicit approval path',
+    async ({filename, previousFilename, baseContent, headContent}) => {
+      const harness = createHarness({
+        author: 'record-owner',
+        changedFile: {
+          filename,
+          previous_filename: previousFilename,
+          status: 'renamed',
+        },
+        baseContent,
+        headContent,
+      });
+
+      await run(
+        harness,
+        context({
+          runId: 100n,
+          action: 'synchronize',
+          author: 'record-owner',
+        }),
+      );
+
+      expect(latestGateStatus(harness.state).state).toBe('pending');
+      expect(harness.state.calls).not.toContain('enable-auto-merge');
+    },
+  );
 
   it('requires a real ready transition and never auto-merges a draft PR', async () => {
     const readyDraft = createDesignHarness({draft: true});
@@ -721,6 +996,39 @@ describe('spec owner workflow reconciliation', () => {
     ).toHaveLength(1);
   });
 
+  it('abandons an ownership snapshot when the live base changes', async () => {
+    const content = currentRecord('architecture:owned', ['record-owner']);
+    const harness = createHarness({
+      author: 'record-owner',
+      changedFile: {
+        filename: 'docs/architecture/owned.md',
+        status: 'modified',
+      },
+      baseContent: content,
+      headContent: content,
+      onPullGet: (count, state) => {
+        if (count === 3) state.pr.base.sha = nextHead;
+      },
+    });
+
+    await run(
+      harness,
+      context({
+        runId: 100n,
+        action: 'synchronize',
+        author: 'record-owner',
+      }),
+    );
+
+    expect(latestGateStatus(harness.state).state).toBe('pending');
+    expect(harness.state.calls).not.toContain('enable-auto-merge');
+    expect(
+      harness.state.calls.some(call =>
+        call.includes('head or base changed while this run was reading state'),
+      ),
+    ).toBe(true);
+  });
+
   it('disables gate-owned auto-merge before reconciling a later revoke', async () => {
     const harness = createHarness();
     await run(harness, context({runId: 100n}));
@@ -876,14 +1184,14 @@ describe('spec owner workflow reconciliation', () => {
     ]);
   });
 
-  it('reconciles same-repository owner reviews automatically', async () => {
+  it('accepts an exact-head owner review for a non-owner author', async () => {
     const review = {
       user: {login: 'cixzhang'},
       state: 'APPROVED',
       commit_id: head,
       submitted_at: '2026-08-30T10:00:00Z',
     };
-    const harness = createHarness({reviews: [review]});
+    const harness = createHarness({author: 'contributor', reviews: [review]});
 
     await run(
       harness,
@@ -891,6 +1199,8 @@ describe('spec owner workflow reconciliation', () => {
         runId: 100n,
         eventName: 'pull_request_review',
         action: 'submitted',
+        actor: 'cixzhang',
+        author: 'contributor',
         review,
       }),
     );

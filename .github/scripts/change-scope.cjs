@@ -27,11 +27,14 @@ const THEME_DOC_CANDIDATE = /^docs\/themes\/(?!README\.md$)[^/]+\.md$/;
 const THEME_PACKAGE_CANDIDATE =
   /^packages\/themes\/[^/]+\/(?:.*\/)?[^/]+\.spec\.md$/;
 
+const ARCHITECTURE_RECORD_PATTERN =
+  /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/;
+
 const KNOWLEDGE_RECORD_PATTERNS = [
   ...SPEC_RECORD_PATTERNS,
   THEME_DOC_CANDIDATE,
   THEME_PACKAGE_CANDIDATE,
-  /^docs\/architecture\/(?!README\.md$)[^/]+\.md$/,
+  ARCHITECTURE_RECORD_PATTERN,
   /^docs\/design\/assets\//,
 ];
 
@@ -39,6 +42,12 @@ function isSpecRecordPath(filePath) {
   return (
     isComponentSpecRecordPath(filePath) ||
     SPEC_RECORD_PATTERNS.some(pattern => pattern.test(filePath))
+  );
+}
+
+function isOwnerAuthorizableRecordPath(filePath) {
+  return (
+    isSpecRecordPath(filePath) || ARCHITECTURE_RECORD_PATTERN.test(filePath)
   );
 }
 
@@ -173,6 +182,7 @@ if (require.main === module) {
 module.exports = {
   classifyChanges,
   isKnowledgeRecordPath,
+  isOwnerAuthorizableRecordPath,
   isSpecRecordPath,
   parseNameStatus,
 };

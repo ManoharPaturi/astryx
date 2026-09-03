@@ -227,8 +227,11 @@ Before any component, module, family, design, theme, or architecture record beco
    - If the direction is rejected, the rejected implementation is removed or
      changed. Record the rejected alternative only when the boundary is
      consequential and likely to come up again.
-5. The final commits invalidate prior approval. The owner approves the exact
-   heads after the record and implementation agree.
+5. A final commit invalidates prior comment and review approval. For the exact
+   current head, the gate re-evaluates whether the pull-request author is already
+   named by every changed record on both the trusted base and proposed head. New
+   records cannot grant this author path; otherwise an owner approves the exact
+   head after the record and implementation agree.
 
 If no implementation direction is accepted, close the contributor pull request.
 The maintainer-owned spec pull request remains only when the ruling is useful
@@ -292,9 +295,17 @@ this flow passes the historical review benchmark and is enforced on pull request
   metadata.
 - `.github/scripts/change-scope.cjs` identifies pure spec-record changes.
 - `.github/workflows/spec-owner-gate.yml` binds approval to the exact pull
-  request head. Theme approval derives from the committed union of
-  `.github/ENGOWNERS` and `.github/DESIGNOWNERS`; record metadata never
-  self-authorizes. The workflow enables auto-merge only for pure spec changes.
+  request head. An author-owner path derives only from a valid record already on
+  the trusted base and requires the author in the valid `owners` lists on both
+  base and head; added records, identity changes, normative design assets,
+  cross-boundary knowledge-path renames, and missing or ambiguous owner metadata
+  never self-authorize. The workflow aborts
+  if either snapshot changes while it is reading. A successful run is an
+  attestation for that exact head, like an exact-head review or command; later
+  base-owner changes do not retroactively revoke it. Theme approval otherwise
+  derives from the committed union of `.github/ENGOWNERS` and
+  `.github/DESIGNOWNERS`. The workflow enables auto-merge only for pure spec
+  changes.
 
 ## Deciding specs
 
@@ -331,9 +342,9 @@ work.
 
 ## Verification
 
-| Invariant                         | Evidence                                       | Failure signal                                                                                                                                      |
-| --------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                     |
-| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                    |
-| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a self-declared owner becomes an approver, or the wrong owner group approves a current theme record |
-| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                            |
+| Invariant                         | Evidence                                       | Failure signal                                                                                                                                                                                                         |
+| --------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV1, INV6                        | `scripts/check-knowledge.test.mjs`             | An unapproved current record or unmigrated active record passes                                                                                                                                                        |
+| INV5, INV7                        | `.github/scripts/change-scope.test.mjs`        | A template, schema, guidance, architecture, code change, unsafe rename, or truncated list qualifies as spec-only                                                                                                       |
+| Approval follows the current head | `.github/scripts/spec-owner-decision.test.mjs` | An approval for another commit clears the gate, a new record self-authorizes, an author missing from either trusted-base or proposed-head owners auto-passes, or the wrong owner group approves a current theme record |
+| INV3, INV4                        | Blinded historical review benchmark            | Reviewer re-asks a settled decision or invents a new one                                                                                                                                                               |
