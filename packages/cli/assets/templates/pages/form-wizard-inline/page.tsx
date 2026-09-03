@@ -77,16 +77,12 @@
  * confirm button out of view. If a step needs a scroll, split it or move to the
  * side-rail layout.
  *
- * **Editing is re-entry, not a separate mode.** The Edit button on a collapsed
- * step reopens it with its values intact, running the same code path as
- * first-time entry. Never build a read-only summary with a parallel edit form —
- * two renderings of the same data drift.
- *
- * **This is the one wizard here without `onStepClick`.** `Step` renders
- * `endContent` inside its own clickable row, so a handler plus an Edit button
- * would nest a button inside a button. The explicit control is the better fit
- * regardless: an expanded row is full of form fields, and a row-wide click
- * target sitting under them invites misclicks.
+ * **Editing is re-entry, not a separate mode.** `onStepClick` reopens a
+ * completed step with its values intact, running the same code path as
+ * first-time entry. `endContent` only labels that row-wide action; it stays
+ * text so the Step's button does not contain another button. Never build a
+ * read-only summary with a parallel edit form — two renderings of the same
+ * data drift.
  */
 
 import {useEffect, useMemo, useState} from 'react';
@@ -626,7 +622,6 @@ export default function FormWizardInlinePage() {
                 </Text>
               </VStack>
             </StackItem>
-            <Button label="Skip for now" variant="ghost" onClick={() => {}} />
           </HStack>
         </LayoutHeader>
       }
@@ -648,12 +643,10 @@ export default function FormWizardInlinePage() {
                   : ''}
             </VisuallyHidden>
 
-            {/* No `onStepClick` here, unlike the other wizards. `endContent`
-                renders inside the step's own row, so pairing a handler with an
-                Edit button would nest a button inside a button. An accordion
-                wants the explicit control anyway: the row holds live form
-                fields once it expands, and a whole-row click target over a
-                form is a misclick waiting to happen. */}
+            {/* Completed rows are the way back into settled steps. The
+                Stepper's `onStepClick` owns that row-wide action; `endContent`
+                below only labels it with Edit or Run again, and deliberately
+                stays text so the Step's button never contains another button. */}
             <Stepper
               activeStep={active}
               orientation="vertical"
