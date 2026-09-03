@@ -1,35 +1,5 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-/**
- * Neutral Theme
- *
- * A pure grayscale spine with a from-scratch OKLCH-derived categorical
- * palette. Hues are placed at evenly-spaced positions on the OKLCH wheel,
- * chosen to keep each color recognizable at every tone (no red drift for
- * orange, no blue drift for purple) and well-separated from its neighbors.
- *
- * Core neutral palette: #fafafa, #f5f5f5, #e5e5e5, #737373, #262626, #0a0a0a
- *
- * Categorical hues (OKLCH; chroma = max-in-gamut at the saturated stop):
- *   Red H=25    Orange H=65    Yellow H=90    Green H=145
- *   Teal H=180  Cyan H=215     Blue H=250     Purple H=320  Pink H=355
- *
- * Saturated badge stops:
- *   • Cool/medium hues sit at OKLCH L=0.48–0.50 with white text (AA+)
- *   • Bright warm hues (orange L=0.68, yellow L=0.80) use dark text
- *
- * Token tonal stops:
- *   bg     = T90 (light) / T20 (dark)
- *   border = T80         / T30
- *   icon   = T30         / T80
- *   text   = T30         / T80
- *
- * All 9 saturated badge values pass WCAG AA against their label (>= 4.5:1);
- * `scripts/check-badge-contrast.test.mjs` holds every theme to that.
- *
- * Only overrides tokens that differ from the defaults.
- */
-
 import {
   defineTheme,
   defineSyntaxTheme,
@@ -37,29 +7,25 @@ import {
 } from '@astryxdesign/core/theme';
 import {neutralIconRegistry} from './icons';
 
-/**
- * Neutral syntax palette — pulled from the OKLCH T30 (light) / T80 (dark)
- * stops of the categorical ramps. Same colors used by --color-icon-* tokens.
- */
 const neutralSyntax = defineSyntaxTheme({
   name: 'astryx-neutral',
   tokens: {
-    keyword: ['#700084', '#efa8ff'], // purple T30/T80
-    string: ['#005600', '#a6d2a2'], // green (sat T30 / pastel T80)
-    comment: ['#737373', '#a3a3a3'], // neutral
-    number: ['#6e3500', '#ffb37f'], // orange
-    function: ['#00458c', '#a0caff'], // blue T30/T80 H=255
-    type: ['#700084', '#efa8ff'], // purple
-    variable: ['#171717', '#e5e5e5'], // near-black / near-white
-    operator: ['#737373', '#a3a3a3'], // neutral
-    constant: ['#6e3500', '#ffb37f'], // orange
-    tag: ['#89001a', '#ffaeaa'], // red
-    attribute: ['#584400', '#eec12f'], // yellow
-    property: ['#005348', '#83dac9'], // teal
-    // #a3a3a3/#525252 (this pair's own disabled-text tone) failed WCAG AA
+    keyword: ['#6f0782', '#e6c9ec'],
+    string: ['#005711', '#bedfbe'],
+    comment: ['#777777', '#9e9e9e'],
+    number: ['#673a00', '#f4cca7'],
+    function: ['#00458c', '#b8d7ff'],
+    type: ['#6f0782', '#e6c9ec'],
+    variable: ['#1b1b1b', '#e2e2e2'],
+    operator: ['#777777', '#9e9e9e'],
+    constant: ['#673a00', '#f4cca7'],
+    tag: ['#8a0011', '#fac5c0'],
+    attribute: ['#584400', '#f4d170'],
+    property: ['#005348', '#a8e2d6'],
+    // #a3a3a3/#525252 (this pair's own disabled-text stop) failed WCAG AA
     // against the syntax background: 2.42:1 light, 2.53:1 dark. #5386.
     punctuation: ['#6e6e6e', '#a0a0a0'], // neutral, 4.89:1 / 7.57:1
-    background: ['#fafafa', '#0a0a0a'],
+    background: ['#f1f1f1', '#000000'],
   },
 });
 
@@ -122,41 +88,10 @@ export const neutralTheme = defineTheme({
   syntax: neutralSyntax,
 
   tokens: {
-    // =========================================================================
-    // Core — pure grayscale spine (Tailwind neutral)
-    // 50:#fafafa 100:#f5f5f5 200:#e5e5e5 300:#d4d4d4 400:#a3a3a3
-    // 500:#737373 600:#525252 700:#404040 800:#262626 900:#171717 950:#0a0a0a
-    // =========================================================================
+    // Core neutrals
 
-    // =========================================================================
-    // Backgrounds — Figma-style flat with a single lifted surface.
-    //
-    // Dark mode collapses card / popover / muted to body T10. Cards and
-    // popovers lift purely via shadow + inset highlight (see --shadow-*
-    // below) — they don't need a distinct tone.
-    //
-    // Surface is the exception: it's tonally LIGHTER than body (T15) so
-    // interactive components that sit on top of body have a clear,
-    // differentiated foreground. Real consumers of --color-background-surface
-    // are: switches, radios, checkboxes, multi-selectors, dialogs, app
-    // shells, sections — all things that need to lift above the canvas.
-    //
-    //   surface  T15 #262626  — interactive surfaces lifted above body
-    //   body     T10 #1b1b1b  — main canvas
-    //   card     T10 #1b1b1b  — same as body, lifts via --shadow-low
-    //   popover  T10 #1b1b1b  — same as body, lifts via --shadow-med
-    //   muted    T10 #1b1b1b  — same as body
-    //
-    // Light mode keeps the standard ladder (white surfaces float on tinted
-    // body; shadows do most of the lifting):
-    //   surface  T100 #ffffff
-    //   body     T95  #f1f1f1
-    //   card     T100 #ffffff
-    //   popover  T100 #ffffff
-    //   muted    T95  #f1f1f1
-    //
-    // All values use the OKLCH Neutral tonal palette (chroma=0).
-    // =========================================================================
+    // Dark cards and popovers match the body and rely on elevation; interactive
+    // surfaces use the next lighter neutral stop.
     '--color-background-surface': ['#ffffff', '#262626'],
     '--color-background-body': ['#f1f1f1', '#1b1b1b'],
     '--color-background-card': ['#ffffff', '#1b1b1b'],
@@ -164,193 +99,109 @@ export const neutralTheme = defineTheme({
     '--color-background-muted': ['#f1f1f1', '#1b1b1b'],
 
     // Accent + neutral surface tints (sit alongside backgrounds)
-    '--color-accent': ['#262626', '#ebebeb'],
+    '--color-accent': ['#262626', '#e7e7e7'],
     '--color-accent-muted': ['#f1f1f1', '#262626'],
-    '--color-neutral': ['#0000000F', '#FFFFFF1A'],
+    '--color-neutral': ['#0000000F', '#ffffff1A'],
 
     // Overlays (modal scrims, hover/pressed tints)
     '--color-overlay': ['#00000080', '#000000CC'],
-    '--color-overlay-hover': ['#0000000D', '#FFFFFF0D'],
-    '--color-overlay-pressed': ['#0000001A', '#FFFFFF1A'],
+    '--color-overlay-hover': ['#0000000D', '#ffffff0D'],
+    '--color-overlay-pressed': ['#0000001A', '#ffffff1A'],
 
     // Text
-    '--color-text-primary': ['#171717', '#fafafa'],
-    // Light secondary is neutral-600 (#525252), not 500 (#737373): 500 only
-    // reaches 4.19:1 on the T95 body (#f1f1f1), just under WCAG AA 4.5:1.
+    '--color-text-primary': ['#1b1b1b', '#f1f1f1'],
+    // Light secondary is stop 35 (#525252), not stop 50 (#777777): stop 50 only
+    // reaches 4.19:1 on the stop 95 body (#f1f1f1), just under WCAG AA 4.5:1.
     // 600 clears it (6.9:1 on body, 7.8:1 on card). Dark stays neutral-400.
-    '--color-text-secondary': ['#525252', '#a3a3a3'],
-    '--color-text-disabled': ['#a3a3a3', '#525252'],
-    '--color-text-accent': ['#262626', '#ebebeb'],
+    '--color-text-secondary': ['#525252', '#9e9e9e'],
+    '--color-text-disabled': ['#9e9e9e', '#525252'],
+    '--color-text-accent': ['#262626', '#e7e7e7'],
     '--color-on-dark': '#ffffff',
-    '--color-on-light': '#171717',
-    // Contrast: neutral accent is near-black (L) / near-white (D)
-    '--color-on-accent': ['#ffffff', '#171717'],
-    '--color-on-success': ['#ffffff', '#171717'],
-    '--color-on-error': ['#ffffff', '#171717'],
-    '--color-on-warning': '#171717',
+    '--color-on-light': '#1b1b1b',
+    '--color-on-accent': ['#ffffff', '#1b1b1b'],
+    '--color-on-success': ['#ffffff', '#1b1b1b'],
+    '--color-on-error': ['#ffffff', '#1b1b1b'],
+    '--color-on-warning': '#1b1b1b',
 
     // Icon
-    '--color-icon-accent': ['#262626', '#ebebeb'],
-    '--color-icon-primary': ['#171717', '#fafafa'],
-    '--color-icon-secondary': ['#737373', '#a3a3a3'],
-    '--color-icon-disabled': ['#a3a3a3', '#525252'],
+    '--color-icon-accent': ['#262626', '#e7e7e7'],
+    '--color-icon-primary': ['#1b1b1b', '#f1f1f1'],
+    '--color-icon-secondary': ['#777777', '#9e9e9e'],
+    '--color-icon-disabled': ['#9e9e9e', '#525252'],
 
-    // Status / Sentiment — dark mode follows the issue #2150 rubric:
-    //
-    //   Light mode: pastel T90 banner bg + dark T30/T40 text/icon. Locked
-    //               light values for cards/banners/inputs/destructive btn.
-    //   Dark mode : tinted-dark T20 bg + light pastel T80 text. INVERTED
-    //               from light. Avoids the §5 "pastel-in-both-modes"
-    //               anti-pattern (locked pastels glow against a dark body).
-    //
-    //   --color-X         = "saturated text/icon stop":
-    //                         light = T40 dark colored (sits on light pastel)
-    //                         dark  = T80 light pastel  (sits on dark tinted bg)
-    //                       Used by destructive button text, input border/icon
-    //                       (in light), banner-status-* text overrides.
-    //   --color-X-muted   = "muted bg stop":
-    //                         light = T90 light pastel
-    //                         dark  = hue-tinted alpha overlay (T70 stop @ 24%)
-    //                       Used by banner bg, status-input message bg,
-    //                       destructive button bg. Dark mode uses an alpha
-    //                       overlay rather than a solid T20 tinted bg so
-    //                       the surface composes onto whatever sits behind
-    //                       it (body, card, popover) rather than reading
-    //                       as a hard colored panel.
-    //
-    //   24% alpha = '3D' suffix. Hue values match --color-icon-{X} dark
-    //   slots (palette T70). Composited onto body #1b1b1b, the effective
-    //   bg luminance hits ~1.65-1.70:1 vs body — visible colored surface
-    //   without the heaviness of a solid T20 panel.
-    '--color-success': ['#007004', '#9fe59b'],
-    '--color-error': ['#a50c25', '#ffc6c1'],
-    '--color-warning': ['#745b00', '#fdcf4f'],
-    '--color-success-muted': ['#c5e5c0', '#84c9803D'],
-    '--color-error-muted': ['#facecb', '#ff9e973D'],
-    '--color-warning-muted': ['#f8da9d', '#deb4333D'],
+    // Status colors pair dark foregrounds with pastel surfaces in light mode,
+    // and light foregrounds with translucent hue surfaces in dark mode.
+    '--color-success': ['#005711', '#bedfbe'],
+    // Error uses stronger stops to preserve contrast through pressed overlays.
+    '--color-error': ['#76000c', '#fbd3cf'],
+    '--color-warning': ['#584400', '#f4d170'],
+    '--color-success-muted': ['#bbe1bb', '#8ecb8f3D'],
+    '--color-error-muted': ['#ffc4be', '#f99c943D'],
+    '--color-warning-muted': ['#f9e19e', '#e1b3003D'],
 
-    // Border
-    '--color-border': ['#00000014', '#FFFFFF1A'],
+    // Borders retain the released Neutral appearance with colors selected from
+    // approved stops. Components that require a 3:1 identifying boundary
+    // should provide that treatment through a component-specific mapping.
+    '--color-border': ['#00000014', '#ffffff1A'],
     '--color-border-emphasized': ['#d4d4d4', '#525252'],
 
     // Effects
-    '--color-skeleton': ['#ebebeb', '#525252'],
+    '--color-skeleton': ['#e2e2e2', '#525252'],
     '--color-shadow': ['#0000001A', '#0000004D'],
     '--color-tint-hover': ['black', 'white'],
 
-    // =========================================================================
-    // Categorical — light mode uses pastel surfaces + dark colored text;
-    //               dark mode INVERTS to a hue-tinted alpha overlay surface +
-    //               light pastel text (per #2150 rubric §3 — pick the tone
-    //               that satisfies required contrast against every surface
-    //               the token touches).
-    //
-    // Per-token tone choice (CIELab L*):
-    //   bg     light=T87-T90 pastel       dark=T70 hue @ 24% alpha overlay
-    //                                       (composites onto body to ~1.65:1
-    //                                        vs body — colored surface that
-    //                                        feels lighter than a solid T20
-    //                                        panel; same hue as --color-icon-X
-    //                                        dark slot, just at lower opacity)
-    //   border light=T80 pastel           dark=T60 mid-bright (>=5.8:1 vs body)
-    //   icon   light=T30 dark colored     dark=T70 light pastel
-    //   text   light=T30 dark colored     dark=T80 light pastel (>=7:1 on bg)
-    //
-    // Light pastels still use the per-hue chroma table (red/blue C=0.05,
-    // orange/green/purple/pink C=0.06, teal/cyan C=0.07, yellow H=85 C=0.10)
-    // for equal PERCEIVED saturation. Dark stops (T60/T70/T80) come from
-    // the dark-mode tonal palette (chroma×0.85, +5 tone lift tapering 80-95).
-    // =========================================================================
+    // Categorical roles use pastel surfaces and dark text in light mode, then
+    // translucent hue surfaces and light text in dark mode.
+    '--color-background-red': ['#ffc4be', '#f99c943D'],
+    '--color-border-red': ['#ffaea7', '#f76a65'],
+    '--color-icon-red': ['#8a0011', '#f99c94'],
+    '--color-text-red': ['#76000c', '#fbd3cf'],
 
-    // Each row's dark slots are HCT-derived from the source hex listed in
-    // apps/sandbox/src/app/(fullscreen)/pages/neutral-palette/page.tsx via
-    // the canonical dark-ramp transform (chroma×0.85, +5 tone-lift taper)
-    // — same algorithm the Tonal Palettes preview renders. Border=T60,
-    // icon=T70, text=T80. Background uses the T70 hue at 24% alpha so the
-    // overlay surface composites onto body to ~1.65:1 luminance.
+    '--color-background-orange': ['#f8cba0', '#eea75f3D'],
+    '--color-border-orange': ['#f7b87a', '#df8600'],
+    '--color-icon-orange': ['#673a00', '#eea75f'],
+    '--color-text-orange': ['#673a00', '#f4cca7'],
 
-    // Red  H=22 — source #eb183a
-    '--color-background-red': ['#facecb', '#ff9e973D'],
-    '--color-border-red': ['#e6bab8', '#ff6f6c'],
-    '--color-icon-red': ['#89001a', '#ff9e97'],
-    '--color-text-red': ['#89001a', '#ffc6c1'],
+    '--color-background-yellow': ['#f9e19e', '#e1b3003D'],
+    '--color-border-yellow': ['#f1c000', '#c09800'],
+    '--color-icon-yellow': ['#584400', '#e1b300'],
+    '--color-text-yellow': ['#584400', '#f4d170'],
 
-    // Orange  H=55 — source #d57113
-    '--color-background-orange': ['#fad0b5', '#ffa2583D'],
-    '--color-border-orange': ['#e6bda2', '#e2883e'],
-    '--color-icon-orange': ['#6e3500', '#ffa258'],
-    '--color-text-orange': ['#6e3500', '#ffc9a2'],
+    '--color-background-green': ['#bbe1bb', '#8ecb8f3D'],
+    '--color-border-green': ['#a1d7a1', '#53b75a'],
+    '--color-icon-green': ['#005711', '#8ecb8f'],
+    '--color-text-green': ['#005711', '#bedfbe'],
 
-    // Yellow  H=90 — source #f8c723
-    // Light-mode butter-yellow pastel at H=85 C=0.085 L=0.90 — yellow
-    // sits at the green-cyan luminance peak so it feels louder than the
-    // other status hues at the same canonical L. Picker decision: pull
-    // L down one step (0.91→0.90) and C down to its identity floor
-    // (0.10→0.085, just above the bronze threshold) so it sits closer
-    // to red/blue's perceived brightness without losing yellow identity.
-    // Dark-mode comes from the canonical H=90 ramp for tonal-palette
-    // consistency.
-    '--color-background-yellow': ['#f8da9d', '#deb4333D'],
-    '--color-border-yellow': ['#e4c279', '#c0990e'],
-    '--color-icon-yellow': ['#584400', '#deb433'],
-    '--color-text-yellow': ['#584400', '#fdcf4f'],
+    '--color-background-teal': ['#a2e4d6', '#55d1bb3D'],
+    '--color-border-teal': ['#76dcc9', '#00b7a1'],
+    '--color-icon-teal': ['#005348', '#55d1bb'],
+    '--color-text-teal': ['#005348', '#a8e2d6'],
 
-    // Green  H=144 — source #358a3a
-    '--color-background-green': ['#c5e5c0', '#84c9803D'],
-    '--color-border-green': ['#b2d1ac', '#69ad67'],
-    '--color-icon-green': ['#0c5700', '#84c980'],
-    '--color-text-green': ['#0c5700', '#9fe59b'],
+    '--color-background-cyan': ['#9ee1f1', '#50cbe73D'],
+    '--color-border-cyan': ['#71d7ef', '#00b1ce'],
+    '--color-icon-cyan': ['#00505f', '#50cbe7'],
+    '--color-text-cyan': ['#00505f', '#a7dfed'],
 
-    // Teal  H=180 — source #0c7365
-    // Light pastel uses L=0.87 C=0.065 (a step darker + less chroma than
-    // the L=0.888 C=0.07 used by other hues) to compensate for the
-    // green-cyan luminance overshoot — at the same OKLCH L, teal/cyan read
-    // ~5% brighter than red/blue because the eye's luminance response
-    // peaks in this band. Dropping L+C brings perceived brightness in
-    // line with the rest of the palette without losing hue identity.
-    '--color-background-teal': ['#a5e3d6', '#7ec6b83D'],
-    '--color-border-teal': ['#94d6c8', '#63ab9d'],
-    '--color-icon-teal': ['#005348', '#7ec6b8'],
-    '--color-text-teal': ['#005348', '#99e2d3'],
+    '--color-background-blue': ['#b8d7ff', '#87bcff3D'],
+    '--color-border-blue': ['#a0caff', '#529fff'],
+    '--color-icon-blue': ['#00458c', '#87bcff'],
+    '--color-text-blue': ['#00458c', '#b8d7ff'],
 
-    // Cyan  H=215 — source #0c6f82
-    // Same L=0.87 C=0.065 pastel as teal (luminance overshoot compensation).
-    '--color-background-cyan': ['#a3e0ef', '#83c2d43D'],
-    '--color-border-cyan': ['#91d3e3', '#67a7b8'],
-    '--color-icon-cyan': ['#00505f', '#83c2d4'],
-    '--color-text-cyan': ['#00505f', '#9edef0'],
+    '--color-background-purple': ['#e8c7ef', '#d7a3e33D'],
+    '--color-border-purple': ['#e1b3ed', '#c979dc'],
+    '--color-icon-purple': ['#6f0782', '#d7a3e3'],
+    '--color-text-purple': ['#6f0782', '#e6c9ec'],
 
-    // Blue  H=255 — source #0074e2
-    //   T50 #0074e2 reserved for filled Info badge / progressbar / inset hover.
-    '--color-background-blue': ['#c4ddfb', '#9eb7ff3D'],
-    '--color-border-blue': ['#b1c9e7', '#6d9cfe'],
-    '--color-icon-blue': ['#00458c', '#9eb7ff'],
-    '--color-text-blue': ['#00458c', '#c7d3ff'],
+    '--color-background-pink': ['#f9c4d6', '#ee9cbd3D'],
+    '--color-border-pink': ['#f7adc9', '#e86ea3'],
+    '--color-icon-pink': ['#82004b', '#ee9cbd'],
+    '--color-text-pink': ['#82004b', '#f4c6d6'],
 
-    // Purple  H=320 — source #980fb2
-    '--color-background-purple': ['#eccef3', '#f297ff3D'],
-    '--color-border-purple': ['#d8bbdf', '#dd74f0'],
-    '--color-icon-purple': ['#700084', '#f297ff'],
-    '--color-text-purple': ['#700084', '#fac1ff'],
-
-    // Pink  H=355 — source #b10e69
-    '--color-background-pink': ['#fccadc', '#ff99c33D'],
-    '--color-border-pink': ['#e7b7c8', '#f273aa'],
-    '--color-icon-pink': ['#83004b', '#ff99c3'],
-    '--color-text-pink': ['#83004b', '#ffc3da'],
-
-    // Gray (categorical neutral, chroma 0)
-    //   Light: #e5e5e5 (Neutral 200) so it's visibly distinct from the
-    //          lighter body / muted surface (both #f5f5f5).
-    //   Dark : var(--color-neutral) — semi-transparent white wash
-    //          (#FFFFFF1A, 10%). Matches the same treatment the gray
-    //          badge uses; clearly distinct from the body T10 #1b1b1b
-    //          while staying chroma-0 neutral. Solid T15 #1c1c1c was
-    //          indistinguishable from --color-background-muted.
-    '--color-background-gray': ['#e5e5e5', 'var(--color-neutral)'],
+    // Gray uses the neutral categorical surface rather than a chromatic ramp.
+    '--color-background-gray': ['#e2e2e2', 'var(--color-neutral)'],
     '--color-border-gray': ['#d4d4d4', '#262626'],
-    '--color-icon-gray': ['#525252', '#a3a3a3'],
-    '--color-text-gray': ['#262626', '#e5e5e5'],
+    '--color-icon-gray': ['#525252', '#9e9e9e'],
+    '--color-text-gray': ['#262626', '#e7e7e7'],
 
     // =========================================================================
     // Radius — slightly larger than default (kept as-is)
@@ -395,11 +246,11 @@ export const neutralTheme = defineTheme({
       '0 4px 6px light-dark(oklch(0 0 0 / 10%), oklch(0 0 0 / 50%)), ' +
       '0 12px 24px light-dark(oklch(0 0 0 / 15%), oklch(0 0 0 / 70%)), ' +
       'inset 0 0 0 1px light-dark(transparent, oklch(1 0 0 / 15%))',
-    '--shadow-inset-hover': 'inset 0px 0px 0px 2px #0074e24D',
-    '--shadow-inset-selected': 'inset 0px 0px 0px 2px #0074e280',
-    '--shadow-inset-success': 'inset 0px 0px 0px 2px #1981004D',
-    '--shadow-inset-warning': 'inset 0px 0px 0px 2px #ffce2f4D',
-    '--shadow-inset-error': 'inset 0px 0px 0px 2px #e33f4a4D',
+    '--shadow-inset-hover': `inset 0px 0px 0px 2px ${'#0068cc4D'}`,
+    '--shadow-inset-selected': `inset 0px 0px 0px 2px ${'#0068cc80'}`,
+    '--shadow-inset-success': `inset 0px 0px 0px 2px ${'#0081204D'}`,
+    '--shadow-inset-warning': `inset 0px 0px 0px 2px ${'#f9d05b4D'}`,
+    '--shadow-inset-error': `inset 0px 0px 0px 2px ${'#d628304D'}`,
   },
 
   components: {
