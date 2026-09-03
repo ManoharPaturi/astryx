@@ -1,0 +1,1161 @@
+{
+  "setup": {
+    "parentHead": "a9984e3676e193ee7b73bc689e5356f16c914a46",
+    "childHead": "6c001d33bf87bdf2b72aac91c4496ba0bbed528e",
+    "productionBundles": true,
+    "strictMode": false,
+    "browser": "149.0.7827.55",
+    "thresholds": {
+      "setBeforeMeasurement": true,
+      "pixelMountRenders": "exactly N for N=1,10,50; zero ResizeObserver activity",
+      "plainPercentageCounts": "child must exactly match parent render and observer counts",
+      "purePixelExpression": "zero ResizeObserver constructors, observes, and callbacks",
+      "nestedResizeCounts": "child nested expression must exactly match child plain percentage render and observer counts",
+      "browserMedianRatioMax": 1.2,
+      "atomicParserMedianRatioMax": 1.25,
+      "atomicParserAbsoluteDeltaNsFloor": 100,
+      "nestedParserMedianNsMax": 5000,
+      "timingRuns": 5,
+      "controlledResizesPerRun": 120,
+      "parserRuns": 11,
+      "parserWarmupIterations": 200000,
+      "parserMeasuredIterationsPerRun": 1000000
+    }
+  },
+  "pixelMounts": {
+    "parent": {
+      "1": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 54.59999990463257,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.5,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.30000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.59999990463257,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ],
+      "10": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.90000009536743,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ],
+      "50": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 65.2000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.90000009536743,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ]
+    },
+    "child": {
+      "1": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 63.5,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.59999990463257,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.80000019073486,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 1,
+          "renders": 1,
+          "durationMs": 64.69999980926514,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ],
+      "10": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 65,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 10,
+          "renders": 10,
+          "durationMs": 65,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ],
+      "50": [
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.7000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 65.2000002861023,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 65.09999990463257,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 65.09999990463257,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        },
+        {
+          "scenario": "pixel-mount",
+          "strictMode": false,
+          "count": 50,
+          "renders": 50,
+          "durationMs": 64.90000009536743,
+          "observer": {
+            "constructors": 0,
+            "observeCalls": 0,
+            "unobserveCalls": 0,
+            "disconnectCalls": 0,
+            "callbacks": 0,
+            "entries": 0
+          }
+        }
+      ]
+    }
+  },
+  "plainPercentage": {
+    "parent": [
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2050,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      }
+    ],
+    "child": [
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.800000190735,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2049.9000000953674,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      },
+      {
+        "scenario": "plain-percentage-resizes",
+        "strictMode": false,
+        "resizeCount": 120,
+        "rendersAfterMount": 3,
+        "rendersDuringResizes": 240,
+        "durationMs": 2050,
+        "finalBound": 220,
+        "finalSize": 180,
+        "observerAfterMount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 1,
+          "entries": 1
+        },
+        "observerDuringResizes": {
+          "callbacks": 120,
+          "entries": 120,
+          "observeCalls": 0,
+          "unobserveCalls": 0,
+          "constructors": 0,
+          "disconnectCalls": 0
+        },
+        "observerTotalBeforeUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 0,
+          "disconnectCalls": 0,
+          "callbacks": 121,
+          "entries": 121
+        },
+        "observerAfterUnmount": {
+          "constructors": 1,
+          "observeCalls": 1,
+          "unobserveCalls": 1,
+          "disconnectCalls": 1,
+          "callbacks": 121,
+          "entries": 121
+        }
+      }
+    ]
+  },
+  "nestedPercentage": [
+    {
+      "scenario": "nested-percentage-resizes",
+      "strictMode": false,
+      "resizeCount": 120,
+      "rendersAfterMount": 3,
+      "rendersDuringResizes": 240,
+      "durationMs": 2049.9000000953674,
+      "finalBound": 44,
+      "finalSize": 44,
+      "observerAfterMount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 1,
+        "entries": 1
+      },
+      "observerDuringResizes": {
+        "callbacks": 120,
+        "entries": 120,
+        "observeCalls": 0,
+        "unobserveCalls": 0,
+        "constructors": 0,
+        "disconnectCalls": 0
+      },
+      "observerTotalBeforeUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 121,
+        "entries": 121
+      },
+      "observerAfterUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 1,
+        "disconnectCalls": 1,
+        "callbacks": 121,
+        "entries": 121
+      }
+    },
+    {
+      "scenario": "nested-percentage-resizes",
+      "strictMode": false,
+      "resizeCount": 120,
+      "rendersAfterMount": 3,
+      "rendersDuringResizes": 240,
+      "durationMs": 2049.9000000953674,
+      "finalBound": 44,
+      "finalSize": 44,
+      "observerAfterMount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 1,
+        "entries": 1
+      },
+      "observerDuringResizes": {
+        "callbacks": 120,
+        "entries": 120,
+        "observeCalls": 0,
+        "unobserveCalls": 0,
+        "constructors": 0,
+        "disconnectCalls": 0
+      },
+      "observerTotalBeforeUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 121,
+        "entries": 121
+      },
+      "observerAfterUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 1,
+        "disconnectCalls": 1,
+        "callbacks": 121,
+        "entries": 121
+      }
+    },
+    {
+      "scenario": "nested-percentage-resizes",
+      "strictMode": false,
+      "resizeCount": 120,
+      "rendersAfterMount": 3,
+      "rendersDuringResizes": 240,
+      "durationMs": 2049.8999996185303,
+      "finalBound": 44,
+      "finalSize": 44,
+      "observerAfterMount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 1,
+        "entries": 1
+      },
+      "observerDuringResizes": {
+        "callbacks": 120,
+        "entries": 120,
+        "observeCalls": 0,
+        "unobserveCalls": 0,
+        "constructors": 0,
+        "disconnectCalls": 0
+      },
+      "observerTotalBeforeUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 121,
+        "entries": 121
+      },
+      "observerAfterUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 1,
+        "disconnectCalls": 1,
+        "callbacks": 121,
+        "entries": 121
+      }
+    },
+    {
+      "scenario": "nested-percentage-resizes",
+      "strictMode": false,
+      "resizeCount": 120,
+      "rendersAfterMount": 3,
+      "rendersDuringResizes": 240,
+      "durationMs": 2049.9000000953674,
+      "finalBound": 44,
+      "finalSize": 44,
+      "observerAfterMount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 1,
+        "entries": 1
+      },
+      "observerDuringResizes": {
+        "callbacks": 120,
+        "entries": 120,
+        "observeCalls": 0,
+        "unobserveCalls": 0,
+        "constructors": 0,
+        "disconnectCalls": 0
+      },
+      "observerTotalBeforeUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 121,
+        "entries": 121
+      },
+      "observerAfterUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 1,
+        "disconnectCalls": 1,
+        "callbacks": 121,
+        "entries": 121
+      }
+    },
+    {
+      "scenario": "nested-percentage-resizes",
+      "strictMode": false,
+      "resizeCount": 120,
+      "rendersAfterMount": 3,
+      "rendersDuringResizes": 240,
+      "durationMs": 2050,
+      "finalBound": 44,
+      "finalSize": 44,
+      "observerAfterMount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 1,
+        "entries": 1
+      },
+      "observerDuringResizes": {
+        "callbacks": 120,
+        "entries": 120,
+        "observeCalls": 0,
+        "unobserveCalls": 0,
+        "constructors": 0,
+        "disconnectCalls": 0
+      },
+      "observerTotalBeforeUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 0,
+        "disconnectCalls": 0,
+        "callbacks": 121,
+        "entries": 121
+      },
+      "observerAfterUnmount": {
+        "constructors": 1,
+        "observeCalls": 1,
+        "unobserveCalls": 1,
+        "disconnectCalls": 1,
+        "callbacks": 121,
+        "entries": 121
+      }
+    }
+  ],
+  "purePixelExpression": {
+    "scenario": "pure-pixel-expression",
+    "strictMode": false,
+    "renders": 2,
+    "observer": {
+      "constructors": 0,
+      "observeCalls": 0,
+      "unobserveCalls": 0,
+      "disconnectCalls": 0,
+      "callbacks": 0,
+      "entries": 0
+    },
+    "observerAfterUnmount": {
+      "constructors": 0,
+      "observeCalls": 0,
+      "unobserveCalls": 0,
+      "disconnectCalls": 0,
+      "callbacks": 0,
+      "entries": 0
+    }
+  },
+  "timing": {
+    "parentPlainMedianMs": 2049.9000000953674,
+    "childPlainMedianMs": 2049.9000000953674,
+    "childNestedMedianMs": 2049.9000000953674,
+    "childPlainVsParentRatio": 1,
+    "childNestedVsChildPlainRatio": 1
+  },
+  "failures": [],
+  "passed": true
+}

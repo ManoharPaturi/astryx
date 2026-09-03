@@ -1,0 +1,181 @@
+{
+  "setup": {
+    "parentHead": "a9984e3676e193ee7b73bc689e5356f16c914a46",
+    "childHead": "6c001d33bf87bdf2b72aac91c4496ba0bbed528e",
+    "node": "v24.20.0",
+    "thresholds": {
+      "setBeforeMeasurement": true,
+      "pixelMountRenders": "exactly N for N=1,10,50; zero ResizeObserver activity",
+      "plainPercentageCounts": "child must exactly match parent render and observer counts",
+      "purePixelExpression": "zero ResizeObserver constructors, observes, and callbacks",
+      "nestedResizeCounts": "child nested expression must exactly match child plain percentage render and observer counts",
+      "browserMedianRatioMax": 1.2,
+      "atomicParserMedianRatioMax": 1.25,
+      "atomicParserAbsoluteDeltaNsFloor": 100,
+      "nestedParserMedianNsMax": 5000,
+      "timingRuns": 5,
+      "controlledResizesPerRun": 120,
+      "parserRuns": 11,
+      "parserWarmupIterations": 200000,
+      "parserMeasuredIterationsPerRun": 1000000
+    },
+    "workload": {
+      "atomic": "alternate parse+evaluate of exact '50%' (basis 998) and '333px'",
+      "nested": "parse+evaluate 'min(400px, max(5%, 10%))' with basis cycling 400..1199",
+      "warmupRuns": 3,
+      "measuredRuns": 11,
+      "warmupIterationsPerRun": 200000,
+      "measuredIterationsPerRun": 1000000,
+      "runOrder": "parent/child alternated each measured run"
+    }
+  },
+  "atomic": {
+    "parent": [
+      {
+        "nsPerIteration": 83.91134299999999,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 79.62831600000004,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 80.43109200000026,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 79.9970699999999,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 82.90275699999984,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 80.35888400000022,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 80.46198900000036,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 80.5136970000003,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 79.9864150000003,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 83.93736300000091,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 80.59472800000003,
+        "checksum": 416000000
+      }
+    ],
+    "child": [
+      {
+        "nsPerIteration": 105.44505000000005,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 87.82916300000011,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.53656600000022,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.71575400000029,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 90.12325999999939,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.83252100000027,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.68401699999959,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.69809799999985,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 87.72572600000058,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 89.65581799999927,
+        "checksum": 416000000
+      },
+      {
+        "nsPerIteration": 88.42534800000067,
+        "checksum": 416000000
+      }
+    ]
+  },
+  "nested": [
+    {
+      "nsPerIteration": 709.4712229999999,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 735.6743179999999,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 719.1613090000001,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 714.4853189999994,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 719.8959029999996,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 711.1962169999997,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 706.2690499999999,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 710.4962539999997,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 711.4742539999997,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 705.7314319999987,
+      "checksum": 80000000
+    },
+    {
+      "nsPerIteration": 686.8505640000003,
+      "checksum": 80000000
+    }
+  ],
+  "summary": {
+    "parentAtomicMedianNs": 80.46198900000036,
+    "childAtomicMedianNs": 88.69809799999985,
+    "atomicRatio": 1.1023602461529936,
+    "atomicDeltaNs": 8.236108999999487,
+    "childNestedMedianNs": 711.1962169999997
+  },
+  "failures": [],
+  "passed": true
+}

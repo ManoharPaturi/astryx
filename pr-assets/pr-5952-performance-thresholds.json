@@ -1,0 +1,16 @@
+{
+  "setBeforeMeasurement": true,
+  "pixelMountRenders": "exactly N for N=1,10,50; zero ResizeObserver activity",
+  "plainPercentageCounts": "child must exactly match parent render and observer counts",
+  "purePixelExpression": "zero ResizeObserver constructors, observes, and callbacks",
+  "nestedResizeCounts": "child nested expression must exactly match child plain percentage render and observer counts",
+  "browserMedianRatioMax": 1.2,
+  "atomicParserMedianRatioMax": 1.25,
+  "atomicParserAbsoluteDeltaNsFloor": 100,
+  "nestedParserMedianNsMax": 5000,
+  "timingRuns": 5,
+  "controlledResizesPerRun": 120,
+  "parserRuns": 11,
+  "parserWarmupIterations": 200000,
+  "parserMeasuredIterationsPerRun": 1000000
+}

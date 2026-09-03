@@ -1,27 +1,23 @@
 {
   "pr": 5952,
-  "head": "82c4467db231cafaf5d6c6d0cf7bb2b398391930",
+  "head": "6c001d33bf87bdf2b72aac91c4496ba0bbed528e",
   "story": {
     "id": "core-hooks-useresizable--css-math-constraints",
     "title": "Core/Hooks/useResizable",
-    "name": "Css Math Constraints",
-    "url": "http://127.0.0.1:6011/iframe.html?id=core-hooks-useresizable--css-math-constraints&viewMode=story"
+    "name": "Css Math Constraints"
   },
   "negativeControl": true,
   "tolerancePx": 0.51,
   "expected": {
-    "tolerancePx": 0.51,
     "wide": {
-      "requestedOuterWidth": 1000,
-      "outerWidth": 1000,
-      "contentBasis": 998,
+      "outer": 1000,
+      "basis": 998,
       "minimum": 400,
       "maximum": 100
     },
     "narrow": {
-      "requestedOuterWidth": 500,
-      "outerWidth": 500,
-      "contentBasis": 498,
+      "outer": 500,
+      "basis": 498,
       "minimum": 333,
       "maximum": 50
     }
@@ -84,10 +80,10 @@
   "pageErrors": [],
   "failures": [
     "wide minimum bound 399 != 400",
-    "wide minimum selected 399 != 400",
+    "wide minimum size 399 != 400",
     "wide minimum panel 399 != 400",
-    "wide aria-valuemin 399 != 400",
-    "wide minimum aria-valuenow 399 != 400"
+    "wide minimum aria-now 399 != 400",
+    "wide minimum aria-bound mismatch"
   ],
   "passed": false
 }
