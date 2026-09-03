@@ -165,6 +165,61 @@ describe('component detail preview state', () => {
     expect(getMissingRequiredProps(knobs, state)).toEqual([]);
   });
 
+  it('seeds Grid children from playground defaults so the preview is not empty (#5892)', () => {
+    const knobs = pickPrimaryProps('Grid', [
+      prop({name: 'columns', type: 'number | {minWidth: number}'}),
+      prop({name: 'gap', type: '0 | 0.5 | 1 | 1.5 | 2'}),
+      prop({name: 'children', type: 'ReactNode'}),
+    ]);
+
+    const state = buildInitialState(knobs, {
+      defaults: {
+        columns: 3,
+        gap: 2,
+        children: [
+          {__element: 'Card', props: {padding: 4}, children: 'Item 1'},
+          {__element: 'Card', props: {padding: 4}, children: 'Item 2'},
+          {__element: 'Card', props: {padding: 4}, children: 'Item 3'},
+        ],
+      },
+    });
+
+    expect(state.columns).toBe(3);
+    expect(Array.isArray(state.children)).toBe(true);
+    expect((state.children as unknown[]).length).toBe(3);
+    expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+  });
+
+  it.each([
+    ['Stack', {direction: 'horizontal'}],
+    ['HStack', {}],
+    ['VStack', {}],
+  ])(
+    'seeds %s children from playground defaults so the preview is not empty (#5894, #5898, #5900)',
+    (name, extraDefaults) => {
+      const knobs = pickPrimaryProps(name, [
+        prop({name: 'gap', type: '0 | 0.5 | 1 | 1.5 | 2'}),
+        prop({name: 'children', type: 'ReactNode'}),
+      ]);
+
+      const state = buildInitialState(knobs, {
+        defaults: {
+          gap: 2,
+          ...extraDefaults,
+          children: [
+            {__element: 'Card', props: {padding: 3}, children: 'Item 1'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 2'},
+            {__element: 'Card', props: {padding: 3}, children: 'Item 3'},
+          ],
+        },
+      });
+
+      expect(Array.isArray(state.children)).toBe(true);
+      expect((state.children as unknown[]).length).toBe(3);
+      expect(getMissingRequiredProps(knobs, state)).toEqual([]);
+    },
+  );
+
   it("satisfies Icon's required, non-generatable icon prop via playground defaults", () => {
     const knobs = pickPrimaryProps('Icon', [
       prop({
