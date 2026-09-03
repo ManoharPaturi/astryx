@@ -79,10 +79,11 @@ outside Core theme normalization and runtime behavior.
   describe the complete family set; normalized seeds; versioned intensity and
   neutral profiles; exact, bounded, and preferred anchors; an explicit stop
   layout; light and dark strategy; target gamut and encoding; and every other
-  output-affecting parameter. Astryx tooling SHOULD default to the 21-stop
-  `0, 5, …, 100` layout, while accepting any non-empty author-defined numeric
-  stop list. Eleven-stop and specialized layouts are valid author choices, not
-  exceptions.
+  output-affecting parameter. Astryx tooling SHOULD default family ramps to the
+  19-stop `5, 10, …, 95` layout, while accepting any non-empty author-defined
+  numeric stop list. Compact and specialized layouts are valid author choices,
+  not exceptions. Exact black and white are ordinary theme values, not repeated
+  default outputs of every generated color family.
 - **FR2a — Custom stop syntax is exact.** Every stop MUST be a finite JSON number
   from 0 through 100 inclusive. Stops MUST be unique and strictly increasing.
   Integer and decimal stops are valid; equivalent numeric spellings such as `5`
@@ -203,8 +204,10 @@ The first production recipe is defined here rather than by mutable Sandbox code:
   at 65%. Neutral profiles are `neutral-v1` (hue 0, chroma 0), `warm-v1`
   (hue 75, chroma 0.018), `cool-v1` (hue 250, chroma 0.018), and `custom`
   (the normalized neutral seed).
-- Dark ramps multiply chroma by 0.85 and lift tone by 5 through tone 80. The
-  lift tapers linearly to zero at tone 95 and is zero above it.
+- Stop numbers retain the same literal tone meaning in both modes. Dark ramps
+  multiply chroma by 0.85 without silently shifting the requested tone. A custom
+  stop 0 therefore resolves to exact black in either mode, and a custom stop 100
+  resolves to exact white. The default family layout emits neither endpoint.
 - Out-of-gamut OKLCH candidates preserve lightness and hue while chroma is found
   by 20 iterations of binary search over `[0, 0.4]`.
 - Exact anchors replace their stop. Bounded anchors move toward the requested
@@ -221,9 +224,9 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 
 | Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
-| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3527 | `27e7ebffd5dcea11985e4a814329bc6069ed6cbb1665da09f28a6f4607af17a5` |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 19 default stops |            3227 | `72f2fca4236dfc76e3fc60444fd6268583f05a840b5e8aa7631b8da126d0cc78` |
 | `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
-| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `2bd7880a2154978c44b351e05d15ebd5094feb37ee30449a1a39c60da1513dfa` |
+| `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b` |
 
 Exact fixture equality is the release gate for recipe compatibility. Monotonicity,
 adjacent-stop distance, hue drift, family distinction, gamut events, and CVD
@@ -285,12 +288,13 @@ Both use the same `astryx-oklch-v1` engine. Neither enters Core or `defineTheme(
 
 **Decider:** `rubyycheung`, `2026-09-03`
 
-The first production generator defaults to 21 stops for finer authoring choices
-and accepts any explicit non-empty numeric stop list. The generated candidate
-becomes author-owned after review and acceptance. Generator defaults therefore
-do not become palette-validity rules.
+The first production generator defaults each family to 19 meaningful chromatic
+or neutral stops from 5 through 95 and accepts any explicit non-empty numeric
+stop list. It does not repeat exact black and white in every family. The
+generated candidate becomes author-owned after review and acceptance. Generator
+defaults therefore do not become palette-validity rules.
 
-Rejected: requiring every accepted palette to use the generator's 21-stop
+Rejected: requiring every accepted palette to use the generator's 19-stop
 default. Themes may need compact or specialized palettes for iconography,
 illustration, visualization, or brand expression.
 
