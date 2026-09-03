@@ -213,6 +213,10 @@ their selected explicit values so palette changes cannot silently recolor the
 theme. This approval does not claim that every component context already passes
 its applicable contrast requirement.
 
+Neutral is the repository reference implementation for palette-aware theme
+templates. Templates may reuse its ownership, review, and alignment workflow;
+they do not inherit Neutral's values, mappings, or stop layout as requirements.
+
 Rejected: treating the palette as a live source that automatically rewrites theme
 mappings, or requiring complete component-level contrast conformance before the
 palette can serve as the baseline for measuring and improving those mappings.
