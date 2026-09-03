@@ -1,9 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-/**
- * Production implementation of the Astryx OKLCH palette recipe. It creates
- * candidates only: it does not modify theme tokens or claim accessibility.
- */
-
 import {
   hexToOklch,
   luminance,
@@ -92,6 +87,15 @@ function hueBalanceFactor(hue) {
   return 1;
 }
 
+function highToneChromaFactor(hue, tone) {
+  if (tone <= 60) return 1;
+  const taper = smoothstep((tone - 60) / 35);
+  const normalized = normalizeHue(hue);
+  if (normalized >= 115 && normalized < 175) return 1 - 0.28 * taper;
+  if (normalized >= 175 && normalized < 200) return 1 - 0.4 * taper;
+  return 1;
+}
+
 function toneAdjustedHue(hue, tone) {
   const normalized = normalizeHue(hue);
   if (normalized < 40 || normalized >= 70 || tone >= 50) return normalized;
@@ -160,8 +164,6 @@ function generateCandidate(
   vibrancy,
   coordinateWithOtherFamilies,
 ) {
-  // Stop labels are literal tones in both modes. Dark-mode character comes
-  // from its chroma treatment, not from silently shifting the requested tone.
   const adjustedTone = tone;
   const adjustedHue = toneAdjustedHue(source.hue, adjustedTone);
   const baseChroma = coordinateWithOtherFamilies
@@ -171,6 +173,7 @@ function generateCandidate(
     baseChroma *
     vibrancyMultiplier(vibrancy) *
     hueBalanceFactor(adjustedHue) *
+    highToneChromaFactor(adjustedHue, adjustedTone) *
     toneChromaEnvelope(adjustedTone) *
     (mode === 'dark' ? DARK_CHROMA_FACTOR : 1);
   const lightness = toneToOklabLightness(adjustedTone);

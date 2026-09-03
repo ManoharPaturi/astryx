@@ -93,6 +93,16 @@ describe('astryx-oklch-v1 palette generator', () => {
         families: [{id: 'red', name: 'Red', seed: '#d62830'}],
       }),
     ).toBe('d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b');
+    expect(
+      candidateDigest({
+        stops: [60, 80, 95],
+        families: [
+          {id: 'green', name: 'Green', seed: '#358a3a'},
+          {id: 'teal', name: 'Teal', seed: '#0c7365'},
+          {id: 'cyan', name: 'Cyan', seed: '#0c6f82'},
+        ],
+      }),
+    ).toBe('991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d');
   });
 
   it('defaults to 19 family-specific stops without requiring that layout', () => {

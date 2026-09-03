@@ -1,8 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-// @ts-nocheck -- parity-locked numerical recipe; public types live at the API boundary.
-
-/** Browser-safe color math pinned for the astryx-oklch-v1 recipe. */
-
 function srgbToLinear(channel) {
   const value = channel / 255;
   return value <= 0.04045

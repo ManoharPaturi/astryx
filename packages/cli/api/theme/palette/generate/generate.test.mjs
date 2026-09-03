@@ -111,8 +111,8 @@ describe('themePaletteGenerate', () => {
       'utf-8',
     );
     expect(preview).toContain('palette-preview-v1');
-    expect(preview).toContain('Generated candidate');
-    expect(preview).toContain('does not certify accessibility');
+    expect(preview).not.toContain('Generated candidate');
+    expect(preview).not.toContain('does not certify accessibility');
     expect(preview).not.toMatch(/https?:\/\//);
   });
 

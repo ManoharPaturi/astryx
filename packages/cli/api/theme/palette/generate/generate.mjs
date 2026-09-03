@@ -1,6 +1,4 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
-// @ts-nocheck -- public request and response types are declared on themePaletteGenerate.
-
 import {createHash} from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -117,7 +115,7 @@ function writeFilesAtomically(files) {
         if (file.existed) fs.writeFileSync(file.path, file.contents);
         else if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       } catch {
-        // Preserve the original error; recovery is best effort.
+        // Recovery is best effort; preserve the original write error.
       }
     }
     throw error;
@@ -181,7 +179,6 @@ export function themePaletteGenerate(
   let candidateText = `${JSON.stringify(candidate, null, 2)}\n`;
   const previewText = options.preview ? renderPalettePreview(candidate) : null;
   let receipt = receiptFor(result, candidateText, previewText);
-  let receiptText = serializeGenerationResult(receipt);
   let output = null;
   let receiptOutput = null;
   let previewOutput = null;
@@ -195,7 +192,7 @@ export function themePaletteGenerate(
     const resolvedReceipt = receiptPathFor(resolvedOutput);
     candidateText = serializeCandidate(candidate, resolvedOutput);
     receipt = receiptFor(result, candidateText, previewText);
-    receiptText = serializeGenerationResult(receipt);
+    const receiptText = serializeGenerationResult(receipt);
     if (
       resolvedOutput === resolvedConfig ||
       resolvedReceipt === resolvedConfig

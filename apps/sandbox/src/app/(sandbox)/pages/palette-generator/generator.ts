@@ -213,6 +213,21 @@ function hueBalanceFactor(hue: number): number {
   return 1;
 }
 
+function highToneChromaFactor(hue: number, tone: number): number {
+  if (tone <= 60) {
+    return 1;
+  }
+  const taper = smoothstep((tone - 60) / 35);
+  const normalized = normalizeHue(hue);
+  if (normalized >= 115 && normalized < 175) {
+    return 1 - 0.28 * taper;
+  }
+  if (normalized >= 175 && normalized < 200) {
+    return 1 - 0.4 * taper;
+  }
+  return 1;
+}
+
 /**
  * Constant-hue orange becomes brown quickly in the lower sRGB gamut. A gentle
  * redward rotation below tone 50 preserves orange identity and unlocks more
@@ -356,6 +371,7 @@ function generateCandidate(
     baseChroma *
     vibrancyMultiplier(vibrancy) *
     hueBalanceFactor(adjustedHue) *
+    highToneChromaFactor(adjustedHue, adjustedTone) *
     toneChromaEnvelope(adjustedTone) *
     modeChroma;
 
