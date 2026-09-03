@@ -24,7 +24,6 @@ import {docTopics} from '../generated/docsRegistry';
 import {packages} from '../generated/packageRegistry';
 import {templates} from '../generated/templateRegistry';
 import {blogPosts} from '../generated/blogRegistry';
-import {CURRENT_TARGET} from '../lib/docsVersions';
 
 export type SitemapPage = MetadataRoute.Sitemap[number] & {title: string};
 
@@ -102,15 +101,6 @@ export async function getSitemapPages(): Promise<SitemapPage[]> {
       priority: 0.5,
     },
   ];
-
-  if (CURRENT_TARGET === 'canary') {
-    staticEntries.push({
-      url: url('/registry'),
-      title: 'Astryx Registry',
-      changeFrequency: 'weekly',
-      priority: 0.7,
-    });
-  }
 
   const componentEntries: SitemapPage[] = flattenComponentSidebarEntries().map(
     component => ({

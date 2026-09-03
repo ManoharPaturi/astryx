@@ -199,7 +199,6 @@ function componentItem(packageName, component, packageDependencies) {
     astryx: {
       kind: isHook ? 'hook' : 'component',
       packageName,
-      componentName: component.name,
       importPath: component.importPath,
       hidden: component.hidden === true,
     },
@@ -283,7 +282,6 @@ function pageItem(template, packageDependencies, cliRoot) {
     ],
     astryx: {
       kind: 'page',
-      slug: template.slug,
       category: template.category,
       isReady: template.isReady,
       isHiddenFromOverview: template.isHiddenFromOverview,
@@ -435,29 +433,8 @@ export function generateShadcnRegistry({
   for (const item of result.items) {
     writeJson(path.join(outDir, `${item.name}.json`), item);
   }
-  const entries = result.items.map(item => {
-    const kind = item.astryx.kind;
-    const href =
-      kind === 'component' || kind === 'hook'
-        ? `/components/${item.astryx.componentName}`
-        : kind === 'page'
-          ? `/templates?preview=${item.astryx.slug}`
-          : item.astryx.exampleFor
-            ? `/components/${item.astryx.exampleFor}`
-            : '/registry';
-    return {
-      name: item.name,
-      type: item.type,
-      kind,
-      title: item.title,
-      description: item.description ?? '',
-      href,
-      hidden: item.astryx.hidden === true,
-    };
-  });
   return {
     ...result.counts,
     itemNames: new Set(result.items.map(item => item.name)),
-    entries,
   };
 }

@@ -116,50 +116,6 @@ function OverviewContent({
         </ComponentPreviewTheme>
       )}
 
-      {CURRENT_TARGET === 'canary' && pkg && pkgVersion && (
-        <VStack gap={2}>
-          <Heading level={2} type="display-3">
-            Install with shadcn
-          </Heading>
-          <MarkdownText type="body">
-            Experimental compatibility. This installs the real Astryx package
-            and creates a local public re-export; it does not copy component
-            implementation source. [How compatibility
-            works](/docs/shadcn-compatibility).
-          </MarkdownText>
-          {shadcnRegistryIsPreview && (
-            <Text type="supporting" color="secondary">
-              This install URL expires with the draft preview.
-            </Text>
-          )}
-          <CodeExampleBlock
-            code={shadcnInstallCommand(
-              shadcnComponentItemName(pkg, comp.name),
-              shadcnRegistryOrigin,
-            )}
-            language="bash"
-            width="100%"
-            hasCopyButton
-          />
-          {showcaseRegistryItemNames[comp.name] && (
-            <>
-              <Text type="supporting" color="secondary">
-                Install the editable showcase composition
-              </Text>
-              <CodeExampleBlock
-                code={shadcnInstallCommand(
-                  showcaseRegistryItemNames[comp.name],
-                  shadcnRegistryOrigin,
-                )}
-                language="bash"
-                width="100%"
-                hasCopyButton
-              />
-            </>
-          )}
-        </VStack>
-      )}
-
       {comp.usage && (
         <VStack gap={4}>
           <Heading level={2} type="display-3">
@@ -214,6 +170,53 @@ function OverviewContent({
             {(exampleRegistry[comp.name] || []).map((entry, i) => (
               <ExampleBlock key={i} entry={entry} componentName={comp.name} />
             ))}
+          </VStack>
+        </>
+      )}
+
+      {CURRENT_TARGET === 'canary' && pkg && pkgVersion && (
+        <>
+          <Divider />
+          <VStack gap={2}>
+            <Heading level={2} type="display-3">
+              Use with shadcn
+            </Heading>
+            <MarkdownText type="body">
+              Already using the shadcn registry workflow? Install the real
+              Astryx package and a local public re-export. Component
+              implementation source stays in Astryx. [How compatibility
+              works](/docs/shadcn-compatibility).
+            </MarkdownText>
+            {shadcnRegistryIsPreview && (
+              <Text type="supporting" color="secondary">
+                This install URL expires with the draft preview.
+              </Text>
+            )}
+            <CodeExampleBlock
+              code={shadcnInstallCommand(
+                shadcnComponentItemName(pkg, comp.name),
+                shadcnRegistryOrigin,
+              )}
+              language="bash"
+              width="100%"
+              hasCopyButton
+            />
+            {showcaseRegistryItemNames[comp.name] && (
+              <>
+                <Text type="supporting" color="secondary">
+                  Install the editable showcase composition
+                </Text>
+                <CodeExampleBlock
+                  code={shadcnInstallCommand(
+                    showcaseRegistryItemNames[comp.name],
+                    shadcnRegistryOrigin,
+                  )}
+                  language="bash"
+                  width="100%"
+                  hasCopyButton
+                />
+              </>
+            )}
           </VStack>
         </>
       )}
