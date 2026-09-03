@@ -1754,26 +1754,7 @@ describe('bounds changing under the held size', () => {
     expect(result.current.size).toBe(250);
   });
 
-  it('reports the involuntary clamp through onSizeChange', () => {
-    const onSizeChange = vi.fn();
-    const {rerender} = renderHook(
-      ({max}) =>
-        useResizable({
-          defaultSize: 300,
-          minSizePx: 100,
-          maxSizePx: max,
-          onSizeChange,
-        }),
-      {initialProps: {max: 400}},
-    );
-
-    rerender({max: 200});
-
-    expect(onSizeChange).toHaveBeenCalledTimes(1);
-    expect(onSizeChange).toHaveBeenCalledWith(200);
-  });
-
-  it('does not re-snap a legal held size when the band widens', () => {
+  it('does not re-snap or report a legal held size when the band widens', () => {
     const onSizeChange = vi.fn();
     const snaps = [100, 300, 500];
     const {result, rerender} = renderHook(
@@ -1793,7 +1774,7 @@ describe('bounds changing under the held size', () => {
 
     rerender({max: 600});
     expect(result.current.size).toBe(250);
-    expect(onSizeChange).toHaveBeenCalledExactlyOnceWith(250);
+    expect(onSizeChange).not.toHaveBeenCalled();
   });
 
   it('does not re-snap a legal held size after collapse and expand', () => {
@@ -1816,6 +1797,54 @@ describe('bounds changing under the held size', () => {
     act(() => result.current.expand());
 
     expect(result.current.size).toBe(250);
+  });
+
+  it('preserves the hidden expanded choice when bounds narrow and widen while collapsed', () => {
+    const {result, rerender} = renderHook(
+      ({max}) =>
+        useResizable({
+          defaultSize: 300,
+          minSizePx: 100,
+          maxSizePx: max,
+          collapsible: true,
+          autoSaveId: 'collapsed-bounds',
+        }),
+      {initialProps: {max: 400}},
+    );
+
+    act(() => result.current.collapse());
+    rerender({max: 200});
+    expect(result.current.size).toBe(0);
+    expect(localStorage.getItem('astryx-resizable:collapsed-bounds')).toBe(
+      JSON.stringify({size: 300, isCollapsed: true}),
+    );
+
+    rerender({max: 400});
+    act(() => result.current.expand());
+
+    expect(result.current.size).toBe(300);
+  });
+
+  it('re-snaps when the snap list itself changes', () => {
+    const {result, rerender} = renderHook(
+      ({snaps}) =>
+        useResizable({
+          defaultSize: 250,
+          minSizePx: 100,
+          maxSizePx: 600,
+          snaps,
+          collapsible: true,
+        }),
+      {initialProps: {snaps: [] as number[]}},
+    );
+
+    expect(result.current.size).toBe(250);
+    act(() => result.current.collapse());
+    rerender({snaps: [100, 300, 500]});
+    expect(result.current.size).toBe(0);
+    act(() => result.current.expand());
+
+    expect(result.current.size).toBe(300);
   });
 
   it('restores a persisted legal off-snap size without moving it', () => {

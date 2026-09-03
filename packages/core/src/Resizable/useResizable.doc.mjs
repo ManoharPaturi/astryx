@@ -27,14 +27,14 @@ export const docs = {
       name: 'minSize',
       type: 'ResizableSize',
       description:
-        'Minimum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage minimums re-resolve when their basis changes and clamp the current pixel selection.',
+        'Minimum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage minimums re-resolve when their basis changes and clamp the current pixel selection only when it becomes illegal; legal choices, including off-snap sizes, stay where the person left them.',
       default: '50',
     },
     {
       name: 'maxSize',
       type: 'ResizableSize',
       description:
-        'Maximum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage maximums re-resolve when their basis changes and clamp the current pixel selection.',
+        'Maximum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage maximums re-resolve when their basis changes and clamp the current pixel selection only when it becomes illegal; widening the band never restores or re-snaps a legal choice.',
       default: 'Infinity',
     },
     {
@@ -183,9 +183,9 @@ export const docsDense = {
     defaultSize:
       'initial pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); resolves once.',
     minSize:
-      'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).',
+      'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); clamps only an illegal choice',
     maxSize:
-      'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}).',
+      'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); widening preserves legal and off-snap choices',
     containerRef: 'the element a percentage is a share of.',
     direction: 'which axis to resize along.',
     collapsible:

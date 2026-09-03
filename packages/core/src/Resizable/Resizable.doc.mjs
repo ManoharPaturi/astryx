@@ -137,14 +137,14 @@ const region = useResizable({
           name: 'minSize',
           type: 'ResizableSize',
           description:
-            'Live minimum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one.',
+            'Live minimum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. A moving minimum clamps only an illegal selection; legal choices stay exact.',
           default: '50',
         },
         {
           name: 'maxSize',
           type: 'ResizableSize',
           description:
-            'Live maximum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one.',
+            'Live maximum. Numbers, exact Npx, and pixel(value) remain pixels; exact N% has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. A moving maximum clamps only an illegal selection; widening never restores or re-snaps a legal choice.',
           default: 'Infinity',
         },
         {
@@ -305,9 +305,9 @@ export const docsDense = {
         defaultSize:
           'initial pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); resolves once',
         minSize:
-          'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)})',
+          'live minimum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); clamps only an illegal choice',
         maxSize:
-          'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)})',
+          'live maximum: pixels, exact N%, or percent(value, {min: pixel(value)}) / percent(value, {max: pixel(value)}); widening preserves legal and off-snap choices',
         collapsible: 'region can collapse to size 0?',
         collapsedSize: 'px threshold triggering collapse during drag',
         snaps: 'px values to snap to during resize',

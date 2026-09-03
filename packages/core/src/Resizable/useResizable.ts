@@ -240,6 +240,15 @@ function clampSize(
   return clamped;
 }
 
+function clampSizeIfOutsideBand(
+  size: number,
+  min: number,
+  max: number,
+  snaps: number[],
+): number {
+  return size < min || size > max ? clampSize(size, min, max, snaps) : size;
+}
+
 interface PersistedResizableState {
   /** Expanded size in px, or null when the entry carries no usable size. */
   size: number | null;
@@ -836,12 +845,27 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   // adjustment below then had to run on the first render to fill the value in.
   const [chosenSize, setChosenSize] = useState<number | null>(() => {
     if (persisted?.size != null) {
-      return persisted.size;
+      return isBasisMeasured
+        ? clampSizeIfOutsideBand(
+            persisted.size,
+            resolvedMin,
+            resolvedMax,
+            snaps,
+          )
+        : persisted.size;
     }
     return isBasisMeasured
       ? clampSize(initialDefaultPx, resolvedMin, resolvedMax, snaps)
       : null;
   });
+  const [uncontrolledIsCollapsed, setUncontrolledIsCollapsed] = useState(
+    () => persisted?.isCollapsed ?? defaultIsCollapsed ?? false,
+  );
+
+  const isControlled = controlledIsCollapsed !== undefined;
+  const isCollapsed =
+    collapsible &&
+    (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
 
   if (
     hasContainer &&
@@ -866,51 +890,63 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
   }
 
   // A re-resolved bound clamps the SELECTION, not just the paint. Deriving
-  // alone was not enough: the stored choice survived, so a container that
-  // shrank and grew again revived the pre-clamp size — measured 320px
-  // reviving to 560px. The clamp has to be committed to be permanent.
+  // alone is not enough: an illegal stored choice would revive when the band
+  // widened again. A legal choice, including one left off-snap by an earlier
+  // hard bound, stays exactly where the person left it.
   //
   // Adjusting state during render (React's documented shape for "a prop
   // changed, so state must follow") rather than in an effect: React re-runs
   // this render before painting, so nothing shows at the stale size, and no
   // interaction callback fires for what is only a layout correction (FR10).
   //
+  // A collapsed region keeps its hidden expanded choice. Bounds are remembered
+  // while it is collapsed, then the transition back to expanded corrects that
+  // choice only if the current band makes it illegal.
+  //
   // Held until the basis is final. Before a supplied container is measured the
   // bounds come from the temporary 1200px stand-in, and committing against
   // that would move a persisted size to fit a basis that was never real.
-  const [committedBounds, setCommittedBounds] = useState({
+  const snapsKey = JSON.stringify(snaps);
+  const [committedConstraints, setCommittedConstraints] = useState({
     min: resolvedMin,
     max: resolvedMax,
+    isCollapsed,
+    snapsKey,
   });
   if (
     isBasisMeasured &&
     gestureBasisRef.current == null &&
-    (committedBounds.min !== resolvedMin || committedBounds.max !== resolvedMax)
+    (committedConstraints.min !== resolvedMin ||
+      committedConstraints.max !== resolvedMax ||
+      committedConstraints.isCollapsed !== isCollapsed ||
+      committedConstraints.snapsKey !== snapsKey)
   ) {
-    setCommittedBounds({min: resolvedMin, max: resolvedMax});
-    setChosenSize(current =>
-      current == null
-        ? null
-        : clampSize(current, resolvedMin, resolvedMax, snaps),
-    );
+    const snapsChanged = committedConstraints.snapsKey !== snapsKey;
+    setCommittedConstraints({
+      min: resolvedMin,
+      max: resolvedMax,
+      isCollapsed,
+      snapsKey,
+    });
+    if (snapsChanged || !isCollapsed) {
+      setChosenSize(current =>
+        current == null
+          ? null
+          : snapsChanged
+            ? clampSize(current, resolvedMin, resolvedMax, snaps)
+            : clampSizeIfOutsideBand(current, resolvedMin, resolvedMax, snaps),
+      );
+    }
   }
 
   // Derived for paint, so the clamp above and the rendered size agree on the
-  // very render that observes a new basis.
-  const size = clampSize(
+  // very render that observes a new basis without re-snapping a legal choice.
+  const size = clampSizeIfOutsideBand(
     chosenSize ?? initialDefaultPx,
     resolvedMin,
     resolvedMax,
     snaps,
   );
-  const [uncontrolledIsCollapsed, setUncontrolledIsCollapsed] = useState(
-    () => persisted?.isCollapsed ?? defaultIsCollapsed ?? false,
-  );
-
-  const isControlled = controlledIsCollapsed !== undefined;
-  const isCollapsed =
-    collapsible &&
-    (isControlled ? controlledIsCollapsed : uncontrolledIsCollapsed);
   const dragStartSizeRef = useRef(size);
 
   // Mirrors isCollapsed so the callbacks below read the live value instead of
@@ -971,9 +1007,19 @@ function useSingleResizable(config: UseResizableSingleConfig): ResizableRegion {
     // real saved size with a value derived from a basis that was never real
     // (AST-010 Platform support, FR9).
     if (autoSaveId && isBasisMeasured) {
-      persistState(autoSaveId, {size, isCollapsed});
+      const expandedSize = isCollapsed
+        ? (chosenSize ?? initialDefaultPx)
+        : size;
+      persistState(autoSaveId, {size: expandedSize, isCollapsed});
     }
-  }, [size, isCollapsed, autoSaveId, isBasisMeasured]);
+  }, [
+    size,
+    chosenSize,
+    initialDefaultPx,
+    isCollapsed,
+    autoSaveId,
+    isBasisMeasured,
+  ]);
 
   const collapse = useCallback(() => {
     // The already-collapsed guard keeps a repeated call from re-notifying a
