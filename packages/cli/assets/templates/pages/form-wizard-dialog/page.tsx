@@ -37,8 +37,10 @@
  * itself a Dialog, and Astryx forbids nesting dialogs.
  *
  * Everything else here is the composition you want. To make it a modal: drop
- * `isInline`, drive `isOpen` from state, hand `onOpenChange` the setter, point
- * the close control at it, and put the flow behind a trigger on the page it
+ * `isInline`, drive `isOpen` from state, and update `handleOpenChange` to set
+ * that state after it resets a closing draft. Keep that handler on both the
+ * Dialog and DialogHeader — replacing it with the raw setter would silently
+ * preserve an abandoned draft. Put the flow behind a trigger on the page it
  * belongs to — for this one, a "Schedule a report" button above the table of
  * reports it adds to. Never mount that page with the dialog already open; a
  * page that greets you with a modal you did not ask for is a page you have to
@@ -50,10 +52,11 @@
  * overlapping dismiss paths are not progressive disclosure. Detail that needs
  * more room goes in a Collapsible inside the step, or the flow becomes a page.
  *
- * **Reset state on close, deliberately.** Scheduling clears the draft, so the
- * next run starts clean rather than resuming a flow the user abandoned. If
- * resuming is what you want, say so with a "Continue where you left off"
- * affordance — silent resumption reads as a bug.
+ * **Reset state on close, deliberately.** A `false` open-change request resets
+ * the draft, and successful scheduling uses the same reset path, so the next
+ * run starts clean rather than resuming a flow the user abandoned or already
+ * finished. If resuming is what you want, say so with a "Continue where you
+ * left off" affordance — silent resumption reads as a bug.
  *
  * **Stepper stays non-interactive here.** `onStepClick` is deliberately absent:
  * in a space this tight the stepper is a position indicator, and the two footer
@@ -158,11 +161,6 @@ const WEEKDAYS = [
 
 // The footer summarises rather than quoting a field's message, so a blocked
 // step never shows the same sentence in two places.
-// Dismissal is the one thing the inline preview cannot honour: there is no
-// `<dialog>` to close and nothing behind it to return to. The close control
-// and `onOpenChange` still render so the anatomy is the modal's, and both land
-// here. In a real modal they point at the state that owns `isOpen`.
-const noop = () => {};
 
 const blockedMessage = (count: number) =>
   count === 1
@@ -192,13 +190,38 @@ export default function FormWizardDialogPage() {
     '08:00' as ISOTimeString,
   );
   const [timezone, setTimezone] = useState('pt');
-  const [startDate, setStartDate] = useState<ISODateString | undefined>(
-    '2026-09-07',
-  );
+  const [startDate, setStartDate] = useState<ISODateString | undefined>();
 
   const [recipients, setRecipients] = useState<string[]>(['exec']);
   const [format, setFormat] = useState('pdf');
   const [skipEmpty, setSkipEmpty] = useState(true);
+
+  const resetDraft = () => {
+    setStep(0);
+    setAttempted(new Set());
+    setName('');
+    setDataset('pipeline');
+    setSections(['summary', 'charts']);
+    setNote('');
+    setCadence('weekly');
+    setWeekday('mon');
+    setTime('08:00' as ISOTimeString);
+    setTimezone('pt');
+    setStartDate(undefined);
+    setRecipients(['exec']);
+    setFormat('pdf');
+    setSkipEmpty(true);
+  };
+
+  // The inline preview cannot actually disappear, but it still exercises the
+  // same close request a real modal receives from Escape or its close button.
+  // When promoted to a modal, update this handler to set the owning `isOpen`
+  // state after the reset rather than replacing it with the raw setter.
+  const handleOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      resetDraft();
+    }
+  };
 
   const errorsByStep: Array<Record<string, string>> = [
     {
@@ -247,20 +270,7 @@ export default function FormWizardDialogPage() {
       body: `${name.trim()} is scheduled · ${cadenceSummary}`,
       uniqueID: 'report-scheduled',
     });
-    setStep(0);
-    setAttempted(new Set());
-    setName('');
-    setDataset('pipeline');
-    setSections(['summary', 'charts']);
-    setNote('');
-    setCadence('weekly');
-    setWeekday('mon');
-    setTime('08:00' as ISOTimeString);
-    setTimezone('pt');
-    setStartDate('2026-09-07' as ISODateString);
-    setRecipients(['exec']);
-    setFormat('pdf');
-    setSkipEmpty(true);
+    resetDraft();
   };
 
   return (
@@ -273,7 +283,7 @@ export default function FormWizardDialogPage() {
         // a docs preview. Drop it, and drive isOpen from the trigger page, to
         // make this a modal.
         isInline
-        onOpenChange={noop}
+        onOpenChange={handleOpenChange}
         width={620}
         // form: a stray backdrop click cannot throw away a part-finished
         // flow. Escape and the close button still work.
@@ -300,7 +310,7 @@ export default function FormWizardDialogPage() {
             <>
               <DialogHeader
                 title="Schedule a report"
-                onOpenChange={noop}
+                onOpenChange={handleOpenChange}
                 hasDivider={false}
               />
               <LayoutHeader hasDivider={false}>
@@ -443,7 +453,6 @@ export default function FormWizardDialogPage() {
                       isRequired
                       value={startDate}
                       onChange={setStartDate}
-                      min="2026-08-27"
                       status={
                         currentErrors.startDate
                           ? {
