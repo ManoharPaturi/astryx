@@ -45,6 +45,12 @@ const styles = stylex.create({
     display: 'flex',
     flexDirection: 'column',
   },
+  // With no description there is no group to keep together. Flattening this
+  // wrapper leaves the public label element as its parent's flex/grid item, so
+  // existing className/style/xstyle layout overrides keep working.
+  labelGroupSingle: {
+    display: 'contents',
+  },
   // A hidden label group must not take a slot in the caller's layout, or an
   // empty box would draw the caller's gap around nothing. Dropping the
   // wrapper box leaves the sr-only children out of flow directly under the
@@ -295,6 +301,7 @@ export function FieldLabel({
     <div
       {...stylex.props(
         styles.labelGroup,
+        description == null && styles.labelGroupSingle,
         isLabelHidden && styles.labelGroupHidden,
       )}>
       <LabelElement

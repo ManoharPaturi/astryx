@@ -2,7 +2,8 @@
 '@astryxdesign/core': patch
 ---
 
-[fix] FieldLabel: a field's description now sits flush under its label, with no gap between the two. (#5673)
+[fix] FieldLabel: a field's description now sits flush under its label without breaking existing label layout overrides. (#5673)
+@ernestt
 
 A label and its description are one block of text, but nothing in `FieldLabel`
 said so. It returned a fragment, leaving the `<label>` and the description
@@ -14,10 +15,10 @@ picked its own value.
 
 Measured in Chromium as `description.top - label.bottom`:
 
-| | label → description | description → control |
-| --- | --- | --- |
-| `Field`, `TextInput` | 4px → **0px** | 4px → 4px |
-| `CheckboxInput`, `Switch` | 2px → **0px** | n/a — control sits beside the label |
+|                           | label → description | description → control               |
+| ------------------------- | ------------------- | ----------------------------------- |
+| `Field`, `TextInput`      | 4px → **0px**       | 4px → 4px                           |
+| `CheckboxInput`, `Switch` | 2px → **0px**       | n/a — control sits beside the label |
 
 The label and description now share a wrapper of their own, so the space
 between them is theirs to set rather than a side effect of the caller's
@@ -34,5 +35,3 @@ gap.
 
 This is one change in `FieldLabel` rather than a change across the ~20 input
 components, because every input reaches its label through `Field`.
-
-@ernestt
