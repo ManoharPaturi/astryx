@@ -21,7 +21,9 @@
  * context is reset around children so nested collapsibles stay chrome-free.
  *
  * Animation uses the same `grid-template-rows: 1fr → 0fr` technique as
- * SideNavItem — pure CSS, no JS timing, no hidden attributes, no rAF.
+ * SideNavItem — pure CSS, no JS timing, no hidden attributes, no rAF. The
+ * inner wrapper stays clipped through the opening transition, then releases
+ * the clip so focused descendants can paint their outlines outside it.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Collapsible/index.ts (exports)
@@ -50,6 +52,11 @@ import {mergeProps} from '../utils';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+
+const releaseContentClip = stylex.keyframes({
+  from: {overflow: 'hidden'},
+  to: {overflow: 'visible'},
+});
 
 const styles = stylex.create({
   root: {
@@ -124,11 +131,21 @@ const styles = stylex.create({
     },
     transitionTimingFunction: `var(--_collapsible-close-ease, ${easeVars['--ease-standard']})`,
   },
-  // Inner clip wrapper — overflow hidden + minHeight 0 lets the grid row
-  // shrink the content to nothing without layout overflow.
+  // Inner clip wrapper — minHeight 0 lets the grid row shrink the content to
+  // nothing. A step-end animation holds the clip through the opening motion,
+  // then releases it so open descendants can paint focus outlines outside it.
   contentInner: {
     overflow: 'hidden',
     minHeight: 0,
+  },
+  contentInnerOpen: {
+    overflow: 'visible',
+    animationName: releaseContentClip,
+    animationDuration: {
+      default: `var(--_collapsible-open-duration, ${durationVars['--duration-medium']})`,
+      '@media (prefers-reduced-motion: reduce)': '0s',
+    },
+    animationTimingFunction: 'step-end',
   },
   // Body typography anchor — keeps revealed text at the system body scale.
   // Padding lives here, inside the clip, so a collapsed panel shows no gap.
@@ -360,22 +377,26 @@ export function Collapsible({
         id={contentId}
         aria-hidden={!isOpen}
         inert={!isOpen ? true : undefined}
-        {...mergeProps(
-          themeProps('collapsible-content', {
-            density: density ?? undefined,
-          }),
-          stylex.props(
-            styles.contentTrack,
-            !isOpen && styles.contentTrackClosed,
-          ),
+        {...stylex.props(
+          styles.contentTrack,
+          !isOpen && styles.contentTrackClosed,
         )}>
-        <div {...stylex.props(styles.contentInner)}>
+        <div
+          {...stylex.props(
+            styles.contentInner,
+            isOpen && styles.contentInnerOpen,
+          )}>
           <div
-            {...stylex.props(
-              styles.content,
-              styles.contentFade,
-              !isOpen && styles.contentFadeClosed,
-              density != null && contentDensity[density],
+            {...mergeProps(
+              themeProps('collapsible-content', {
+                density: density ?? undefined,
+              }),
+              stylex.props(
+                styles.content,
+                styles.contentFade,
+                !isOpen && styles.contentFadeClosed,
+                density != null && contentDensity[density],
+              ),
             )}>
             {presentation != null ? (
               <CollapsibleGroupPresentationContext value={null}>

@@ -91,7 +91,7 @@ export const docs = {
     anatomy: [
       { name: 'Trigger', required: true, description: 'The always-visible button that toggles the content. Shows a label and a chevron indicator.' },
       { name: 'Chevron', required: false, description: 'Animated arrow that rotates to show open or closed state.' },
-      { name: 'Content', required: false, description: 'The area that hides or reveals when the trigger is clicked.' },
+      { name: 'Content', required: false, description: 'The inner padded area that hides or reveals with the panel. The collapsible-content theme target lives inside the animated clip, so themed padding closes with it.' },
     ],
   },
 };

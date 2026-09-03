@@ -3,7 +3,7 @@
 /**
  * @file Collapsible.test.tsx
  * @input Uses vitest, @testing-library/react, Collapsible + CollapsibleGroup
- * @output Characterization coverage for Collapsible behavior
+ * @output Characterization and regression coverage for Collapsible behavior
  * @position Testing; validates Collapsible.tsx (disclosure primitive)
  *
  * SYNC: When Collapsible.tsx changes, update tests to match new behavior
@@ -25,6 +25,15 @@ function contentFor(trigger: HTMLElement): HTMLElement {
   const el = document.getElementById(id as string);
   expect(el).not.toBeNull();
   return el as HTMLElement;
+}
+
+/** Resolves the padded element that owns the public content theme target. */
+function themedContentFor(trigger: HTMLElement): HTMLElement {
+  const content = contentFor(trigger).querySelector(
+    '.astryx-collapsible-content',
+  );
+  expect(content).toBeInstanceOf(HTMLElement);
+  return content as HTMLElement;
 }
 
 describe('Collapsible', () => {
@@ -78,10 +87,35 @@ describe('Collapsible', () => {
       );
     });
 
-    it('renders the stable astryx-collapsible-content class on the content area', () => {
+    it('renders the stable astryx-collapsible-content class on the padded content element', () => {
       render(<Collapsible trigger="T">c</Collapsible>);
-      const content = contentFor(screen.getByRole('button'));
-      expect(content).toHaveClass('astryx-collapsible-content');
+      const trigger = screen.getByRole('button');
+      const track = contentFor(trigger);
+      expect(track).not.toHaveClass('astryx-collapsible-content');
+      expect(themedContentFor(trigger)).toHaveClass(
+        'astryx-collapsible-content',
+      );
+    });
+
+    it('keeps themed padding inside the clipping wrapper while closed', () => {
+      render(
+        <>
+          <style>{`.astryx-collapsible-content { padding: 16px; }`}</style>
+          <Collapsible trigger="T" defaultIsOpen={false}>
+            Body
+          </Collapsible>
+        </>,
+      );
+      const trigger = screen.getByRole('button');
+      const track = contentFor(trigger);
+      const content = themedContentFor(trigger);
+      const clip = content.parentElement as HTMLElement;
+
+      expect(clip.parentElement).toBe(track);
+      expect(getComputedStyle(content).paddingTop).toBe('16px');
+      expect(getComputedStyle(track).paddingTop).not.toBe('16px');
+      expect(getComputedStyle(track).gridTemplateRows).toBe('0fr');
+      expect(getComputedStyle(clip).overflow).toBe('hidden');
     });
 
     it('renders a ReactNode trigger, not just a string', () => {
@@ -191,6 +225,34 @@ describe('Collapsible', () => {
 
       expect(content).not.toHaveAttribute('inert');
       expect(content).toHaveAttribute('aria-hidden', 'false');
+    });
+
+    it("releases the open clip for the final child's focus outline", async () => {
+      const user = userEvent.setup();
+      render(
+        <Collapsible trigger="T" defaultIsOpen={false}>
+          <span>First child</span>
+          <button type="button" style={{outline: '5px solid currentColor'}}>
+            Final action
+          </button>
+        </Collapsible>,
+      );
+      const trigger = screen.getByRole('button', {name: /T/});
+      const content = themedContentFor(trigger);
+      const clip = content.parentElement as HTMLElement;
+      const finalChild = screen.getByRole('button', {
+        name: 'Final action',
+        hidden: true,
+      });
+
+      expect(getComputedStyle(clip).overflow).toBe('hidden');
+      await user.click(trigger);
+      finalChild.focus();
+
+      expect(content.lastElementChild).toBe(finalChild);
+      expect(finalChild).toHaveFocus();
+      expect(finalChild.getAttribute('style')).toContain('outline: 5px');
+      expect(getComputedStyle(clip).overflow).toBe('visible');
     });
 
     it('floors the full-width trigger at the WCAG 2.5.8 target size', () => {
