@@ -276,9 +276,12 @@ function modeParents(modeIndex) {
 }
 
 function buttonVariants(modeIndex) {
+  const baseOverride = neutralTheme.components.button?.base ?? {};
   return BUTTON_VARIANTS.map(key => {
     const defaults = BUTTON_DEFAULTS[key];
-    const override = neutralTheme.components.button?.[`variant:${key}`] ?? {};
+    const variantOverride =
+      neutralTheme.components.button?.[`variant:${key}`] ?? {};
+    const override = {...baseOverride, ...variantOverride};
     return {
       key,
       name: displayName(key),
@@ -335,6 +338,7 @@ function buttonStateBackgrounds(variant, modeIndex, parents) {
             parentColor: parent.color,
             foreground,
             color: overlay == null ? base : compositeColor(overlay, base),
+            local,
           };
         }),
       ];
@@ -415,15 +419,29 @@ function readableBadgeContext(state, parent) {
 function badgeMeasurement(stateBackgrounds, modeIndex) {
   const badgeResults = BADGE_VARIANTS.map(badgeVariant => {
     const badge = neutralTheme.components.badge[`variant:${badgeVariant}`];
-    const foregroundValue = resolve(badge.color, modeIndex);
-    const backgroundValue = resolve(badge.backgroundColor, modeIndex);
     const combinations = Object.entries(stateBackgrounds).flatMap(
       ([state, backgrounds]) =>
         backgrounds.map(background => {
-          const renderedBackground = compositeColor(
-            backgroundValue,
-            background.color,
-          );
+          const local = localVariables(background.local, badge);
+          const foregroundValue = resolve(badge.color, modeIndex, local);
+          const badgeBase = renderBackground({
+            value: badge.backgroundColor,
+            parent: background.color,
+            modeIndex,
+            local,
+            resolve,
+          });
+          const badgeOverlay = resolveSolidOverlay({
+            backgroundImage: badge.backgroundImage,
+            fallback: null,
+            local,
+            modeIndex,
+            resolve,
+          });
+          const renderedBackground =
+            badgeOverlay == null
+              ? badgeBase
+              : compositeColor(badgeOverlay, badgeBase);
           const renderedForeground = compositeColor(
             foregroundValue,
             renderedBackground,

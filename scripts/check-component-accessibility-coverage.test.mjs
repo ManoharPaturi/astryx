@@ -113,10 +113,46 @@ describe('Pressable controls audit module', () => {
     expect(destructive.measurements).toContainEqual(
       expect.objectContaining({
         label: 'Pointer down',
-        value: '4.41:1',
-        status: 'Fail',
+        value: '4.78:1',
       }),
     );
+    const secondaryBadges = buttonLight.results
+      .find(result => result.name === 'Secondary')
+      .measurements.find(measurement => measurement.label === 'Badges');
+    expect(secondaryBadges.breakdown).toContainEqual(
+      expect.objectContaining({
+        label: 'Neutral',
+        value: '10.83:1',
+        colorPair: {foreground: '#262626', background: '#dadada'},
+      }),
+    );
+    const destructiveBadges = destructive.measurements.find(
+      measurement => measurement.label === 'Badges',
+    );
+    expect(destructiveBadges.breakdown).toContainEqual(
+      expect.objectContaining({
+        label: 'Red',
+        value: '6.58:1',
+        colorPair: {foreground: '#89001a', background: '#f6c4cc'},
+      }),
+    );
+    expect(destructiveBadges.breakdown).toContainEqual(
+      expect.objectContaining({
+        label: 'Orange',
+        value: '7.60:1',
+        colorPair: {foreground: '#6e3500', background: '#f8e1be'},
+      }),
+    );
+
+    const buttonDark = calculated.Button[0].tables[0].modes[1];
+    for (const result of buttonDark.results) {
+      expect(result.measurements).toContainEqual(
+        expect.objectContaining({
+          label: 'Badges',
+          value: '14 of 14 badge colors pass',
+        }),
+      );
+    }
 
     const segmentedDark = calculated.SegmentedControl[0].tables[0].modes[1];
     const unselected = segmentedDark.results.find(
@@ -271,10 +307,8 @@ describe('Pressable controls audit module', () => {
     expect(badgeBreakdowns).toContainEqual(
       expect.objectContaining({detail: 'Rest state · Page background'}),
     );
-    expect(badgeBreakdowns).toContainEqual(
-      expect.objectContaining({
-        detail: 'Pointer down state · Surface background',
-      }),
+    expect(badgeBreakdowns).not.toContainEqual(
+      expect.objectContaining({detail: expect.stringContaining('Surface')}),
     );
     expect(badgeBreakdowns).not.toContainEqual(
       expect.objectContaining({detail: expect.stringContaining('Body')}),
