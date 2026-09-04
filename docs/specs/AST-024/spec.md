@@ -42,7 +42,8 @@ contract.
 - Add arbitrary Heading sizes without a theme declaration or local source.
 - Replace `Text`, typography tokens, or the existing type-scale generator.
 - Define how additional typography values are calculated; scale-extension
-  authoring is covered separately by AST-023.
+  authoring is covered separately by
+  [AST-023](https://github.com/facebook/astryx/pull/6010).
 - Expand the font-weight choices available in every theme in this change.
 
 ## Terms
@@ -84,18 +85,24 @@ therefore permits CSS that its public component API cannot use safely.
   corresponding type augmentation and reference it from the generated theme
   declaration. If the augmentation cannot be generated or loaded, the build MUST
   fail with actionable guidance rather than emit CSS that typed source cannot use.
-- **FR3 — Custom types are theme-owned.** A custom name becomes valid only for a
-  consumer that imports the owning theme's generated declarations. It MUST NOT
-  enlarge Heading's built-in type set for every Astryx consumer.
+- **FR3 — Custom types are theme-owned but TypeScript availability is
+  program-wide.** A custom name becomes type-safe after a consumer imports the
+  owning theme's generated declarations. TypeScript module augmentation applies to
+  the whole compilation, so it cannot prove that a matching Theme is active at one
+  call site. Documentation MUST state that distinction. A custom name MUST NOT
+  enlarge Heading's built-in type set for applications that do not import it.
 - **FR4 — Runtime styling is deterministic.** A valid custom type MUST reflect its
   name through the same theming selector path as a built-in type. Before theme CSS
   applies, it MUST retain the selected semantic level's safe baseline rather than
-  becoming unstyled or inheriting an unrelated ambient text size.
-- **FR5 — Custom type declarations are complete enough to use.** The build MUST
-  require a custom Heading type to resolve at least a font size and line height,
-  directly or through declared theme-local tokens. Font family and weight MAY
-  inherit from the Heading role unless the type overrides them. Missing required
-  visual values fail before output.
+  becoming unstyled or inheriting an unrelated ambient text size. If application
+  source uses an imported custom name under a theme that does not define it, the
+  safe baseline applies. Development tooling SHOULD warn when it can determine the
+  active theme and mismatch without adding production runtime cost.
+- **FR5 — Partial custom types are valid.** A custom Heading type MUST contain at
+  least one meaningful visual declaration. Font size, line height, font family,
+  weight, letter spacing, color, and other supported properties MAY be changed
+  independently; omitted properties inherit from the selected semantic level's
+  baseline. An empty or wholly invalid custom type fails before output.
 - **FR6 — Existing types do not change.** Themes that declare no custom Heading
   type MUST retain their current types, runtime output, and generated artifacts.
   Existing `display-1` through `display-3` behavior remains compatible.
@@ -107,7 +114,10 @@ therefore permits CSS that its public component API cannot use safely.
   `bold`. When omitted, the current level- or type-derived default remains.
 - **FR8 — Explicit weight has clear precedence.** A supplied `weight` prop MUST win
   over the default weight of either a built-in or custom visual type. It MUST NOT
-  change `level`, `accessibilityLevel`, or the selected HTML element.
+  change `level`, `accessibilityLevel`, or the selected HTML element. Heading MUST
+  reflect the selected weight through its theming target, and the emitted cascade
+  MUST guarantee this order regardless of authored rule order: explicit weight,
+  then visual-type default, then semantic-level default.
 - **FR9 — Theme values remain authoritative.** Named weight props resolve through
   the existing font-weight tokens, so a theme may change what `bold` or `semibold`
   means without changing component source. Raw numeric or arbitrary weight strings
@@ -134,7 +144,8 @@ therefore permits CSS that its public component API cannot use safely.
   and statically built theme modes.
 - **FR14 — Missing declarations fail visibly.** A consumer that uses a custom type
   without importing the owning theme declarations MUST receive a TypeScript error.
-  Documentation MUST show the required theme artifact import.
+  Documentation MUST show the required theme artifact import and explain that
+  importing it cannot prove which Theme is active at runtime.
 - **FR15 — Accessibility behavior is unchanged.** Adding a visual type or weight
   MUST NOT alter accessible name, heading role, semantic level, truncation behavior,
   or `aria-level` handling. Existing Heading accessibility tests remain applicable.
@@ -142,7 +153,7 @@ therefore permits CSS that its public component API cannot use safely.
 ## Proposed API
 
 ```ts
-// @astryxdesign/core/Heading
+// Excerpt from @astryxdesign/core/Heading
 export interface HeadingTypeMap {
   'display-1': true;
   'display-2': true;
@@ -202,16 +213,17 @@ Themes and applications that use only the three built-in display types require n
 migration. A theme that already emits `heading['type:<custom>']` CSS currently has
 an unusable typed selector; after implementation and rebuild, its generated
 declarations will make that existing local name available to consumers that import
-the theme artifact. No custom name becomes an option that every Astryx theme must
-support.
+the theme artifact. The augmentation is available throughout that TypeScript
+program, while the custom styling remains owned by the active theme. No custom name
+becomes an option that every Astryx application must support.
 
 ## Verification
 
 | Contract  | Verification                                                                 | Representative failure                                                                                         |
 | --------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| FR1–FR3   | Public-subpath augmentation and generated-declaration type tests             | The CSS builds but `type="hero"` still fails, or importing one theme widens every consumer globally.           |
-| FR4–FR6   | Heading unit tests and before/after CSS snapshots                            | A custom type is unstyled before theme CSS, or a theme without custom types changes output.                    |
-| FR7–FR9   | Weight precedence tests for level, built-in type, and custom type            | `weight="bold"` loses to a type default or bypasses theme weight tokens.                                       |
+| FR1–FR3   | Public-subpath augmentation and generated-declaration type tests             | The CSS builds but `type="hero"` still fails, or docs claim TypeScript knows which Theme is active.            |
+| FR4–FR6   | Heading unit tests and before/after CSS snapshots                            | A custom type loses its level baseline, an intentional partial role fails, or a built-in theme changes output. |
+| FR7–FR9   | Weight target and cascade tests for level, built-in type, and custom type    | `weight="bold"` loses to a type default, depends on authored rule order, or bypasses theme weight tokens.      |
 | FR10–FR12 | Docs and authoring fixtures                                                  | Tooling infers `h1` from `hero`, skips a level for size, or uses Heading for non-heading copy.                 |
 | FR13–FR15 | Consumer typecheck, runtime/static build parity, DOM and accessibility tests | The built artifact is not loaded, the selector differs by build path, or visual props alter heading semantics. |
 
@@ -221,8 +233,11 @@ This spec moves from `proposed` to `shipped` only when:
 
 - Heading exposes and consumes one public augmentable type map;
 - theme build emits and loads custom Heading type declarations;
-- a custom type has a safe semantic-level baseline and complete theme styling;
+- a custom type has a safe semantic-level baseline and at least one valid visual
+  declaration;
 - Heading accepts the existing named weight values with documented precedence;
+- explicit weight wins through the runtime and built theme cascade, independent of
+  authored rule order;
 - runtime and static theme builds produce equivalent custom-type styling;
 - built-in Heading behavior and themes without custom types remain unchanged; and
 - examples and tests keep semantic level independent from visual treatment.
@@ -236,7 +251,7 @@ None.
 ### DEC-1 — Make Heading type extensible through a public map
 
 **Reference:** `spec:AST-024/DEC-1`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
 Use the same proven map-based module-augmentation model as other extensible
 component props. A closed type alias cannot be widened, and generating an unrelated
@@ -245,7 +260,7 @@ interface would falsely suggest type safety without changing `HeadingProps`.
 ### DEC-2 — Keep semantic level separate from visual type
 
 **Reference:** `spec:AST-024/DEC-2`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
 Custom names control appearance only. Authors continue to choose `level` from the
 document structure. This permits the same visual role at different valid levels
@@ -254,7 +269,7 @@ without coupling typography to accessibility semantics.
 ### DEC-3 — Add weight parity with Text
 
 **Reference:** `spec:AST-024/DEC-3`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
 Add the existing named `TextWeight` vocabulary to Heading and make an explicit prop
 override the type or level default. Do not add a second weight vocabulary or raw
@@ -285,3 +300,29 @@ in theme source.
 
 Rejected: accepting arbitrary numeric values directly at each component call site,
 which would couple application source to one font and bypass theme ownership.
+
+### DEC-6 — State the limit of theme-generated TypeScript clearly
+
+**Reference:** `spec:AST-024/DEC-6`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Importing a theme's generated declaration makes its custom Heading names available
+throughout that TypeScript program. It does not prove that the matching Theme is
+active around every use. Runtime styling remains theme-scoped, mismatches retain the
+semantic-level baseline, and development tooling warns when it can identify one
+reliably.
+
+Rejected: promising provider-aware static typing that TypeScript module augmentation
+cannot enforce.
+
+### DEC-7 — Permit partial visual roles
+
+**Reference:** `spec:AST-024/DEC-7`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+A custom Heading type may intentionally change only one supported visual property
+and inherit the rest from its semantic level. It must contain at least one valid
+declaration, but it does not have to restate font size and line height.
+
+Rejected: requiring every custom type to be a complete typography replacement,
+which would make small theme variations unnecessarily repetitive.
