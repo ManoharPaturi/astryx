@@ -1,0 +1,264 @@
+---
+schema_version: 1
+template_version: 1
+kind: system-spec
+id: spec:AST-024
+authority: draft
+archive_reason: null
+superseded_by: null
+approved_by: null
+approved_at: null
+phase: proposed
+owners: [rubyycheung]
+affects_architecture: [architecture:theme-authoring-contract]
+affects_families: []
+affects_contributing: []
+affects_consumer_docs: [theme, typography]
+---
+
+# Theme-extensible Heading visual roles system spec
+
+## Intent
+
+Product themes sometimes need named heading treatments beyond Astryx's three
+built-in display roles. A theme may need a hero treatment, a compact section
+heading, or another locally named visual role while still rendering the correct
+`h1`–`h6` element. Authors may also need to change the weight of one Heading use
+without creating a new visual role.
+
+Astryx already supports theme-defined `Text` types and generates their TypeScript
+augmentation during `astryx theme build`. `Heading` does not provide the same
+extension point: its `type` is a closed union and it has no `weight` prop. This spec
+makes Heading visual roles theme-extensible, keeps document semantics independent
+from appearance, and gives generated theme CSS and generated types one dependable
+contract.
+
+## Non-goals
+
+- Add product-specific heading names to Astryx's built-in portable types.
+- Infer an `h1`–`h6` level from a visual type name or font size.
+- Allow visual styling to repair an incorrect document outline.
+- Add arbitrary Heading sizes without a theme declaration or local source.
+- Replace `Text`, typography tokens, or the existing type-scale generator.
+- Define how additional typography values are calculated; scale-extension
+  authoring is covered separately by AST-023.
+- Expand the universal font-weight vocabulary in this change.
+
+## Terms
+
+- **Semantic level:** the `Heading.level` value that selects `h1`–`h6` and the
+  element's place in the document outline.
+- **Visual type:** a named treatment that controls size, line height, font family,
+  weight, or other approved visual properties without changing semantic level.
+- **Built-in type:** `display-1`, `display-2`, or `display-3`.
+- **Custom type:** a theme-owned visual type declared through a Heading component
+  override and exposed to TypeScript through an augmentable map.
+- **Weight override:** an explicit `Heading.weight` value for one rendered heading;
+  it wins over the visual type or semantic-level default without changing either.
+
+## Current limitation
+
+`HeadingType` is currently the closed literal union
+`'display-1' | 'display-2' | 'display-3'`. TypeScript module augmentation cannot
+widen a type alias. The theme builder therefore skips a theme rule such as
+`heading['type:hero']` when generating `.variants.d.ts`; emitting a new unrelated
+interface would not change `HeadingProps.type`.
+
+The browser can match the generated `data-type="hero"` selector, but application
+source cannot pass `type="hero"` without a type error. If the error is bypassed,
+Heading also has no defined baseline StyleX entry for that name. The current system
+therefore permits CSS that its public component API cannot use safely.
+
+## Requirements
+
+### Extensible visual types
+
+- **FR1 — Heading exposes a real augmentation point.** The public Heading subpath
+  MUST export an interface whose keys form the custom portion of `HeadingType`.
+  Built-in types remain available without augmentation. A generated declaration
+  MUST widen the same interface consumed by `HeadingProps.type`; a declaration
+  against a barrel-only or unused interface is invalid.
+- **FR2 — Theme build enrolls declared custom types.** When a theme contains a
+  custom `heading['type:<name>']` override, `astryx theme build` MUST emit the
+  corresponding type augmentation and reference it from the generated theme
+  declaration. If the augmentation cannot be generated or loaded, the build MUST
+  fail with actionable guidance rather than emit CSS that typed source cannot use.
+- **FR3 — Custom types are theme-owned.** A custom name becomes valid only for a
+  consumer that imports the owning theme's generated declarations. It MUST NOT
+  enlarge Heading's built-in type set for every Astryx consumer.
+- **FR4 — Runtime styling is deterministic.** A valid custom type MUST reflect its
+  name through the same theming selector path as a built-in type. Before theme CSS
+  applies, it MUST retain the selected semantic level's safe baseline rather than
+  becoming unstyled or inheriting an unrelated ambient text size.
+- **FR5 — Custom type declarations are complete enough to use.** The build MUST
+  require a custom Heading type to resolve at least a font size and line height,
+  directly or through declared theme-local tokens. Font family and weight MAY
+  inherit from the Heading role unless the type overrides them. Missing required
+  visual values fail before output.
+- **FR6 — Existing types do not change.** Themes that declare no custom Heading
+  type MUST retain their current types, runtime output, and generated artifacts.
+  Existing `display-1` through `display-3` behavior remains compatible.
+
+### Per-use weight
+
+- **FR7 — Heading accepts an optional weight override.** `Heading` MUST accept the
+  same named `TextWeight` values as `Text`: `normal`, `medium`, `semibold`, and
+  `bold`. When omitted, the current level- or type-derived default remains.
+- **FR8 — Explicit weight has clear precedence.** A supplied `weight` prop MUST win
+  over the default weight of either a built-in or custom visual type. It MUST NOT
+  change `level`, `accessibilityLevel`, or the selected HTML element.
+- **FR9 — Theme values remain authoritative.** Named weight props resolve through
+  the existing font-weight tokens, so a theme may change what `bold` or `semibold`
+  means without changing component source. Raw numeric or arbitrary weight strings
+  are not added to the component prop in the first version.
+
+### Semantics and author guidance
+
+- **FR10 — Level and type remain independent.** Every custom-type example MUST
+  include an explicit semantic `level`. Tooling and documentation MUST NOT infer a
+  level from names such as `hero`, `title`, or `display`.
+- **FR11 — Visual reuse does not justify skipped levels.** Guidance MUST tell
+  authors to choose heading levels from the document outline, then choose a visual
+  type. It MUST NOT recommend changing `level` merely to obtain a different size.
+- **FR12 — Non-heading text keeps using Text.** If content is not a section or page
+  heading, authoring guidance MUST use `Text` even when the same visual treatment is
+  desired. A shared visual name MAY be declared separately for both components, but
+  does not make non-heading content semantic.
+
+### Verification and generated artifacts
+
+- **FR13 — Source, runtime, and build agree.** A custom Heading type MUST pass
+  TypeScript, render the requested `h1`–`h6`, expose its `data-type`, receive the
+  generated declarations, and compute the expected CSS in both runtime-injected
+  and statically built theme modes.
+- **FR14 — Missing declarations fail visibly.** A consumer that uses a custom type
+  without importing the owning theme declarations MUST receive a TypeScript error.
+  Documentation MUST show the required theme artifact import.
+- **FR15 — Accessibility behavior is unchanged.** Adding a visual type or weight
+  MUST NOT alter accessible name, heading role, semantic level, truncation behavior,
+  or `aria-level` handling. Existing Heading accessibility tests remain applicable.
+
+## Proposed API
+
+```ts
+// @astryxdesign/core/Heading
+export interface HeadingTypeMap {
+  'display-1': true;
+  'display-2': true;
+  'display-3': true;
+}
+
+export type HeadingType = keyof HeadingTypeMap;
+
+export interface HeadingProps {
+  level: 1 | 2 | 3 | 4 | 5 | 6;
+  type?: HeadingType;
+  weight?: TextWeight;
+}
+```
+
+A theme may then declare and build a local role:
+
+```ts
+defineTheme({
+  name: 'product',
+  localTokens: {
+    '--astryx-theme-product-text-hero-size': '4.5rem',
+    '--astryx-theme-product-text-hero-leading': '1.05',
+  },
+  components: {
+    heading: {
+      'type:hero': {
+        fontSize: 'var(--astryx-theme-product-text-hero-size)',
+        lineHeight: 'var(--astryx-theme-product-text-hero-leading)',
+      },
+    },
+  },
+});
+```
+
+After importing the built theme artifacts, application source can use the visual
+role without changing its semantic level:
+
+```tsx
+<Heading level={1} type="hero">
+  Product overview
+</Heading>
+
+<Heading level={2} type="hero" weight="bold">
+  Featured report
+</Heading>
+```
+
+## Current-state impact
+
+The accepted spec changes no runtime or public API by itself. Its implementation
+will replace Heading's closed type alias with a public map-backed union, teach the
+theme builder to augment that map, give custom types a semantic-level baseline,
+and add the existing named weight vocabulary to `HeadingProps`.
+
+Themes and applications that use only the three built-in display types require no
+migration. A theme that already emits `heading['type:<custom>']` CSS currently has
+an unusable typed selector; after implementation and rebuild, its generated
+declarations will make that existing local name available to consumers that import
+the theme artifact. No custom name becomes part of Astryx's universal contract.
+
+## Verification
+
+| Contract  | Verification                                                                 | Representative failure                                                                                         |
+| --------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| FR1–FR3   | Public-subpath augmentation and generated-declaration type tests             | The CSS builds but `type="hero"` still fails, or importing one theme widens every consumer globally.           |
+| FR4–FR6   | Heading unit tests and before/after CSS snapshots                            | A custom type is unstyled before theme CSS, or a theme without custom types changes output.                    |
+| FR7–FR9   | Weight precedence tests for level, built-in type, and custom type            | `weight="bold"` loses to a type default or bypasses theme weight tokens.                                       |
+| FR10–FR12 | Docs and authoring fixtures                                                  | Tooling infers `h1` from `hero`, skips a level for size, or uses Heading for non-heading copy.                 |
+| FR13–FR15 | Consumer typecheck, runtime/static build parity, DOM and accessibility tests | The built artifact is not loaded, the selector differs by build path, or visual props alter heading semantics. |
+
+### Completion criteria
+
+This spec moves from `proposed` to `shipped` only when:
+
+- Heading exposes and consumes one public augmentable type map;
+- theme build emits and loads custom Heading type declarations;
+- a custom type has a safe semantic-level baseline and complete theme styling;
+- Heading accepts the existing named weight values with documented precedence;
+- runtime and static theme builds produce equivalent custom-type styling;
+- built-in Heading behavior and themes without custom types remain unchanged; and
+- examples and tests keep semantic level independent from visual treatment.
+
+## Open questions
+
+- Should one declared visual-role name automatically become available to both
+  `Text` and `Heading`, or should authors enroll it independently on each component
+  whose semantics they intend to use?
+- Should a future proposal allow raw numeric variable-font weights on `Heading`
+  and `Text`, or should component props continue using portable named weights while
+  themes map those names to numeric values?
+
+## Decision log
+
+### DEC-1 — Make Heading type extensible through a public map
+
+**Reference:** `spec:AST-024/DEC-1`
+**Decider:** pending
+
+Use the same proven map-based module-augmentation model as other extensible
+component props. A closed type alias cannot be widened, and generating an unrelated
+interface would falsely suggest type safety without changing `HeadingProps`.
+
+### DEC-2 — Keep semantic level separate from visual type
+
+**Reference:** `spec:AST-024/DEC-2`
+**Decider:** pending
+
+Custom names control appearance only. Authors continue to choose `level` from the
+document structure. This permits the same visual role at different valid levels
+without coupling typography to accessibility semantics.
+
+### DEC-3 — Add weight parity with Text
+
+**Reference:** `spec:AST-024/DEC-3`
+**Decider:** pending
+
+Add the existing named `TextWeight` vocabulary to Heading and make an explicit prop
+override the type or level default. Do not add a second weight vocabulary or raw
+numeric values in the first change.
