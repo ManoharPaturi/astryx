@@ -65,6 +65,7 @@ import {discoverTemplates, extractComponents} from '../template/template.mjs';
 import {loadDocsCatalog, loadTopicDoc} from '../docs/_adapter.mjs';
 import {AstryxError} from '../error.mjs';
 import {ERROR_CODES} from '../../foundation/response/error-codes.mjs';
+import {setResultCoverage} from './coverage.mjs';
 
 /**
  * A search candidate gathered from one content domain. Extra underscore-
@@ -274,7 +275,7 @@ export function scoreQuery(term, tokens, candidate) {
   // of Table-related templates each match "table" and "contents" separately
   // and accumulate a higher raw score (#5239).
   if (full && full.score >= 90) {
-    return {score: full.score + 100, reason: full.reason};
+    return asFull({score: full.score + 100, reason: full.reason});
   }
 
   // Multi-word natural language: score each content token, counting only
@@ -724,39 +725,43 @@ function toResult(c, score, reason, matchedTerms, queryTerms) {
     name: c.name,
     score,
     reason,
-    matchedTerms,
-    queryTerms,
     description: c.description || '',
   };
+  let result;
   switch (c.domain) {
     case 'component':
-      return {
+      result = {
         ...base,
         import: c._import,
         command: `astryx component ${c.name}`,
       };
+      break;
     case 'hook':
-      return {
+      result = {
         ...base,
         import: c._import,
         command: `astryx hook ${c.name}`,
       };
+      break;
     case 'doc':
-      return {
+      result = {
         ...base,
         title: c._title,
         command: `astryx docs ${c.name}`,
       };
+      break;
     case 'template':
-      return {
+      result = {
         ...base,
         displayName: c._displayName,
         kind: c._kind,
         command: `astryx template ${c.name}`,
       };
+      break;
     default:
-      return base;
+      result = base;
   }
+  return setResultCoverage(result, matchedTerms, queryTerms);
 }
 
 /**
