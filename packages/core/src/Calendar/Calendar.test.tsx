@@ -165,6 +165,27 @@ describe('Calendar', () => {
     ).toEqual([...localizedNames.slice(1), localizedNames[0]]);
   });
 
+  it('updates the month header and subsequent navigation with provider locale', async () => {
+    const user = userEvent.setup();
+    const renderCalendar = (locale: 'en-US' | 'es-ES') => (
+      <InternationalizationProvider locale={locale}>
+        <Calendar focusDate="2026-01-01" />
+      </InternationalizationProvider>
+    );
+    const {rerender} = render(renderCalendar('en-US'));
+
+    expect(screen.getByText('January 2026')).toBeInTheDocument();
+
+    rerender(renderCalendar('es-ES'));
+    expect(screen.getByText('enero de 2026')).toBeInTheDocument();
+
+    const nextButton =
+      document.querySelector<HTMLButtonElement>('[data-nav="next"]');
+    expect(nextButton).not.toBeNull();
+    await user.click(nextButton!);
+    expect(screen.getByText('febrero de 2026')).toBeInTheDocument();
+  });
+
   it('displays correct number of day cells', () => {
     render(<Calendar />);
 
@@ -365,6 +386,46 @@ describe('Calendar', () => {
     expect(getDayButton(12)).not.toBeDisabled(); // 3-day span — allowed
     expect(getDayButton(8)).not.toBeDisabled(); // 3-day span the other way
     expect(getDayButton(9)).toBeDisabled(); // 2-day span — too short
+  });
+
+  it('commits a same-day range with the default minimum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar mode="range" focusDate="2026-01-01" onChange={handleChange} />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
+  });
+
+  it('commits a same-day range when the minimum permits it, including with a maximum', async () => {
+    const user = userEvent.setup();
+    const handleChange = vi.fn();
+
+    render(
+      <Calendar
+        mode="range"
+        focusDate="2026-01-01"
+        onChange={handleChange}
+        minRangeSpan={1}
+        maxRangeSpan={7}
+      />,
+    );
+
+    await user.click(getDayButton(10));
+    await user.click(getDayButton(10));
+
+    expect(handleChange).toHaveBeenCalledWith({
+      start: '2026-01-10',
+      end: '2026-01-10',
+    });
   });
 
   it('clears the in-progress start when the anchor is clicked again', async () => {

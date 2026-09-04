@@ -11,7 +11,9 @@
  * Besides the props it is given, this component tracks the `activeStep` it
  * last rendered with and publishes it on the context. Steps need the distance
  * and direction of a change to choreograph their connector fill; see the
- * CONNECTOR FILL block in Step.tsx.
+ * CONNECTOR FILL block in Step.tsx. When a horizontal Stepper becomes compact,
+ * this component measures its public list root and owns previous/next controls
+ * that move between enabled steps below the presentational track.
  *
  * SYNC: When modified, update these files to stay in sync:
  * - /packages/core/src/Stepper/Stepper.doc.mjs (props table, features, implementation notes)
@@ -33,7 +35,8 @@ import * as stylex from '@stylexjs/stylex';
 
 import {spacingVars} from '../theme/tokens.stylex';
 import {mergeProps, rtlStyles} from '../utils';
-import {observeResize, unobserveResize} from '../utils/sharedResizeObserver';
+import {observeResize} from '../utils/sharedResizeObserver';
+import {useMergedRefs} from '../hooks/useMergedRefs';
 import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils';
 import {Icon} from '../Icon';
@@ -74,8 +77,9 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    */
   orientation?: StepperOrientation;
   /**
-   * Called when a step indicator is clicked. Enables non-linear navigation.
-   * When provided, completed and current steps become clickable.
+   * Called when a step is clicked, or when a compact summary control is used.
+   * Enables non-linear navigation. At compact horizontal widths, individual
+   * track nodes are presentational and summary controls skip disabled steps.
    */
   onStepClick?: (index: number) => void;
   /**
@@ -103,12 +107,11 @@ export interface StepperProps extends BaseProps<HTMLOListElement> {
    * off for a flow that already has its own Back/Continue, so the two pairs
    * do not compete.
    *
-   * Turning them off in the `separated` layout leaves the collapsed stepper
-   * with nothing to press — its step targets go with its labels — so
-   * `onStepClick` becomes unreachable until the stepper is wide again. That is
-   * the point when the flow has its own controls, but it does mean the
-   * stepper is then purely a progress indicator. `on-track` keeps its nodes on
-   * the rail either way, so there it costs nothing.
+   * Turning them off leaves the compact track presentational in either layout,
+   * so `onStepClick` becomes unreachable until the stepper is wide again. That
+   * is intentional when the surrounding flow owns navigation: the collapsed
+   * stepper becomes purely a progress indicator instead of exposing a second,
+   * denser set of controls.
    * @default true
    */
   hasCollapsedControls?: boolean;
@@ -130,6 +133,14 @@ const styles = stylex.create({
     listStyleType: 'none',
     margin: 0,
     padding: 0,
+    // Public, and declared HERE because component vars are root-owned: a theme
+    // writes `stepper: {base: {'--step-connector-gap': '4px'}}`, which lands on
+    // this element in `@layer astryx-theme` and beats this declaration. The
+    // connectors inherit it. Declaring it on each connector instead — where it
+    // started — made every one of them re-declare 0px on itself, and a value
+    // declared on an element always beats an inherited one, so the generated
+    // override compiled and changed nothing.
+    '--step-connector-gap': '0px',
   },
   // The gap between steps is the break between connector segments, so it is
   // sized to match the connector's own thickness (BAR_WIDTH, the same token).
@@ -232,13 +243,20 @@ export function Stepper({
   // deregister on unmount; a Map tracks count per index so we can warn when
   // two Steps share the same `step` value (which breaks aria-current).
   const stepCountsRef = useRef<Map<number, number>>(new Map());
+  // Disabled registrations are tracked separately so compact previous/next
+  // controls can move to the nearest enabled step without inspecting children.
+  // Counts keep cleanup correct even for the invalid duplicate-index case.
+  const disabledStepCountsRef = useRef<Map<number, number>>(new Map());
+  const [disabledSteps, setDisabledSteps] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
   // How many steps there are, which the stepper needs for real and not only
   // for the warning: the width each step is getting is this divided into the
   // width the stepper got. Counted from what registers rather than from the
   // children, so grouping steps in a fragment or an array cannot change the
   // answer.
   const [stepCount, setStepCount] = useState(0);
-  const registerStep = useCallback((index: number) => {
+  const registerStep = useCallback((index: number, isDisabled: boolean) => {
     const counts = stepCountsRef.current;
     const prev = counts.get(index) ?? 0;
     counts.set(index, prev + 1);
@@ -248,6 +266,11 @@ export function Stepper({
           `This breaks \`aria-current="step"\` and causes both to show as active simultaneously.`,
       );
     }
+    if (isDisabled) {
+      const disabledCounts = disabledStepCountsRef.current;
+      disabledCounts.set(index, (disabledCounts.get(index) ?? 0) + 1);
+      setDisabledSteps(new Set(disabledCounts.keys()));
+    }
     setStepCount(c => c + 1);
     return () => {
       const cur = counts.get(index) ?? 1;
@@ -255,6 +278,16 @@ export function Stepper({
         counts.delete(index);
       } else {
         counts.set(index, cur - 1);
+      }
+      if (isDisabled) {
+        const disabledCounts = disabledStepCountsRef.current;
+        const disabledCount = disabledCounts.get(index) ?? 1;
+        if (disabledCount <= 1) {
+          disabledCounts.delete(index);
+        } else {
+          disabledCounts.set(index, disabledCount - 1);
+        }
+        setDisabledSteps(new Set(disabledCounts.keys()));
       }
       setStepCount(c => c - 1);
     };
@@ -292,28 +325,32 @@ export function Stepper({
 
   // A vertical stepper gives every label a row of its own and can never run
   // out of width for them, so it opts out of all of this and renders exactly
-  // the DOM it always has.
-  const [frameWidth, setFrameWidth] = useState(0);
-  const frameRef = useRef<HTMLDivElement | null>(null);
-  const attachFrame = useCallback((el: HTMLDivElement | null) => {
-    if (frameRef.current) {
-      unobserveResize(frameRef.current);
-    }
-    frameRef.current = el;
-    if (el) {
-      // observeResize calls back once, synchronously, as it subscribes. That
-      // is what keeps the collapse off the screen: a ref callback runs during
-      // commit, so the width lands and the re-render happens before the
-      // browser has painted the uncollapsed stepper it would otherwise show
-      // first.
-      observeResize(el, entry => setFrameWidth(entry.target.clientWidth));
-    }
-  }, []);
+  // the DOM it always has. Horizontal Stepper sizing follows the public list
+  // root because that is where consumer refs and width styles are applied.
+  const [rootWidth, setRootWidth] = useState(0);
+  const stopObservingRootRef = useRef<(() => void) | null>(null);
+  const attachRoot = useCallback(
+    (el: HTMLOListElement | null) => {
+      stopObservingRootRef.current?.();
+      stopObservingRootRef.current = null;
+      if (el && isHorizontal) {
+        // observeResize calls back once, synchronously, as it subscribes. That
+        // is what keeps the collapse off the screen: a ref callback runs during
+        // commit, so the width lands and the re-render happens before the
+        // browser has painted the uncollapsed stepper it would otherwise show
+        // first.
+        stopObservingRootRef.current = observeResize(el, entry =>
+          setRootWidth(entry.target.clientWidth),
+        );
+      }
+    },
+    [isHorizontal],
+  );
+  const rootRef = useMergedRefs(ref, attachRoot);
   useEffect(
     () => () => {
-      if (frameRef.current) {
-        unobserveResize(frameRef.current);
-      }
+      stopObservingRootRef.current?.();
+      stopObservingRootRef.current = null;
     },
     [],
   );
@@ -323,16 +360,17 @@ export function Stepper({
   // their click targets leave the DOM entirely. A query could only have hidden
   // them, which would leave every step's text in the tree for a consumer's
   // `getByText` to trip over and every collapsed step still holding a focus
-  // stop with nothing visible to show for it.
+  // stop with nothing visible to show for it. Step content is the exception:
+  // it stays mounted and is hidden so local state survives a resize.
   //
   // Either value being zero means the stepper has not been told something it
   // needs yet — on the server, and for the one commit before the observer
   // fires and the steps register — and until it has, it renders whole.
   const isCompact =
     isHorizontal &&
-    frameWidth > 0 &&
+    rootWidth > 0 &&
     stepCount > 0 &&
-    frameWidth / stepCount < MIN_STEP_WIDTH;
+    rootWidth / stepCount < MIN_STEP_WIDTH;
 
   const [summarySlot, setSummarySlot] = useState<HTMLElement | null>(null);
 
@@ -376,7 +414,7 @@ export function Stepper({
 
   const list = (
     <ol
-      ref={ref}
+      ref={rootRef}
       aria-label={label}
       {...rest}
       {...mergeProps(
@@ -405,17 +443,37 @@ export function Stepper({
   // Unlike TabList's scroll arrows — decorative, aria-hidden, skipped by the
   // keyboard because every tab can still be reached by arrowing the strip —
   // these are the way through a collapsed stepper wherever they appear. So
-  // they are real controls with real names, and they take focus.
+  // they are real controls with real names, and they take focus. Disabled
+  // steps are omitted exactly as they are from the full-width set of clickable
+  // steps.
   const showsControls = hasCollapsedControls && onStepClick != null;
 
   // With neither half asked for there is nothing to put in the row, and an
   // empty one would still spend the frame's gap under the track.
   const showsSummary = isCompact && (showsControls || hasCollapsedLabel);
 
+  const adjacentEnabledStep = (delta: -1 | 1): number | null => {
+    let target: number | null = null;
+    for (const index of stepCountsRef.current.keys()) {
+      if (disabledSteps.has(index)) {
+        continue;
+      }
+      if (
+        delta === -1
+          ? index < activeStep && (target == null || index > target)
+          : index > activeStep && (target == null || index < target)
+      ) {
+        target = index;
+      }
+    }
+    return target;
+  };
+
   const control = (delta: -1 | 1) => {
     if (!showsControls || onStepClick == null) {
       return null;
     }
+    const target = adjacentEnabledStep(delta);
     const name =
       delta === -1
         ? t('@astryx.stepper.previousStep')
@@ -431,10 +489,12 @@ export function Stepper({
             xstyle={rtlStyles.mirror}
           />
         }
-        isDisabled={
-          delta === -1 ? activeStep <= 0 : activeStep >= stepCount - 1
-        }
-        onClick={() => onStepClick(activeStep + delta)}
+        isDisabled={target == null}
+        onClick={() => {
+          if (target != null) {
+            onStepClick(target);
+          }
+        }}
       />
     );
   };
@@ -442,7 +502,6 @@ export function Stepper({
   return (
     <StepperContext value={ctxValue}>
       <div
-        ref={attachFrame}
         {...mergeProps(
           themeProps('stepper-frame'),
           stylex.props(styles.frame),

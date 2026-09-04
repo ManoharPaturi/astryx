@@ -59,10 +59,40 @@ export const docs = {
     ],
     anatomy: [
       {
+        name: 'Stepper',
+        required: true,
+        description:
+          'The ordered list holding the steps. Owns the orientation and the indicator placement the whole flow is laid out on.',
+      },
+      {
+        name: 'Frame',
+        required: true,
+        description:
+          'The layout frame that groups the ordered steps with the compact summary shown at narrow widths.',
+      },
+      {
+        name: 'Compact summary',
+        required: false,
+        description:
+          'The row a horizontal Stepper adds beneath the track once it is too narrow to label every step: the current step name and optional Previous/Next controls. Turn either half off with hasCollapsedLabel or hasCollapsedControls when the page already provides it. Every step keeps its name in the accessible sequence at any width.',
+      },
+      {
+        name: 'Step',
+        required: true,
+        description:
+          'One step in the flow, and the element carrying its status. Wraps the indicator, label, description, and the track segments belonging to it.',
+      },
+      {
         name: 'Progress bar',
         required: true,
         description:
-          'A 4px segmented bar per step. Filled for completed and active steps. Advancing one step grows the fill along the track it just covered, so the movement reads as progress rather than a bar changing color. Every other change applies at once: going back, jumping forward by more than one step, mounting mid-flow, and any change at all under prefers-reduced-motion. Where a span is drawn by more than one segment — the on-track layouts split it between two steps, three when a content slot sits between them — the segments run in track order at one constant speed, so the fill reads as a single line growing rather than pieces lighting in turn.',
+          'A 4px segmented bar per step. Filled for completed and active steps. Advancing one step grows the fill along the track it just covered, so the movement reads as progress rather than a bar changing color. Every other change applies at once: going back, jumping forward by more than one step, mounting mid-flow, and any change at all under prefers-reduced-motion. Where a span is drawn by more than one segment (the on-track layouts split it between two steps, three when a content slot sits between them), the segments run in track order at one constant speed, so the fill reads as a single line growing rather than pieces lighting in turn.',
+      },
+      {
+        name: 'Connector',
+        required: false,
+        description:
+          'The track drawn between indicators in the on-track layouts. Each connector paints an unfilled line and, over it, the accent fill covering the progress made. How many pieces a connector is drawn from is an implementation detail of the layout, not a themeable part; use --step-connector-gap to hold the track off the indicator.',
       },
       {
         name: 'Indicator',
@@ -80,12 +110,6 @@ export const docs = {
         required: false,
         description: 'Supporting text below the label with additional context.',
       },
-      {
-        name: 'Collapsed summary',
-        required: false,
-        description:
-          'The row a horizontal stepper adds beneath the track once it is too narrow to label every step: the name of the current step, flanked by Previous/Next controls when onStepClick is set. Turn either half off with hasCollapsedLabel or hasCollapsedControls when the page already provides it. Every step keeps its name in the accessible sequence at any width, so nothing here changes what a screen reader hears.',
-      },
     ],
   },
   theming: {
@@ -98,8 +122,24 @@ export const docs = {
       {className: 'astryx-stepper-summary'},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
+      {
+        className: 'astryx-step-label',
+        visualProps: ['progress', 'status', 'disabled'],
+      },
+      {
+        className: 'astryx-step-description',
+        visualProps: ['progress', 'status'],
+      },
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
+    ],
+    vars: [
+      {
+        name: '--step-connector-gap',
+        description:
+          'Gap a connector leaves where it meets the indicator, spent on the side facing it. Applies to the on-track layouts, whose connector is drawn as one segment either side of the node; 0 leaves the track running unbroken through it.',
+        default: '0px',
+      },
     ],
   },
   components: [
@@ -132,7 +172,7 @@ export const docs = {
           name: 'onStepClick',
           type: '(index: number) => void',
           description:
-            'Called when a step is clicked. Enables non-linear navigation. All non-disabled steps become clickable, including not-started steps.',
+            'Called when a step is clicked or a compact summary control is used. Enables non-linear navigation. All non-disabled steps become clickable until a horizontal Stepper collapses, when navigation moves to summary controls that skip disabled steps.',
         },
         {
           name: 'label',
@@ -158,7 +198,7 @@ export const docs = {
           name: 'hasCollapsedControls',
           type: 'boolean',
           description:
-            'Whether a collapsed stepper shows Previous/Next controls beneath the track. They only ever appear when onStepClick is set; turn them off for a flow that already has its own Back/Continue. In the separated layout that leaves the collapsed stepper with nothing to press, since its step targets go with its labels, so it becomes a progress indicator until it is wide again. The on-track layout keeps its nodes on the rail either way.',
+            'Whether a collapsed stepper shows Previous/Next controls beneath the track. They only ever appear when onStepClick is set; turn them off for a flow that already has its own Back/Continue. The compact track is presentational in both layouts, so turning these controls off makes the collapsed stepper a progress indicator until it is wide again.',
           default: 'true',
         },
         {
@@ -237,12 +277,13 @@ export const docsDense = {
         activeStep: 'zero-based active step index',
         children: 'Step elements',
         orientation: 'horizontal or vertical layout',
-        onStepClick: 'enables non-linear navigation',
+        onStepClick:
+          'enables non-linear navigation; summary controls own compact navigation and skip disabled steps',
         label: 'ordered-list aria-label',
         density: 'padding of all steps',
         indicatorPosition: 'indicators separated from or on the track',
         hasCollapsedControls:
-          'prev/next under a collapsed track; needs onStepClick; off strands separated nodes',
+          'prev/next under a collapsed track; needs onStepClick; off makes the track progress-only',
         hasCollapsedLabel:
           'name the current step under a collapsed track; visual only',
         xstyle: 'StyleX layout customization',
@@ -302,8 +343,24 @@ export const docsZh = {
       {className: 'astryx-stepper-summary'},
       {className: 'astryx-step', visualProps: ['progress', 'status']},
       {className: 'astryx-step-indicator', visualProps: ['progress', 'status']},
+      {
+        className: 'astryx-step-label',
+        visualProps: ['progress', 'status', 'disabled'],
+      },
+      {
+        className: 'astryx-step-description',
+        visualProps: ['progress', 'status'],
+      },
       {className: 'astryx-step-bar'},
       {className: 'astryx-step-connector'},
+    ],
+    vars: [
+      {
+        name: '--step-connector-gap',
+        description:
+          '连接线与指示器相接处留出的间隙，落在朝向指示器的一侧。适用于 on-track 布局——其连接线由节点两侧各一段绘制；取 0 时轨道将不间断地穿过节点。',
+        default: '0px',
+      },
     ],
   },
   components: [
@@ -333,7 +390,8 @@ export const docsZh = {
         {
           name: 'onStepClick',
           type: '(index: number) => void',
-          description: '点击步骤时调用。启用非线性导航。',
+          description:
+            '点击步骤或紧凑摘要控件时调用。启用非线性导航；水平步骤器折叠后，导航转移到会跳过已禁用步骤的摘要控件。',
         },
         {
           name: 'label',
@@ -357,7 +415,7 @@ export const docsZh = {
           name: 'hasCollapsedControls',
           type: 'boolean',
           description:
-            '收起后是否在轨道下方显示上一步/下一步控件。仅在设置了 onStepClick 时出现；当流程已有自己的返回/继续按钮时关闭。在 separated 布局中关闭后，收起的步骤器将没有可点击的目标，直到宽度恢复；on-track 布局的节点始终留在轨道上。',
+            '收起后是否在轨道下方显示上一步/下一步控件。仅在设置了 onStepClick 时出现；当流程已有自己的返回/继续按钮时关闭。两种布局的紧凑轨道都只用于展示进度，因此关闭这些控件后，步骤器会保持为进度指示器，直到宽度恢复。',
           default: 'true',
         },
         {
