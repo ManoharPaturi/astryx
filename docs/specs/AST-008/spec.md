@@ -168,9 +168,14 @@ outside Core theme normalization and runtime behavior.
 - **FR15 — Visual review uses one standard artifact.** The CLI MAY explicitly
   write a self-contained HTML preview from the same candidate data. The preview
   MUST identify itself as `palette-preview-v1`, show every generated family,
-  mode, stop, and hex value, require no network resources, and state that it does
-  not certify accessibility. It MUST follow the same overwrite protection as
-  palette output and MUST NOT open a browser without a separate explicit action.
+  mode, stop, and hex value, and require no network resources. It MUST NOT make
+  an accessibility claim. It follows the same overwrite protection as palette
+  output and MUST NOT open a browser without a separate explicit action.
+- **FR16 — Authoring guidance preserves intent.** Agent-facing documentation and
+  evaluation fixtures MUST distinguish exact, bounded, and preferred anchors;
+  preserve explicit decimal and custom layouts; omit an accent when none is
+  requested; and ask whether an ambiguous accent is one theme value or a light
+  and dark family rather than guessing.
 
 ## Implementation contract
 
@@ -187,6 +192,9 @@ outside Core theme normalization and runtime behavior.
    improvised by each agent or caller.
 5. Every public function, command, package, schema, or artifact receives separate
    API and AST-017 compatibility acceptance before release.
+6. Focused agent fixtures cover anchor language, optional accents, clarification,
+   and custom stops. Expected decisions remain evaluation-only and MUST NOT be
+   included in prompts sent to agents.
 
 ### `astryx-oklch-v1` normative recipe
 
