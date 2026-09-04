@@ -542,14 +542,24 @@ function DateRangeEditor({
     [onChange],
   );
 
+  const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
+    // DateRangeInput owns an inner popover. Its Enter activation must not reach
+    // the parent PowerSearch shortcut before the focused button's click runs.
+    if (event.key === 'Enter') {
+      event.stopPropagation();
+    }
+  }, []);
+
   return (
-    <DateRangeInput
-      label={t('@astryx.powersearch.valueEditor.dateRange')}
-      isLabelHidden
-      value={currentValue}
-      onChange={handleChange}
-      hasClear={false}
-    />
+    <div onKeyDown={handleKeyDown}>
+      <DateRangeInput
+        label={t('@astryx.powersearch.valueEditor.dateRange')}
+        isLabelHidden
+        value={currentValue}
+        onChange={handleChange}
+        hasClear={false}
+      />
+    </div>
   );
 }
 

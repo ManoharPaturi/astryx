@@ -265,6 +265,56 @@ describe('PowerSearchFilterEditor', () => {
     });
   });
 
+  it('saves an ordered date range after keyboard endpoint selection and Apply', () => {
+    const onSave = vi.fn();
+    render(
+      <PowerSearchFilterEditor
+        config={config}
+        filter={dateRangeFilter}
+        mode="edit"
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', {name: 'Open calendar'}));
+
+    const later = dateButton('2026-01-20');
+    later.focus();
+    fireEvent.keyDown(later, {key: 'Enter'});
+    expect(onSave).not.toHaveBeenCalled();
+    // jsdom does not synthesize the native button click from Enter.
+    fireEvent.click(later);
+
+    const earlier = dateButton('2026-01-10');
+    earlier.focus();
+    fireEvent.keyDown(earlier, {key: 'Enter'});
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(earlier);
+
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith({
+      field: 'created',
+      operator: 'between',
+      value: {
+        type: 'date_range',
+        value: {
+          start: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-10T00:00:00Z') / 1000,
+          },
+          end: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse('2026-01-20T00:00:00Z') / 1000,
+          },
+        },
+      },
+    });
+  });
+
   it('forwards onCancel to the cancel action', () => {
     const onCancel = vi.fn();
     render(
