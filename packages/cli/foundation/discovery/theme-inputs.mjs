@@ -89,44 +89,57 @@ function blankLiterals(code) {
       i += 1;
       continue;
     }
-    out += ' '; // the opening backtick itself is not code
-    i += 1;
-    while (i < code.length) {
-      const c = code[i];
+    // Scan the template into a buffer. If no closing backtick turns up, this
+    // was not a template at all — most often a backtick inside a regex or a
+    // quoted string — and swallowing the rest of the file would hide every
+    // real import after it. Fall back to copying the character through.
+    let buf = ' ';
+    let j = i + 1;
+    let closed = false;
+    while (j < code.length) {
+      const c = code[j];
       if (c === '\\') {
-        out += '  ';
-        i += 2;
+        buf += '  ';
+        j += 2;
         continue;
       }
       if (c === '`') {
-        out += ' ';
-        i += 1;
+        buf += ' ';
+        j += 1;
+        closed = true;
         break;
       }
-      if (c === '$' && code[i + 1] === '{') {
+      if (c === '$' && code[j + 1] === '{') {
         // An interpolation is executable code — copy it through verbatim,
         // tracking brace depth so a nested object or template inside it does
         // not end the interpolation early.
-        out += '  ';
-        i += 2;
+        buf += '  ';
+        j += 2;
         let depth = 1;
-        while (i < code.length && depth > 0) {
-          const k = code[i];
+        while (j < code.length && depth > 0) {
+          const k = code[j];
           if (k === '{') depth += 1;
           else if (k === '}') depth -= 1;
           if (depth === 0) {
-            out += ' ';
-            i += 1;
+            buf += ' ';
+            j += 1;
             break;
           }
-          out += k;
-          i += 1;
+          buf += k;
+          j += 1;
         }
         continue;
       }
       // Keep newlines so line offsets, and the `^`-anchored alternatives in
       // the specifier patterns, still behave.
-      out += c === '\n' ? '\n' : ' ';
+      buf += c === '\n' ? '\n' : ' ';
+      j += 1;
+    }
+    if (closed) {
+      out += buf;
+      i = j;
+    } else {
+      out += code[i];
       i += 1;
     }
   }

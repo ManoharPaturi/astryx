@@ -480,3 +480,15 @@ describe('StyleX wiring must reach the bundler plugin list', () => {
     expect(findSwizzled(dir).hasCompiler).toBe(true);
   });
 });
+
+describe('a quoted string is not a plugin list', () => {
+  it('ignores "plugins: [...]" written inside a string', () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({devDependencies: {'vite-plugin-stylex': '^0.6.0'}}),
+      'vite.config.js': 'export default {doc: "plugins: [\'vite-plugin-stylex\']"};',
+      'src/components/astryx/Z/Z.tsx':
+        "import * as stylex from '@stylexjs/stylex';\nexport function Z() {}",
+    });
+    expect(findSwizzled(dir).hasCompiler).toBeNull();
+  });
+});

@@ -331,3 +331,27 @@ describe('template literals: text is prose, interpolations are code', () => {
     expect(themeInputsDigest(path.join(dir, 'theme.ts')).digest).not.toBe(before);
   });
 });
+
+describe('a stray backtick must not swallow the rest of the file', () => {
+  // `const r = /`/;` is a backtick inside a REGEX. Treating it as the start of
+  // a template blanked everything after it, so every real import below went
+  // missing and the digest silently stopped tracking them. An unterminated
+  // template is not a template.
+  it('keeps imports after a backtick in a regex literal', () => {
+    expect(readSpecifiers('const r = /`/;\nimport a from "./real";').specifiers).toEqual([
+      './real',
+    ]);
+  });
+
+  it('keeps imports after a lone backtick in a string', () => {
+    expect(readSpecifiers('const s = "`";\nimport a from "./real";').specifiers).toEqual([
+      './real',
+    ]);
+  });
+
+  it('still blanks a properly closed template', () => {
+    expect(
+      readSpecifiers('const x = `  import "./no"  `;\nimport a from "./real";').specifiers,
+    ).toEqual(['./real']);
+  });
+});

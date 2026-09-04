@@ -123,13 +123,18 @@ export function isStyleXConfigured(pkgDir, plugins, root = pkgDir) {
   const pluginLists = (/** @type {string} */ code) => {
     /** @type {string[]} */
     const lists = [];
-    for (const m of code.matchAll(/\b(?:plugins|presets)\s*:\s*\[/g)) {
+    // Find the `plugins:` key in a copy whose STRING CONTENTS are blanked, so
+    // a quoted string that happens to contain "plugins: ['x']" is not read as
+    // a plugin list — then slice the ORIGINAL, whose strings still hold the
+    // plugin names the list legitimately contains.
+    const masked = code.replace(/(['"])(?:\\.|(?!\1)[^\\\n])*\1/g, m => m[0] + ' '.repeat(m.length - 2) + m[0]);
+    for (const m of masked.matchAll(/\b(?:plugins|presets)\s*:\s*\[/g)) {
       let i = m.index + m[0].length;
       let depth = 1;
       const start = i;
-      while (i < code.length && depth > 0) {
-        if (code[i] === '[') depth += 1;
-        else if (code[i] === ']') depth -= 1;
+      while (i < masked.length && depth > 0) {
+        if (masked[i] === '[') depth += 1;
+        else if (masked[i] === ']') depth -= 1;
         i += 1;
       }
       lists.push(code.slice(start, i - 1));
