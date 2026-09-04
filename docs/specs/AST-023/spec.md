@@ -133,7 +133,12 @@ does not run when the application loads.
 
 - **FR9 — Output is explicit local source.** Accepted extensions MUST be written as
   reviewable theme-local tokens or other existing supported theme constructs. The
-  application build MUST NOT rerun the extension generator.
+  application build MUST NOT rerun the extension generator. By default, tooling
+  MUST keep the added values and their component mappings together in the owning
+  `defineTheme({...})` module. Splitting author-maintained definitions into imported
+  files is optional and requires the author's explicit choice; generated `.css`,
+  `.js`, and declaration artifacts remain build output rather than additional
+  authoring surfaces.
 - **FR10 — Local naming follows the owning theme.** Generated custom properties
   MUST satisfy the current theme-local namespace and collision rules. Names SHOULD
   describe intent, such as `spacing-hero`, when the value has one specific role.
