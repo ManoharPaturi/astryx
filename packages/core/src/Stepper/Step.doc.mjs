@@ -10,7 +10,7 @@ export const docs = {
   category: 'Navigation',
   isHiddenFromOverview: true,
   description:
-    'Individual step within a Stepper. Renders a progress-bar segment, an indicator, and a label with optional description. Progress (completed/active/not-started) is derived from the parent Stepper\'s activeStep and this step\'s step index.',
+    "Individual step within a Stepper. Renders a progress-bar segment, an indicator, and a label with optional description. Progress (completed/active/not-started) is derived from the parent Stepper's activeStep and this step's step index.",
   props: [
     {
       name: 'step',
@@ -36,7 +36,7 @@ export const docs = {
       name: 'children',
       type: 'ReactNode',
       description:
-        'Content rendered below the label and description. Useful in vertical steppers for form fields or detailed step content.',
+        'Content rendered below the label and description. Useful in vertical steppers for form fields or detailed step content. In a compact horizontal Stepper, the content remains mounted to preserve local state while it is hidden with the expanded step details.',
     },
     {
       name: 'status',
