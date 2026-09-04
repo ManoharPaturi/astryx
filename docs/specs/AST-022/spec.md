@@ -83,10 +83,13 @@ change, and writes an equivalent local theme only after the author confirms.
 
 ### Explicit lifecycle choice
 
-- **FR1 — Following and owning are different promises.** Tooling that starts a
-  theme from an existing theme MUST ask whether the author wants to follow that
-  base or use it only as a starting point. It MUST NOT describe `extends` as a
-  fully independent copy.
+- **FR1 — Following and owning are different promises.** Tooling that starts a new
+  application or product theme from an existing theme MUST default to an owned
+  starting point. Following the base requires an explicit author choice after the
+  tooling explains that upgrades may change inherited results. A local variant of
+  another theme in the same owned family MAY recommend following, but MUST still
+  make that relationship explicit. Tooling MUST NOT describe `extends` as a fully
+  independent copy.
 - **FR2 — Following preserves current `extends` semantics.** A following theme
   retains its base dependency and may adopt the base's resolved token, component,
   media-surface, icon, indicator, syntax, and local-token changes after an
@@ -115,10 +118,10 @@ change, and writes an equivalent local theme only after the author confirms.
   markup, default styles outside the theme contract, browser rendering, or future
   package behavior.
 - **FR7 — Theme-owned palette references remain owned.** A reference to an exact
-  value in the same theme's committed palette file MAY remain a reference; it does
-  not need to be replaced with a copied hex value. A reference to another package's
-  mutable palette or theme MUST remain visible as an external dependency or be
-  resolved according to the author's selected ownership mode.
+  value in the same theme's committed palette file remains a reference by default;
+  it does not need to be replaced with a copied hex value. When a palette belongs
+  to another package, tooling MUST ask whether to retain that visible dependency or
+  copy the current value locally.
 
 ### Executable values and failure behavior
 
@@ -131,7 +134,10 @@ change, and writes an equivalent local theme only after the author confirms.
 - **FR9 — Writes are atomic and opt-in.** Preview is the default. Writing requires
   an explicit author action, uses a temporary destination, validates the complete
   result, and replaces target files only after success. Existing modified output
-  MUST NOT be overwritten without explicit confirmation.
+  MUST NOT be overwritten without explicit confirmation. An author MAY detach by
+  adding resolved values to the existing theme and removing `extends`; tooling MUST
+  NOT require creation of a second theme. A sibling output remains an available
+  comparison option.
 - **FR10 — Partial ownership is explicit.** An author MAY choose to freeze only
   selected generated scales while continuing to follow a base. The preview and
   receipt MUST identify every retained dependency. A partial operation MUST NOT be
@@ -151,12 +157,18 @@ change, and writes an equivalent local theme only after the author confirms.
   summary. Visual comparison MAY supplement this evidence but MUST NOT replace the
   structural comparison.
 - **FR13 — Every write has a receipt.** The receipt MUST include the tool and
-  Astryx versions, source theme identity, selected operation and surfaces, input and
-  output digests, retained dependencies, generated file paths, and verification
-  result. It MUST NOT be required at runtime.
+  Astryx versions, source theme identity, original base identity and version when
+  applicable, selected operation and surfaces, input and output digests, retained
+  dependencies, generated file paths, and verification result. It MUST NOT be
+  required at runtime.
 - **FR14 — Repeated output is stable.** With the same source, versions, options,
   and environment-independent inputs, materialization MUST produce byte-identical
   generated files and receipts except for an explicitly excluded invocation time.
+- **FR14a — Future comparison is read-only.** An owned snapshot MAY later compare
+  itself with a newer release of its former base using receipt metadata. The
+  comparison MUST be explicitly requested, MUST show the proposed structural and
+  visual differences, and MUST NOT update the owned source or recreate inheritance
+  automatically.
 
 ### Compatibility and migration
 
@@ -164,7 +176,10 @@ change, and writes an equivalent local theme only after the author confirms.
   implementation behind an existing `defineTheme` typography, motion, radius, or
   color configuration MUST NOT silently adopt incompatible generation behavior.
   Versioning, deprecation, or replacement requires a supported comparison and
-  materialization path first.
+  materialization path first. `defineTheme({color})` MUST NOT be marked deprecated
+  until the supported palette generator, explicit mapping workflow, visual
+  comparison, migration command, documentation, and compatibility fixtures are
+  available. Removal requires a later breaking release.
 - **FR16 — Legacy color migration is explicit.** Migrating
   `defineTheme({color})` to an author-owned tonal palette MUST use the current
   supported palette generator, produce a reviewable palette and token mapping, and
@@ -258,26 +273,14 @@ This spec moves from `proposed` to `shipped` only when:
 
 ## Open questions
 
-- **What should new themes do by default?** An owned snapshot gives an application
-  control and visual stability, but it also takes responsibility for maintaining
-  the copied values. Following a base keeps source smaller and receives its fixes,
-  but upgrades may change the result. Should the default vary between application
-  themes, reusable theme packages, and local variants of another owned theme?
 - **Should the CLI expose `detach`, `freeze`, or both?** Detach removes a base-theme
   relationship; freeze converts selected generated scales into explicit values.
   They use the same materialization engine but communicate different outcomes. Is
   one guided command clearer, or do separate verbs make the consequences safer?
-- **Where should detached output go?** Replacing the original source is convenient
-  but can immediately affect every import and is harder to undo outside version
-  control. Creating a sibling theme is safer for comparison but requires callers
-  to switch imports deliberately. Should the CLI default to a sibling and offer
-  replacement only as an explicit option?
-- **How should icons, indicators, and syntax definitions survive?** These values
-  may contain React nodes or other executable code that cannot be reconstructed
-  from resolved data. Stable public exports can remain explicit imports, while
-  project-local values may already have safe source references. Should an
-  untraceable executable value stop the entire operation, or can the author supply
-  a replacement import before writing?
+- **Should in-place detach or sibling output be the default?** Both are supported.
+  Updating the existing theme preserves imports and avoids application changes, but
+  a sibling is safer for side-by-side review. Which should the CLI preselect after
+  it has shown the complete diff?
 - **How complete should an owned snapshot be?** Emitting every resolved public
   theme value provides the strongest independence from Core default changes but
   may produce a very large file and require ongoing maintenance. Emitting only
@@ -292,33 +295,17 @@ This spec moves from `proposed` to `shipped` only when:
   of a `calc()` expression and its current computed result. Should equivalence
   require identical authoring intent, identical normalized theme data, identical
   compiled output, or a documented combination?
-- **Should owned palette references be preserved?** Keeping a reference to the same
-  theme's committed palette maintains one source of truth and remains locally
-  owned. Copying the current hex removes indirection but allows the palette and
-  theme token to drift. Should local references remain by default while external
-  palette dependencies require an explicit keep-or-copy decision?
-- **How should authors compare with future base updates?** An owned snapshot should
-  not silently reconnect to its former base. A comparison command could use the
-  receipt's base identity and version to produce an optional diff against a newer
-  release. What evidence should it show, and how can it avoid implying that the
-  author must accept the update?
-- **When can legacy color configuration be deprecated?** A warning before the new
-  palette generator, mapping workflow, visual comparison, and migration command are
-  dependable would leave existing authors without a safe path. Which adoption,
-  fixture, documentation, and release criteria must be satisfied before
-  `defineTheme({color})` is marked deprecated, and which later major release may
-  remove it?
 
 ## Decision log
 
-### DEC-1 — Make follow versus own an explicit author choice
+### DEC-1 — Default new application themes to an owned starting point
 
 **Reference:** `spec:AST-022/DEC-1`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
-Inheritance is useful when authors want ongoing base-theme improvements. A copied
-starting point is useful when visual stability and local control matter more. The
-tooling must present both honestly rather than treating one as universally better.
+New application and product themes should own their starting source, consistent
+with the theme-owned palette model. Following a base remains useful for intentional
+variants, but requires an explicit choice after its upgrade behavior is explained.
 
 ### DEC-2 — Use one materialization engine for inheritance and generated scales
 
@@ -332,8 +319,34 @@ and receipt guarantees even if the CLI uses different user-facing verbs.
 ### DEC-3 — Preserve existing generator behavior until migration is reviewable
 
 **Reference:** `spec:AST-022/DEC-3`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
 Replacing a formula behind unchanged theme source is a visual compatibility break.
 Existing helpers remain stable until authors can compare, materialize, and accept a
 replacement explicitly.
+
+### DEC-4 — Preserve executable source references or fail before writing
+
+**Reference:** `spec:AST-022/DEC-4`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Stable icon, indicator, and syntax imports remain explicit imports. When tooling
+cannot identify a supported source reference, it stops and asks the author for one
+rather than omitting or approximating executable behavior.
+
+### DEC-5 — Preserve locally owned palette references
+
+**Reference:** `spec:AST-022/DEC-5`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+A reference to the same theme's committed palette maintains one owned source of
+truth and remains a reference by default. External palette dependencies require an
+explicit keep-or-copy choice.
+
+### DEC-6 — Compare future bases only on request
+
+**Reference:** `spec:AST-022/DEC-6`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Receipts retain the former base identity and version so an author may request a
+future comparison. Comparison does not update the theme or recreate inheritance.
