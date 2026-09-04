@@ -155,7 +155,7 @@
   },
   {
     "component": "Resizable",
-    "storyId": "lab-resizable--horizontal-split",
+    "storyId": "core-resizable--horizontal-split",
     "dims": [
       "D4"
     ],
