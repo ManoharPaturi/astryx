@@ -91,6 +91,11 @@ outside Core theme normalization and runtime behavior.
   100 are optional. A one-stop palette is valid. Serialization uses the canonical
   JSON number spelling produced by the implementation and MUST NOT depend on
   locale.
+- **FR2b — Stop numbers are stable coordinates.** For the same recipe, family,
+  mode, seed, vibrancy, profile, and compatible anchors, a shared stop MUST
+  produce the same exact color in compact, full, and custom layouts. Adding or
+  removing other stops MUST NOT renumber or change it. Generated TypeScript MUST
+  expose only the requested stop keys, so an omitted stop fails type checking.
 - **FR3 — Mode intent is explicit.** Light-only, dark-only, independent light and
   dark inputs, shared candidates, and named dark transforms are distinct. A
   light ramp MUST NOT silently become a reviewed dark ramp, and labels MUST NOT
@@ -197,7 +202,8 @@ The first production recipe is defined here rather than by mutable Sandbox code:
   `0.18 + 0.82 × sqrt(sin(π × tone / 100))`.
 - Apply hue-balance factors 0.94 for `[70,115)`, 0.78 for `[115,175)`, 0.82 for
   `[175,230)`, 0.90 for `[285,340)`, and 1 elsewhere. Orange hues `[40,70)`
-  rotate toward red below tone 50 by at most 18 degrees.
+  rotate toward red below tone 50 by at most 8 degrees so low orange stops stay
+  distinct from the red family.
 - Above tone 60, green hues `[115,175)` taper to 72% of their balanced chroma
   and teal hues `[175,200)` taper to 60% at tone 95 using smoothstep. This keeps
   their light stops optically balanced without muting cyan or changing the
@@ -228,7 +234,7 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 
 | Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
-| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 19 default stops |            3227 | `72f2fca4236dfc76e3fc60444fd6268583f05a840b5e8aa7631b8da126d0cc78` |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 19 default stops |            3227 | `90d280d8d0c7f4eeab97cebf0dc93a0183d4dd3ef9dc81e7357e65550efad103` |
 | `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
 | `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b` |
 | `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             825 | `991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d` |
@@ -306,6 +312,19 @@ expression; only the explicitly approved output becomes the theme-owned palette.
 Rejected: requiring every accepted palette to use the generator's 19-stop
 default. Themes may need compact or specialized palettes for iconography,
 illustration, visualization, or brand expression.
+
+### DEC-13 — Intermediate stops are generated explicitly
+
+**Deciders:** `cixzhang`, `rubyycheung`, `2026-09-03`
+
+Compact and full presets share the same 0–100 tonal coordinate system, and
+custom layouts remain valid. An author who needs an intermediate value such as
+12.5 requests that stop during generation and reviews the emitted exact hex.
+The committed TypeScript then exposes `family[12.5]` as an actual typed key.
+
+Rejected: restricting palette authors to two stop counts, renumbering stops when
+the layout changes, or adding a runtime `family.get(12.5)` that creates an
+unreviewed color after authoring.
 
 ## Open questions
 
