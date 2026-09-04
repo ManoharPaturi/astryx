@@ -477,6 +477,22 @@ describe('checkThemeBuilt', () => {
     // The wired one is still reported, as context rather than as a failure.
     expect(c.message).toMatch(/1 other stale artifact/);
   }, SLOW);
+
+  it('warns instead of reassuring when the walk was truncated', async () => {
+    // A 4001-directory project whose theme sits past the bound returned the
+    // reassuring skip message while the remainder was never examined.
+    const files = {'package.json': '{}'};
+    for (let i = 0; i < 4200; i++) files[`src/d${i}/.keep`] = '';
+    const dir = mkProject(files);
+    const c = await checkThemeBuilt({...ctx(dir), coreDir: null});
+    expect(c.status).toBe('warn');
+    expect(c.message).toMatch(/stopped before walking all of it/);
+  }, SLOW);
+
+  it('still says INFO for a small project that genuinely has none', async () => {
+    const dir = mkProject({'package.json': '{}', 'src/app.ts': 'export const a = 1;'});
+    expect((await checkThemeBuilt({...ctx(dir), coreDir: null})).status).toBe('info');
+  });
 });
 
 describe('isThemeBuildWired — matched per source, not per package', () => {

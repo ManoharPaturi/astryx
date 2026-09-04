@@ -14,4 +14,8 @@ Caught by building a real app rather than another unit test: import-shaped prose
 
 Verified end to end against a built app: edit an imported token and doctor fails; touch the artifact so it looks newest and it still fails; rebuild and it passes; wire the build into predev and staleness drops to info; point predev at a different theme, or drop its argument, and it fails again.
 
+The first version of that fix over-corrected: blanking template CONTENTS swallowed `${require('./tokens')}`, which is a real dependency, so the digest stopped moving when tokens changed — a stale theme reported as current, the opposite false green. Template TEXT is prose and is blanked; `${...}` is code and is kept.
+
+`doctor` also returned "no built theme output found" without checking whether the walk had finished. A project whose theme sits past the directory bound got the reassuring skip message while the remainder was never examined; that case now warns.
+
 @josephfarina

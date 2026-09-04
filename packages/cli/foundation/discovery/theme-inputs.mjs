@@ -58,20 +58,24 @@ const EXTENSIONS = [
 const MAX_INPUTS = 200;
 
 /**
- * Blank the CONTENTS of template literals, preserving offsets, so a line of
- * prose that talks about importing is not read as an import.
+ * Blank the TEXT of template literals while KEEPING `${...}` interpolations,
+ * preserving offsets, so prose about importing is not read as an import but
+ * real code inside an interpolation still is.
  *
  * Found by building a real app: core's `<Theme>` prints a perf hint whose text
  * contains an example `import '@astryxdesign/theme-<name>/theme.css'`. The walk
  * read that as two unresolvable specifiers, declared the graph incomplete, and
- * every build then recorded `Inputs: unverifiable` — so freshness reported
- * "cannot verify" for every theme in every real project. The feature was inert,
- * and only an end-to-end build showed it.
+ * every build then recorded `Inputs: unverifiable` — freshness could not verify
+ * anything, in any real project, while every unit test passed.
+ *
+ * The first fix over-corrected and blanked interpolations too. That is the
+ * opposite failure and worse: `${require('./tokens')}` is a REAL dependency, and
+ * swallowing it left the digest unchanged when tokens changed — a stale theme
+ * reported as current. Text is prose; an interpolation is code. Keep the code.
  *
  * Plain '' and "" strings are left alone: a real specifier lives in one, and the
  * surrounding grammar (`from`, `import(`, `require(`) is what makes it an
- * import. A TEMPLATE literal can never be a static specifier, so its contents
- * are only ever prose or an interpolation.
+ * import. Template TEXT can never be a static specifier.
  *
  * @param {string} code
  * @returns {string}
@@ -85,9 +89,8 @@ function blankLiterals(code) {
       i += 1;
       continue;
     }
-    out += '`';
+    out += ' '; // the opening backtick itself is not code
     i += 1;
-    let depth = 0;
     while (i < code.length) {
       const c = code[i];
       if (c === '\\') {
@@ -95,25 +98,34 @@ function blankLiterals(code) {
         i += 2;
         continue;
       }
-      if (depth === 0 && c === '`') {
-        out += '`';
+      if (c === '`') {
+        out += ' ';
         i += 1;
         break;
       }
       if (c === '$' && code[i + 1] === '{') {
-        depth += 1;
+        // An interpolation is executable code — copy it through verbatim,
+        // tracking brace depth so a nested object or template inside it does
+        // not end the interpolation early.
         out += '  ';
         i += 2;
+        let depth = 1;
+        while (i < code.length && depth > 0) {
+          const k = code[i];
+          if (k === '{') depth += 1;
+          else if (k === '}') depth -= 1;
+          if (depth === 0) {
+            out += ' ';
+            i += 1;
+            break;
+          }
+          out += k;
+          i += 1;
+        }
         continue;
       }
-      if (depth > 0 && c === '}') {
-        depth -= 1;
-        out += ' ';
-        i += 1;
-        continue;
-      }
-      // Keep newlines so line offsets, and therefore the other regexes'
-      // `^`-anchored alternatives, still behave.
+      // Keep newlines so line offsets, and the `^`-anchored alternatives in
+      // the specifier patterns, still behave.
       out += c === '\n' ? '\n' : ' ';
       i += 1;
     }

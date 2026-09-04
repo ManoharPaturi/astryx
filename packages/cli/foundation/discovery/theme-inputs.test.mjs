@@ -299,3 +299,35 @@ describe('readSpecifiers — prose about importing is not an import', () => {
     expect(digest).not.toBeNull();
   });
 });
+
+describe('template literals: text is prose, interpolations are code', () => {
+  // Both directions are false-greens, and I shipped each in turn.
+  // Reading template TEXT as code: an example import in a warning string made
+  // the graph incomplete, suppressing the digest everywhere.
+  // Blanking interpolations as prose: `${require('./tokens')}` is a REAL
+  // dependency, and swallowing it left the digest unchanged when tokens
+  // changed — a stale theme reported as current.
+  it('keeps a require() inside an interpolation', () => {
+    expect(readSpecifiers('export const x = `${require("./tokens")}`;').specifiers).toEqual([
+      './tokens',
+    ]);
+  });
+
+  it('keeps a dynamic import inside an interpolation', () => {
+    expect(readSpecifiers('export const y = `${await import("./a")}`;').specifiers).toEqual(['./a']);
+  });
+
+  it('still ignores an import written in template TEXT', () => {
+    expect(readSpecifiers("const m = `  import '@a/b';`;").specifiers).toEqual([]);
+  });
+
+  it('tracks a dependency reached only through an interpolation', () => {
+    const dir = mkProject({
+      'tokens.js': 'module.exports = "#ff3366";',
+      'theme.ts': 'export const t = `${require("./tokens")}`;',
+    });
+    const before = themeInputsDigest(path.join(dir, 'theme.ts')).digest;
+    fs.writeFileSync(path.join(dir, 'tokens.js'), 'module.exports = "#00ff00";');
+    expect(themeInputsDigest(path.join(dir, 'theme.ts')).digest).not.toBe(before);
+  });
+});

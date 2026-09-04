@@ -450,3 +450,33 @@ describe('swizzle findings count and name only what is real', () => {
     expect(checkSwizzled(ctx(dir)).status).toBe('warn');
   });
 });
+
+describe('StyleX wiring must reach the bundler plugin list', () => {
+  const app = cfg => ({
+    'package.json': JSON.stringify({devDependencies: {'vite-plugin-stylex': '^0.6.0'}}),
+    'vite.config.js': cfg,
+    'src/components/astryx/Z/Z.tsx':
+      "import * as stylex from '@stylexjs/stylex';\nexport function Z() {}",
+  });
+
+  it('does not count a plugin that is called and discarded', () => {
+    // `const unused = stylex()` beside `plugins: []` runs nowhere; the app
+    // compiles no StyleX and its components render unstyled.
+    const dir = mkProject(
+      app("import s from 'vite-plugin-stylex';\nconst unused = s();\nexport default {plugins: []};"),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBeNull();
+  });
+
+  it('counts a plugin called inside the plugin list', () => {
+    const dir = mkProject(
+      app("import s from 'vite-plugin-stylex';\nexport default {plugins: [s()]};"),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBe(true);
+  });
+
+  it('counts a bare binding passed in the plugin list', () => {
+    const dir = mkProject(app("import s from 'vite-plugin-stylex';\nexport default {plugins: [s]};"));
+    expect(findSwizzled(dir).hasCompiler).toBe(true);
+  });
+});

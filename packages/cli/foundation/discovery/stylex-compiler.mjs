@@ -110,25 +110,50 @@ export function declaredStyleXCompilers(pkgDir, root = pkgDir) {
 export function isStyleXConfigured(pkgDir, plugins, root = pkgDir) {
   const names = Array.isArray(plugins) ? plugins : [plugins];
   if (names.length === 0) return false;
+
+  /**
+   * The contents of every `plugins:`/`presets:` array in a config.
+   *
+   * Wiring means the plugin reaches the bundler's plugin list. Accepting any
+   * call of the import counted `const unused = stylex();` beside
+   * `plugins: []` — the plugin runs nowhere and the app compiles no StyleX.
+   * Extracting the list and asking whether the plugin is IN it is the check
+   * that matches what the bundler actually does.
+   */
+  const pluginLists = (/** @type {string} */ code) => {
+    /** @type {string[]} */
+    const lists = [];
+    for (const m of code.matchAll(/\b(?:plugins|presets)\s*:\s*\[/g)) {
+      let i = m.index + m[0].length;
+      let depth = 1;
+      const start = i;
+      while (i < code.length && depth > 0) {
+        if (code[i] === '[') depth += 1;
+        else if (code[i] === ']') depth -= 1;
+        i += 1;
+      }
+      lists.push(code.slice(start, i - 1));
+    }
+    return lists;
+  };
+
   const referenced = (/** @type {string} */ src) => {
     const code = stripComments(src);
+    const lists = pluginLists(code);
     return names.some(n => {
       const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // A bare string or a direct call is wiring: `plugins: ['x']`, `x()`.
-      if (new RegExp(`['"\`]${esc}['"\`]\\s*[,)\\]}]`).test(code)) return true;
-      if (new RegExp(`\\b${esc}\\s*[(:]`).test(code)) return true;
-      // An IMPORT of the plugin is only wiring if the binding is then used.
-      // `import stylex from 'vite-plugin-stylex'` with `plugins: []` compiles
-      // nothing, and counting it reported a working setup for a project whose
-      // components render unstyled.
+      // Named directly in a plugin list: `plugins: ['x']` or `plugins: [x()]`.
+      const inList = lists.some(l =>
+        new RegExp(`['"\`]${esc}['"\`]|\\b${esc}\\s*\\(`).test(l),
+      );
+      if (inList) return true;
+      // Imported, then that binding used in a plugin list.
       const bind =
         new RegExp(`import\\s+(?:\\*\\s+as\\s+)?(\\w+)[^;]*?from\\s*['"\`]${esc}['"\`]`).exec(code) ??
         new RegExp(`(?:const|let|var)\\s+(\\w+)\\s*=\\s*require\\s*\\(\\s*['"\`]${esc}['"\`]`).exec(code);
       if (!bind) return false;
       const id = bind[1];
-      // Used = called, constructed, or passed along somewhere after the import.
-      const after = code.slice(bind.index + bind[0].length);
-      return new RegExp(`\\bnew\\s+${id}\\b|\\b${id}\\s*\\(|[[,:]\\s*${id}\\s*[,\\]}]`).test(after);
+      return lists.some(l => new RegExp(`\\bnew\\s+${id}\\b|\\b${id}\\s*\\(|(^|[,\\s])${id}\\s*(,|$)`).test(l));
     });
   };
 

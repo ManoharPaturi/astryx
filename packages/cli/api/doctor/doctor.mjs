@@ -797,14 +797,29 @@ export function isThemeBuildWired(pkgDir, source) {
 export async function checkThemeBuilt(ctx) {
   const {themes: built, truncated: builtTruncated} = findBuiltThemes(ctx.cwd);
   if (built.length === 0) {
-    return {
-      id: 'theme-built',
-      label: 'Built theme freshness',
-      status: 'info',
-      message:
-        'Skipped — no built theme output found. Importing a defineTheme() source ' +
-        'directly (runtime injection) cannot go stale.',
-    };
+    // "None found" is only meaningful if the whole project was looked at. A
+    // truncated walk that reached no artifact has established nothing: a
+    // 4001-directory project with its theme past the bound reported the
+    // reassuring skip message while the remainder was never examined.
+    return builtTruncated
+      ? {
+          id: 'theme-built',
+          label: 'Built theme freshness',
+          status: 'warn',
+          message:
+            'No built theme output found in the part of this project that was scanned, but the ' +
+            'scan stopped before walking all of it — a stale artifact beyond that point would ' +
+            'not have been seen.',
+          fix: `Run \`${getCliInvocation(ctx.cwd)} doctor\` per package so every directory is covered.`,
+        }
+      : {
+          id: 'theme-built',
+          label: 'Built theme freshness',
+          status: 'info',
+          message:
+            'Skipped — no built theme output found. Importing a defineTheme() source ' +
+            'directly (runtime injection) cannot go stale.',
+        };
   }
 
   const rel = (/** @type {string} */ p) => path.relative(ctx.cwd, p) || p;
