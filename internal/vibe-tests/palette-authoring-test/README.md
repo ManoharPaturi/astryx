@@ -9,7 +9,7 @@ agent cannot see the answer key.
 
 Evaluate whether the response:
 
-- selects `exact`, `bounded`, or `preferred` from the author's stated intent;
+- selects `exact`, `bounded`, or `flexible` from the author's stated intent;
 - changes vibrancy only when requested;
 - preserves explicit custom and decimal stops;
 - includes default black and white endpoints unless the author removes them;

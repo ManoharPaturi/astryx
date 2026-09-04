@@ -13,7 +13,7 @@ export const doc = {
     'perform semantic mapping, or make accessibility claims. Stop numbers remain ' +
     'stable across layouts, and requested decimal stops are emitted explicitly. ' +
     'Anchor policies are intentional: exact preserves the chosen color at its stop; ' +
-    'bounded permits movement within maxDeltaE; preferred treats it as guidance. ' +
+    'bounded permits movement within maxDeltaE; flexible treats it as guidance. ' +
     'An anchor needs a mode and stop. Stops apply to every family in one request. ' +
     'The default 0–100 layout includes exact black and white; a custom stop list can omit them.',
   importPath: '@astryxdesign/cli/api',
@@ -56,7 +56,7 @@ export const doc = {
     },
     {
       label: 'Use an anchor as guidance',
-      code: "generateTonalPalette({stops: [50], families: [{id: 'pink', seed: '#ff4db8', anchors: [{mode: 'light', stop: 50, color: '#ff4db8', policy: 'preferred'}]}]});",
+      code: "generateTonalPalette({stops: [50], families: [{id: 'pink', seed: '#ff4db8', anchors: [{mode: 'light', stop: 50, color: '#ff4db8', policy: 'flexible'}]}]});",
     },
     {
       label: 'Generate an optional accent family',

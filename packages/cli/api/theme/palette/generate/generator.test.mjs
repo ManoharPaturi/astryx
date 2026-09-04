@@ -244,7 +244,7 @@ describe('astryx-oklch-v1 palette generator', () => {
     ]);
   });
 
-  it('distinguishes exact, bounded, and preferred authoring policies', () => {
+  it('distinguishes exact, bounded, and flexible authoring policies', () => {
     const target = '#1682d5';
     const generate = (policy, maxDeltaE) =>
       generateTonalPalette({
@@ -270,12 +270,12 @@ describe('astryx-oklch-v1 palette generator', () => {
 
     const exact = generate('exact');
     const bounded = generate('bounded', 2);
-    const preferred = generate('preferred');
+    const flexible = generate('flexible');
 
     expect(exact).toBe(target);
     expect(perceptualDelta(bounded, target)).toBeLessThanOrEqual(2.01);
-    expect(preferred).not.toBe(target);
-    expect(new Set([exact, bounded, preferred]).size).toBe(3);
+    expect(flexible).not.toBe(target);
+    expect(new Set([exact, bounded, flexible]).size).toBe(3);
   });
 
   it('generates an accent family only when the author declares one', () => {

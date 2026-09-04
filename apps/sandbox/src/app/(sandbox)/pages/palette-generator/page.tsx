@@ -95,7 +95,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 80,
         color: '#f8c723',
-        policy: 'preferred',
+        policy: 'flexible',
         maxDeltaE: 3,
       },
     ],
@@ -106,7 +106,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 50,
         color: '#358a3a',
-        policy: 'preferred',
+        policy: 'flexible',
         maxDeltaE: 3,
       },
     ],
@@ -119,7 +119,7 @@ const INITIAL_FAMILIES: EditableFamily[] = [
         mode: 'light',
         stop: 50,
         color: '#980fb2',
-        policy: 'preferred',
+        policy: 'flexible',
         maxDeltaE: 3,
       },
     ],
@@ -1390,7 +1390,7 @@ export default function PaletteGeneratorPage() {
                                       'light',
                                     ),
                                     color: family.seed,
-                                    policy: 'preferred',
+                                    policy: 'flexible',
                                     maxDeltaE: 2,
                                   },
                                 ],
@@ -1422,7 +1422,7 @@ export default function PaletteGeneratorPage() {
                                 options={[
                                   {value: 'exact', label: 'Exact'},
                                   {value: 'bounded', label: 'Bounded'},
-                                  {value: 'preferred', label: 'Preferred'},
+                                  {value: 'flexible', label: 'Flexible'},
                                 ]}
                               />
                               <IconButton
@@ -1545,7 +1545,7 @@ export default function PaletteGeneratorPage() {
                     Vibrancy is hue-, tone-, and mode-aware—not one chroma
                     multiplier applied equally to every family. Exact anchors
                     must be preserved; bounded anchors may move only within the
-                    stated ΔE; preferred anchors may move and report the
+                    stated ΔE; flexible anchors may move and report the
                     difference. Anchor corrections taper through neighboring
                     stops instead of changing one isolated swatch.
                   </Text>

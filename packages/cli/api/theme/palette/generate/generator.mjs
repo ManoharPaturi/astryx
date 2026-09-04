@@ -10,6 +10,18 @@ import {
   toneToOklabLightness,
 } from './color.mjs';
 
+/** @typedef {import('../../theme.type.mjs').TonalPaletteAnchor} TonalPaletteAnchor */
+/** @typedef {import('../../theme.type.mjs').TonalPaletteGenerationInput} TonalPaletteGenerationInput */
+/** @typedef {[number, number, number]} ColorTriple */
+/** @typedef {'light' | 'dark'} PaletteMode */
+/** @typedef {{lightness: number, chroma: number, hue: number}} PolarColor */
+/** @typedef {TonalPaletteAnchor & {color: string, generatedColor: string, deltaE: number}} AnchorResult */
+/** @typedef {{colors: Record<number, string>, diagnostics: Record<string, unknown>}} GeneratedRamp */
+/** @typedef {{id: string, name: string, seed: string, kind: 'chromatic' | 'neutral', anchors: TonalPaletteAnchor[]}} NormalizedFamily */
+/** @typedef {{recipe: typeof PALETTE_RECIPE, vibrancy: number, neutralProfile: string, modeStrategy: string, stops: number[], families: NormalizedFamily[]}} NormalizedRequest */
+/** @typedef {{id: string, name: string, seed: string, light?: GeneratedRamp, dark?: GeneratedRamp}} GeneratedFamily */
+/** @typedef {{recipe: typeof PALETTE_RECIPE, status: 'candidate', request: NormalizedRequest, families: GeneratedFamily[], coordination: Record<string, unknown>[], errors: {familyId: string, message: string}[]}} PaletteGenerationResult */
+
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
 export const DEFAULT_21_STOPS = Object.freeze([
   0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
@@ -21,28 +33,34 @@ export const COMPACT_11_STOPS = Object.freeze([
 
 const DARK_CHROMA_FACTOR = 0.85;
 
+/** @param {number} value @param {number} minimum @param {number} maximum */
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
+/** @param {number} hue */
 function normalizeHue(hue) {
   return ((hue % 360) + 360) % 360;
 }
 
+/** @param {number} a @param {number} b */
 function hueDistance(a, b) {
   const difference = Math.abs(normalizeHue(a) - normalizeHue(b));
   return Math.min(difference, 360 - difference);
 }
 
+/** @param {number} from @param {number} to */
 function signedHueDelta(from, to) {
   return ((normalizeHue(to) - normalizeHue(from) + 540) % 360) - 180;
 }
 
+/** @param {number} a @param {number} b @param {number} amount */
 function interpolateHue(a, b, amount) {
   const delta = ((b - a + 540) % 360) - 180;
   return normalizeHue(a + delta * amount);
 }
 
+/** @param {readonly number[]} stops @returns {number[]} */
 export function validateStops(stops) {
   if (!Array.isArray(stops) || stops.length === 0) {
     throw new Error('A palette requires at least one stop.');
@@ -62,6 +80,7 @@ export function validateStops(stops) {
   return [...stops];
 }
 
+/** @param {unknown} input @returns {number[]} */
 export function parseStopList(input) {
   const values = String(input)
     .split(',')
@@ -72,6 +91,7 @@ export function parseStopList(input) {
   return validateStops(values.map(Number));
 }
 
+/** @param {string} strategy @returns {PaletteMode[]} */
 function modesForStrategy(strategy) {
   if (strategy === 'light-only') return ['light'];
   if (strategy === 'dark-only') return ['dark'];
@@ -79,6 +99,7 @@ function modesForStrategy(strategy) {
   throw new Error(`Unknown mode strategy: ${String(strategy)}`);
 }
 
+/** @param {number} hue */
 function hueBalanceFactor(hue) {
   const normalized = normalizeHue(hue);
   if (normalized >= 70 && normalized < 115) return 0.94;
@@ -88,6 +109,7 @@ function hueBalanceFactor(hue) {
   return 1;
 }
 
+/** @param {number} hue @param {number} tone */
 function highToneChromaFactor(hue, tone) {
   if (tone <= 60) return 1;
   const taper = smoothstep((tone - 60) / 35);
@@ -97,6 +119,7 @@ function highToneChromaFactor(hue, tone) {
   return 1;
 }
 
+/** @param {number} hue @param {number} tone */
 function toneAdjustedHue(hue, tone) {
   const normalized = normalizeHue(hue);
   if (normalized < 40 || normalized >= 70 || tone >= 50) return normalized;
@@ -104,11 +127,13 @@ function toneAdjustedHue(hue, tone) {
   return normalizeHue(normalized - 8 * Math.sqrt(darkening));
 }
 
+/** @param {number} tone */
 function toneChromaEnvelope(tone) {
   const normalized = clamp(tone / 100, 0, 1);
   return 0.18 + 0.82 * Math.sqrt(Math.max(0, Math.sin(Math.PI * normalized)));
 }
 
+/** @param {number} vibrancy */
 function vibrancyMultiplier(vibrancy) {
   if (!Number.isFinite(vibrancy) || vibrancy < 0 || vibrancy > 100) {
     throw new Error('Vibrancy must be a number from 0 to 100.');
@@ -118,15 +143,18 @@ function vibrancyMultiplier(vibrancy) {
   return 1 + (vibrancy - 50) * 0.0096;
 }
 
+/** @param {number} sourceChroma */
 function coordinatedChroma(sourceChroma) {
   return sourceChroma * 0.35 + 0.18 * 0.65;
 }
 
+/** @param {string} color @returns {PolarColor} */
 function colorToPolar(color) {
   const value = hexToOklch(color);
   return {lightness: value.L, chroma: value.C, hue: value.H};
 }
 
+/** @param {string} profile @param {string} seed @returns {PolarColor} */
 function neutralPolar(profile, seed) {
   if (profile === 'custom') return colorToPolar(seed);
   const hue = profile === 'warm-v1' ? 75 : profile === 'cool-v1' ? 250 : 0;
@@ -140,6 +168,7 @@ function neutralPolar(profile, seed) {
   };
 }
 
+/** @param {PolarColor} seed @param {TonalPaletteAnchor[]} anchors @param {number} stop @returns {PolarColor} */
 function anchorPolarAtStop(seed, anchors, stop) {
   if (anchors.length === 0) return seed;
   const sorted = [...anchors].sort((a, b) => a.stop - b.stop);
@@ -158,6 +187,13 @@ function anchorPolarAtStop(seed, anchors, stop) {
   };
 }
 
+/**
+ * @param {PolarColor} source
+ * @param {number} tone
+ * @param {PaletteMode} mode
+ * @param {number} vibrancy
+ * @param {boolean} coordinateWithOtherFamilies
+ */
 function generateCandidate(
   source,
   tone,
@@ -184,6 +220,7 @@ function generateCandidate(
   };
 }
 
+/** @param {string} colorA @param {string} colorB */
 export function perceptualDelta(colorA, colorB) {
   const [lightnessA, aA, bA] = oklabCoordinates(colorA);
   const [lightnessB, aB, bB] = oklabCoordinates(colorB);
@@ -194,6 +231,7 @@ export function perceptualDelta(colorA, colorB) {
   );
 }
 
+/** @param {string} colorA @param {string} colorB @param {number} amount */
 function interpolateColor(colorA, colorB, amount) {
   const start = hexToOklch(colorA);
   const end = hexToOklch(colorB);
@@ -204,13 +242,14 @@ function interpolateColor(colorA, colorB, amount) {
   );
 }
 
+/** @param {string} candidate @param {TonalPaletteAnchor} anchor @returns {AnchorResult} */
 function applyAnchor(candidate, anchor) {
   const target = normalizeColor(anchor.color);
   let generatedColor = candidate;
   if (anchor.policy === 'exact') {
     generatedColor = target;
   } else if (anchor.policy === 'bounded') {
-    const tolerance = anchor.maxDeltaE;
+    const tolerance = Number(anchor.maxDeltaE);
     if (!Number.isFinite(tolerance) || tolerance < 0) {
       throw new Error(
         `Bounded anchor at stop ${anchor.stop} requires a non-negative maxDeltaE.`,
@@ -227,7 +266,7 @@ function applyAnchor(candidate, anchor) {
       }
       generatedColor = interpolateColor(target, candidate, low);
     }
-  } else if (anchor.policy === 'preferred') {
+  } else if (anchor.policy === 'flexible') {
     generatedColor = interpolateColor(candidate, target, 0.35);
   } else {
     throw new Error(`Unknown anchor policy: ${String(anchor.policy)}`);
@@ -240,11 +279,13 @@ function applyAnchor(candidate, anchor) {
   };
 }
 
+/** @param {number} amount */
 function smoothstep(amount) {
   const value = clamp(amount, 0, 1);
   return value * value * (3 - 2 * value);
 }
 
+/** @param {ColorTriple} start @param {ColorTriple} end @param {number} amount @returns {ColorTriple} */
 function interpolateDelta(start, end, amount) {
   return [
     start[0] + (end[0] - start[0]) * amount,
@@ -253,7 +294,9 @@ function interpolateDelta(start, end, amount) {
   ];
 }
 
+/** @param {{stop: number, delta: ColorTriple}[]} corrections @param {number} stop @returns {ColorTriple} */
 function correctionAtStop(corrections, stop) {
+  /** @type {ColorTriple} */
   const zero = [0, 0, 0];
   if (corrections.length === 0) return zero;
   const first = corrections[0];
@@ -286,6 +329,7 @@ function correctionAtStop(corrections, stop) {
   );
 }
 
+/** @param {Record<number, string>} colors @param {number[]} stops @param {TonalPaletteAnchor[]} anchors */
 function applyAnchorCorrections(colors, stops, anchors) {
   if (anchors.length === 0) return {colors, anchors: []};
   const corrections = anchors
@@ -294,13 +338,20 @@ function applyAnchorCorrections(colors, stops, anchors) {
       const result = applyAnchor(candidate, anchor);
       const base = oklabCoordinates(candidate);
       const target = oklabCoordinates(result.generatedColor);
+      /** @type {ColorTriple} */
+      const delta = [
+        target[0] - base[0],
+        target[1] - base[1],
+        target[2] - base[2],
+      ];
       return {
         stop: anchor.stop,
-        delta: [target[0] - base[0], target[1] - base[1], target[2] - base[2]],
+        delta,
         result,
       };
     })
     .sort((a, b) => a.stop - b.stop);
+  /** @type {Record<number, string>} */
   const corrected = {};
   for (const stop of stops) {
     const base = oklabCoordinates(colors[stop]);
@@ -320,6 +371,7 @@ function applyAnchorCorrections(colors, stops, anchors) {
   };
 }
 
+/** @param {TonalPaletteAnchor[]} anchors @param {number[]} stops */
 function assertAnchorSet(anchors, stops) {
   const seen = new Set();
   for (const anchor of anchors) {
@@ -350,6 +402,7 @@ function assertAnchorSet(anchors, stops) {
   }
 }
 
+/** @param {Record<number, string>} colors @param {number[]} stops @param {number} sourceHue @param {number[]} gamutMappedStops @param {AnchorResult[]} anchors */
 function buildDiagnostics(colors, stops, sourceHue, gamutMappedStops, anchors) {
   let monotonic = true;
   let minimumAdjacentDeltaE = Number.POSITIVE_INFINITY;
@@ -394,6 +447,7 @@ function buildDiagnostics(colors, stops, sourceHue, gamutMappedStops, anchors) {
   };
 }
 
+/** @param {NormalizedRequest} request @param {NormalizedFamily} family @param {PaletteMode} mode @returns {GeneratedRamp} */
 function generateRamp(request, family, mode) {
   const seedHex = normalizeColor(family.seed);
   const anchors = (family.anchors ?? []).filter(anchor => anchor.mode === mode);
@@ -402,6 +456,7 @@ function generateRamp(request, family, mode) {
     family.kind === 'neutral'
       ? neutralPolar(request.neutralProfile, seedHex)
       : colorToPolar(seedHex);
+  /** @type {Record<number, string>} */
   const colors = {};
   const gamutMappedStops = [];
   const diagnosticReference = generateCandidate(
@@ -439,12 +494,14 @@ function generateRamp(request, family, mode) {
   return {colors: corrected.colors, diagnostics};
 }
 
+/** @param {number[]} stops @param {number} target */
 function nearestStop(stops, target) {
   return stops.reduce((best, stop) =>
     Math.abs(stop - target) < Math.abs(best - target) ? stop : best,
   );
 }
 
+/** @param {NormalizedRequest} request @param {GeneratedFamily[]} families */
 function buildCoordinationDiagnostics(request, families) {
   const stop = nearestStop(request.stops, 50);
   const chromaticIds = new Set(
@@ -456,7 +513,9 @@ function buildCoordinationDiagnostics(request, families) {
     const samples = families
       .filter(family => chromaticIds.has(family.id) && family[mode])
       .map(family => {
-        const color = family[mode].colors[stop];
+        const ramp = family[mode];
+        if (!ramp) throw new Error(`Missing ${mode} ramp for ${family.id}.`);
+        const color = ramp.colors[stop];
         return {
           id: family.id,
           name: family.name,
@@ -499,6 +558,7 @@ function buildCoordinationDiagnostics(request, families) {
   });
 }
 
+/** @param {TonalPaletteGenerationInput} input @returns {NormalizedRequest} */
 export function normalizeGenerationRequest(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('Palette generation config must be an object.');
@@ -532,6 +592,7 @@ export function normalizeGenerationRequest(input) {
       anchors: Array.isArray(family.anchors) ? family.anchors : [],
     };
   });
+  /** @type {NormalizedRequest} */
   const request = {
     recipe: PALETTE_RECIPE,
     vibrancy: input.vibrancy ?? 50,
@@ -545,12 +606,16 @@ export function normalizeGenerationRequest(input) {
   return request;
 }
 
+/** @param {TonalPaletteGenerationInput} input @returns {PaletteGenerationResult} */
 export function generatePaletteSet(input) {
   const request = normalizeGenerationRequest(input);
+  /** @type {GeneratedFamily[]} */
   const families = [];
+  /** @type {{familyId: string, message: string}[]} */
   const errors = [];
   for (const family of request.families) {
     try {
+      /** @type {GeneratedFamily} */
       const generated = {
         id: family.id,
         name: family.name,
@@ -609,6 +674,7 @@ export function generateTonalPalette(input) {
   };
 }
 
+/** @param {unknown} result */
 export function serializeGenerationResult(result) {
   return `${JSON.stringify(result, null, 2)}\n`;
 }

@@ -11,7 +11,7 @@
       "prompt": "Generate a blue palette, but keep #1682d5 within a perceptual distance of 2."
     },
     {
-      "id": "palette-anchor-preferred",
+      "id": "palette-anchor-flexible",
       "prompt": "Use #ff4db8 as inspiration for the pink family, but it can move if that makes the ramp more balanced."
     },
     {

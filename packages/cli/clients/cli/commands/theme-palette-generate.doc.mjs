@@ -13,7 +13,7 @@ export const doc = {
     'numeric stop list, including decimals. Stops apply to every family in the request. ' +
     'Authors may omit the repeated exact black and white endpoints with a custom list. ' +
     'For anchors, exact preserves the chosen color at its mode and stop; bounded allows ' +
-    'movement within maxDeltaE; preferred uses the color as guidance. ' +
+    'movement within maxDeltaE; flexible uses the color as guidance. ' +
     'Without --out it prints a preview. With --out it writes a candidate file and detached ' +
     'receipt. --preview writes a standardized, self-contained HTML review artifact. ' +
     'TypeScript output is directly importable and contains no generator dependency. ' +

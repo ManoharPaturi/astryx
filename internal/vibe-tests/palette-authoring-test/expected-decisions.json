@@ -1,7 +1,7 @@
 {
   "palette-anchor-exact": {"anchorPolicy": "exact"},
   "palette-anchor-bounded": {"anchorPolicy": "bounded", "maxDeltaE": 2},
-  "palette-anchor-preferred": {"anchorPolicy": "preferred"},
+  "palette-anchor-flexible": {"anchorPolicy": "flexible"},
   "palette-vibrancy-muted": {"vibrancyDirection": "decrease"},
   "palette-accent-absent": {"accent": "omit"},
   "palette-accent-ambiguous": {

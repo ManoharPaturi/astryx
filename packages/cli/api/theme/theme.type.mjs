@@ -106,9 +106,9 @@
  * @property {'light' | 'dark'} mode Mode containing the anchored stop.
  * @property {number} stop Existing requested stop where the anchor applies.
  * @property {string} color
- * @property {'exact' | 'bounded' | 'preferred'} policy `exact` preserves the
+ * @property {'exact' | 'bounded' | 'flexible'} policy `exact` preserves the
  * chosen color at that stop; `bounded` permits adjustment within `maxDeltaE`;
- * `preferred` treats the color as guidance and blends toward it.
+ * `flexible` treats the color as guidance and blends toward it.
  * @property {number} [maxDeltaE] Required non-negative perceptual-distance
  * limit for a `bounded` anchor.
  */

@@ -31,7 +31,7 @@ export type PaletteAlgorithm = 'oklch-v1-experimental' | 'hct-v1-experimental';
 export type NeutralProfile = 'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom';
 export type PaletteMode = 'light' | 'dark';
 export type ModeStrategy = 'light-only' | 'dark-only' | 'light-and-dark';
-export type AnchorPolicy = 'exact' | 'bounded' | 'preferred';
+export type AnchorPolicy = 'exact' | 'bounded' | 'flexible';
 
 export interface PaletteAnchor {
   mode: PaletteMode;

@@ -1,4 +1,8 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
+
+/** @typedef {[number, number, number]} ColorTriple */
+
+/** @param {number} channel @returns {number} */
 function srgbToLinear(channel) {
   const value = channel / 255;
   return value <= 0.04045
@@ -6,6 +10,7 @@ function srgbToLinear(channel) {
     : Math.pow((value + 0.055) / 1.055, 2.4);
 }
 
+/** @param {number} channel @returns {number} */
 function linearToSrgb(channel) {
   const value =
     channel <= 0.0031308
@@ -14,6 +19,7 @@ function linearToSrgb(channel) {
   return Math.round(Math.min(255, Math.max(0, value * 255)));
 }
 
+/** @param {string} hex @returns {ColorTriple} */
 function hexToRgb(hex) {
   const value = hex.replace('#', '');
   const full =
@@ -24,6 +30,7 @@ function hexToRgb(hex) {
   return [(numeric >> 16) & 0xff, (numeric >> 8) & 0xff, numeric & 0xff];
 }
 
+/** @param {number} red @param {number} green @param {number} blue @returns {string} */
 function rgbToHex(red, green, blue) {
   return (
     '#' +
@@ -37,6 +44,7 @@ function rgbToHex(red, green, blue) {
   );
 }
 
+/** @param {number} red @param {number} green @param {number} blue @returns {ColorTriple} */
 function linearRgbToOklab(red, green, blue) {
   const lRoot = Math.cbrt(
     0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue,
@@ -54,6 +62,7 @@ function linearRgbToOklab(red, green, blue) {
   ];
 }
 
+/** @param {number} lightness @param {number} a @param {number} b @returns {ColorTriple} */
 function oklabToLinearRgb(lightness, a, b) {
   const lRoot = lightness + 0.3963377774 * a + 0.2158037573 * b;
   const mRoot = lightness - 0.1055613458 * a - 0.0638541728 * b;
@@ -68,6 +77,7 @@ function oklabToLinearRgb(lightness, a, b) {
   ];
 }
 
+/** @param {unknown} input @returns {string} */
 export function normalizeColor(input) {
   const value = String(input).trim();
   if (/^#?[0-9a-f]{3}$/i.test(value)) {
@@ -80,6 +90,7 @@ export function normalizeColor(input) {
   throw new Error(`Invalid color: ${input}`);
 }
 
+/** @param {string} hex @returns {{L: number, C: number, H: number}} */
 export function hexToOklch(hex) {
   const [red, green, blue] = hexToRgb(normalizeColor(hex));
   const [lightness, a, b] = linearRgbToOklab(
@@ -92,6 +103,7 @@ export function hexToOklch(hex) {
   return {L: lightness, C: Math.sqrt(a * a + b * b), H: hue};
 }
 
+/** @param {number} lightness @param {number} chroma @param {number} hue @returns {boolean} */
 function oklchInGamut(lightness, chroma, hue) {
   const radians = (hue * Math.PI) / 180;
   const [red, green, blue] = oklabToLinearRgb(
@@ -109,6 +121,7 @@ function oklchInGamut(lightness, chroma, hue) {
   );
 }
 
+/** @param {number} lightness @param {number} chroma @param {number} hue @returns {string} */
 function oklchToHex(lightness, chroma, hue) {
   if (lightness <= 0) return '#000000';
   if (lightness >= 1) return '#ffffff';
@@ -125,6 +138,7 @@ function oklchToHex(lightness, chroma, hue) {
   );
 }
 
+/** @param {number} hue @param {number} lightness @returns {number} */
 export function maxOklchChroma(hue, lightness) {
   let low = 0;
   let high = 0.4;
@@ -136,6 +150,7 @@ export function maxOklchChroma(hue, lightness) {
   return low;
 }
 
+/** @param {number} lightness @param {number} chroma @param {number} hue @returns {string} */
 export function oklchClampedHex(lightness, chroma, hue) {
   if (oklchInGamut(lightness, chroma, hue)) {
     return oklchToHex(lightness, chroma, hue);
@@ -143,6 +158,7 @@ export function oklchClampedHex(lightness, chroma, hue) {
   return oklchToHex(lightness, maxOklchChroma(hue, lightness), hue);
 }
 
+/** @param {number} tone @returns {number} */
 export function toneToOklabLightness(tone) {
   if (tone <= 0) return 0;
   if (tone >= 100) return 1;
@@ -150,18 +166,22 @@ export function toneToOklabLightness(tone) {
   return Math.cbrt(relative);
 }
 
+/** @param {string} hex @returns {number} */
 export function luminance(hex) {
   const [red, green, blue] = hexToRgb(hex).map(srgbToLinear);
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
+/** @param {string} hex @returns {ColorTriple} */
 export function oklabCoordinates(hex) {
   const value = hexToOklch(hex);
   const radians = (value.H * Math.PI) / 180;
   return [value.L, value.C * Math.cos(radians), value.C * Math.sin(radians)];
 }
 
-export function oklabCoordinatesToHex([lightness, a, b]) {
+/** @param {ColorTriple} coordinates @returns {string} */
+export function oklabCoordinatesToHex(coordinates) {
+  const [lightness, a, b] = coordinates;
   const chroma = Math.sqrt(a * a + b * b);
   const hue = ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
   return oklchClampedHex(Math.min(1, Math.max(0, lightness)), chroma, hue);

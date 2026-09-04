@@ -1,6 +1,9 @@
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 export const PALETTE_PREVIEW_VERSION = 'palette-preview-v1';
 
+/** @typedef {'light' | 'dark'} PaletteMode */
+
+/** @param {unknown} value */
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -10,6 +13,12 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+/**
+ * @param {string} familyId
+ * @param {string} familyName
+ * @param {'light' | 'dark'} mode
+ * @param {Record<string, string>} colors
+ */
 function renderRamp(familyId, familyName, mode, colors) {
   const swatches = Object.entries(colors)
     .map(
@@ -28,12 +37,16 @@ function renderRamp(familyId, familyName, mode, colors) {
       </section>`;
 }
 
+/**
+ * @param {import('../../theme.type.mjs').TonalPaletteCandidate} candidate
+ * @param {'light' | 'dark'} mode
+ */
 function renderMode(candidate, mode) {
   const families = Object.entries(candidate.palette)
-    .filter(([, family]) => family[mode])
-    .map(([familyId, family]) =>
-      renderRamp(familyId, family.name, mode, family[mode]),
-    )
+    .map(([familyId, family]) => {
+      const colors = family[mode];
+      return colors ? renderRamp(familyId, family.name, mode, colors) : '';
+    })
     .join('');
   if (!families) return '';
   return `
@@ -65,7 +78,9 @@ function renderThemeValues() {
  * @returns {string}
  */
 export function renderPalettePreview(candidate) {
-  const modes = ['light', 'dark']
+  /** @type {PaletteMode[]} */
+  const paletteModes = ['light', 'dark'];
+  const modes = paletteModes
     .map(mode => renderMode(candidate, mode))
     .filter(Boolean)
     .join('');
