@@ -267,7 +267,35 @@ function nodeWiresPlugin(node, names, bindings, root, depth = 0) {
     return found;
   }
 
-  // `defineConfig({...})`, `withX({...})` — look inside the arguments.
+  // A config may be a FUNCTION that returns one — `export default ({mode}) =>
+  // ({plugins: [...]})` and its async form are both standard Vite/Next shapes.
+  // Not following them reported a correctly-configured project as unverified,
+  // and a diagnostic that cries wolf on a healthy setup is the thing that
+  // teaches people to ignore it.
+  if (
+    node.type === 'ArrowFunctionExpression' ||
+    node.type === 'FunctionExpression' ||
+    node.type === 'FunctionDeclaration'
+  ) {
+    const body = node.body;
+    if (!body) return false;
+    // Concise arrow body: `() => ({...})`.
+    if (body.type !== 'BlockStatement') {
+      return nodeWiresPlugin(body, names, bindings, root, depth + 1);
+    }
+    // Block body: look at what it returns.
+    let found = false;
+    jscodeshift(body)
+      .find(jscodeshift.ReturnStatement)
+      .forEach(p => {
+        if (p.value.argument && nodeWiresPlugin(p.value.argument, names, bindings, root, depth + 1)) {
+          found = true;
+        }
+      });
+    return found;
+  }
+
+  // `defineConfig({...})`, `defineConfig(() => ({...}))`, `withX({...})`.
   if (node.type === 'CallExpression') {
     return (node.arguments ?? []).some(a => nodeWiresPlugin(a, names, bindings, root, depth + 1));
   }
@@ -275,7 +303,10 @@ function nodeWiresPlugin(node, names, bindings, root, depth = 0) {
   if (node.type === 'ObjectExpression') {
     for (const prop of node.properties ?? []) {
       const key = prop.key?.name ?? prop.key?.value;
-      if ((key === 'plugins' || key === 'presets') && arrayWiresPlugin(prop.value, names, bindings)) {
+      if (
+        (key === 'plugins' || key === 'presets') &&
+        arrayWiresPlugin(prop.value, names, bindings, root)
+      ) {
         return true;
       }
       // Nested config sections (`build: {plugins: [...]}`) still reach the
@@ -292,10 +323,24 @@ function nodeWiresPlugin(node, names, bindings, root, depth = 0) {
  * @param {any} node
  * @param {string[]} names
  * @param {Set<string>} bindings
+ * @param {any} [root] - Present to follow a spread back to its declaration.
  * @returns {boolean}
  */
-function arrayWiresPlugin(node, names, bindings) {
-  if (!node || node.type !== 'ArrayExpression') return false;
+function arrayWiresPlugin(node, names, bindings, root) {
+  if (!node) return false;
+  // `plugins: p` where `p` is a local array — follow it, the same way an
+  // exported identifier is followed.
+  if (node.type === 'Identifier') {
+    if (!root) return false;
+    let found = false;
+    root
+      .find(jscodeshift.VariableDeclarator, {id: {type: 'Identifier', name: node.name}})
+      .forEach(p => {
+        if (arrayWiresPlugin(p.value.init, names, bindings, root)) found = true;
+      });
+    return found;
+  }
+  if (node.type !== 'ArrayExpression') return false;
   return (node.elements ?? []).some(function check(el) {
     if (!el) return false;
     if (el.type === 'StringLiteral' || el.type === 'Literal') return names.includes(el.value);
@@ -303,6 +348,10 @@ function arrayWiresPlugin(node, names, bindings) {
     if (el.type === 'CallExpression') {
       const c = el.callee;
       if (c?.type === 'Identifier' && bindings.has(c.name)) return true;
+      // `s.default()` from a namespace import.
+      if (c?.type === 'MemberExpression' && c.object?.type === 'Identifier' && bindings.has(c.object.name)) {
+        return true;
+      }
       return (el.arguments ?? []).some(check);
     }
     if (el.type === 'NewExpression') {
@@ -312,7 +361,20 @@ function arrayWiresPlugin(node, names, bindings) {
     if (el.type === 'LogicalExpression') return check(el.left) || check(el.right);
     if (el.type === 'ConditionalExpression') return check(el.consequent) || check(el.alternate);
     if (el.type === 'ArrayExpression') return (el.elements ?? []).some(check);
-    if (el.type === 'SpreadElement') return check(el.argument);
+    if (el.type === 'SpreadElement') {
+      // `plugins: [...basePlugins]` — follow the spread to its declaration.
+      const arg = el.argument;
+      if (!arg) return false;
+      if (arg.type !== 'Identifier') return check(arg);
+      if (!root) return false;
+      let found = false;
+      root
+        .find(jscodeshift.VariableDeclarator, {id: {type: 'Identifier', name: arg.name}})
+        .forEach(p => {
+          if (arrayWiresPlugin(p.value.init, names, bindings, root)) found = true;
+        });
+      return found;
+    }
     return false;
   });
 }

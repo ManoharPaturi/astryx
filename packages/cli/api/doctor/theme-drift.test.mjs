@@ -530,3 +530,35 @@ describe('only the EXPORTED config wires a compiler', () => {
     expect(findSwizzled(dir).hasCompiler).toBe(true);
   });
 });
+
+describe('the config shapes real projects actually use', () => {
+  const app = cfg => ({
+    'package.json': JSON.stringify({devDependencies: {'vite-plugin-stylex': '^0.6.0'}}),
+    'vite.config.js': cfg,
+    'src/components/astryx/Z/Z.tsx':
+      "import * as stylex from '@stylexjs/stylex';\nexport function Z() {}",
+  });
+  const wired = cfg => findSwizzled(mkProject(app(cfg))).hasCompiler;
+
+  // A config exported as a FUNCTION is standard Vite and Next. Reporting those
+  // projects as unverified is a false alarm on a healthy setup, and a
+  // diagnostic that cries wolf is one people learn to ignore.
+  it.each([
+    ['arrow returning a config', "export default () => ({plugins: [s()]});"],
+    ['async arrow config', 'export default async () => ({plugins: [s()]});'],
+    ['defineConfig(fn)', 'export default (({mode}) => ({plugins: [s()]}));'],
+    ['block body with a return', 'export default () => { const p = [s()]; return {plugins: p}; };'],
+    ['plugins bound to a const', 'const p = [s()];\nexport default {plugins: p};'],
+    ['spread of a const array', 'const base = [s()];\nexport default {plugins: [...base]};'],
+  ])('detects %s', (_label, body) => {
+    expect(wired(`import s from 'vite-plugin-stylex';\n${body}`)).toBe(true);
+  });
+
+  it('a function config that does NOT wire it is still unverified', () => {
+    expect(wired("import s from 'vite-plugin-stylex';\nexport default () => ({plugins: []});")).toBeNull();
+  });
+
+  it('an empty plugins const is still unverified', () => {
+    expect(wired("import s from 'vite-plugin-stylex';\nconst p = [];\nexport default {plugins: p};")).toBeNull();
+  });
+});
