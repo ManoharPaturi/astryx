@@ -6,8 +6,8 @@ import {hexToOklch} from '../color-studio/colorUtils';
 import {THEME_REFERENCES} from './themeCorpus';
 
 import {
-  COMPACT_9_STOPS,
-  DEFAULT_19_STOPS,
+  COMPACT_11_STOPS,
+  FULL_21_STOPS,
   generatePaletteSet,
   parseStopList,
   perceptualDelta,
@@ -24,7 +24,7 @@ function request(
     vibrancy: 50,
     neutralProfile: 'neutral-v1',
     modeStrategy: 'light-and-dark',
-    stops: [...DEFAULT_19_STOPS],
+    stops: [...FULL_21_STOPS],
     families: [
       {
         id: 'blue',
@@ -59,8 +59,8 @@ describe('experimental palette generator', () => {
   });
 
   it('supports the default and compact stop presets', () => {
-    expect(validateStops([...DEFAULT_19_STOPS])).toHaveLength(19);
-    expect(validateStops([...COMPACT_9_STOPS])).toHaveLength(9);
+    expect(validateStops([...FULL_21_STOPS])).toHaveLength(21);
+    expect(validateStops([...COMPACT_11_STOPS])).toHaveLength(11);
     expect(parseStopList('0, 25, 50, 75, 100')).toEqual([0, 25, 50, 75, 100]);
   });
 
@@ -207,7 +207,7 @@ describe('experimental palette generator', () => {
   it('fails a family when an anchor references a missing stop', () => {
     const result = generatePaletteSet(
       request({
-        stops: [...COMPACT_9_STOPS],
+        stops: [...COMPACT_11_STOPS],
         families: [
           {
             id: 'blue',
@@ -228,6 +228,31 @@ describe('experimental palette generator', () => {
 
     expect(result.families).toEqual([]);
     expect(result.errors[0].message).toContain('not present');
+  });
+
+  it('does not let anchors turn the absolute endpoints into tinted colors', () => {
+    const result = generatePaletteSet(
+      request({
+        families: [
+          {
+            id: 'blue',
+            name: 'Blue',
+            seed: '#0064e0',
+            anchors: [
+              {
+                mode: 'light',
+                stop: 0,
+                color: '#001122',
+                policy: 'exact',
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(result.families).toEqual([]);
+    expect(result.errors[0].message).toContain('reserved for exact black');
   });
 
   it('produces distinct, monotonic light and dark ramps', () => {
@@ -328,7 +353,8 @@ describe('experimental palette generator', () => {
     );
     expect(neutral.families[0].dark?.colors[90]).not.toBe('#ffffff');
     expect(neutral.families[0].dark?.colors[95]).not.toBe('#ffffff');
-    expect(neutral.families[0].dark?.colors[100]).toBeUndefined();
+    expect(neutral.families[0].dark?.colors[0]).toBe('#000000');
+    expect(neutral.families[0].dark?.colors[100]).toBe('#ffffff');
   });
 
   it('reports cross-family distinction and chroma balance at a shared stop', () => {

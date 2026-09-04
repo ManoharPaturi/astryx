@@ -11,11 +11,12 @@ import {
 } from './color.mjs';
 
 export const PALETTE_RECIPE = 'astryx-oklch-v1';
-export const DEFAULT_19_STOPS = Object.freeze([
-  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+export const DEFAULT_21_STOPS = Object.freeze([
+  0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
+  100,
 ]);
-export const COMPACT_9_STOPS = Object.freeze([
-  10, 20, 30, 40, 50, 60, 70, 80, 90,
+export const COMPACT_11_STOPS = Object.freeze([
+  0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
 ]);
 
 const DARK_CHROMA_FACTOR = 0.85;
@@ -322,13 +323,21 @@ function applyAnchorCorrections(colors, stops, anchors) {
 function assertAnchorSet(anchors, stops) {
   const seen = new Set();
   for (const anchor of anchors) {
-    normalizeColor(anchor.color);
+    const color = normalizeColor(anchor.color);
     if (!['light', 'dark'].includes(anchor.mode)) {
       throw new Error(`Unknown anchor mode: ${String(anchor.mode)}`);
     }
     if (!stops.includes(anchor.stop)) {
       throw new Error(
         `Anchor stop ${anchor.stop} is not present in the requested stop layout.`,
+      );
+    }
+    if (
+      (anchor.stop === 0 && color !== '#000000') ||
+      (anchor.stop === 100 && color !== '#ffffff')
+    ) {
+      throw new Error(
+        `Anchor stop ${anchor.stop} is reserved for exact ${anchor.stop === 0 ? 'black' : 'white'}; use an interior stop for a tinted endpoint.`,
       );
     }
     const key = `${anchor.mode}:${anchor.stop}`;
@@ -528,7 +537,7 @@ export function normalizeGenerationRequest(input) {
     vibrancy: input.vibrancy ?? 50,
     neutralProfile: input.neutralProfile ?? 'neutral-v1',
     modeStrategy: input.modeStrategy ?? 'light-and-dark',
-    stops: validateStops(input.stops ?? DEFAULT_19_STOPS),
+    stops: validateStops(input.stops ?? DEFAULT_21_STOPS),
     families: normalizedFamilies,
   };
   vibrancyMultiplier(request.vibrancy);

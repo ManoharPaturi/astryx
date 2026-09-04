@@ -49,7 +49,7 @@ function renderThemeValues() {
       <section class="theme-values">
         <div>
           <h2>Exact theme values</h2>
-          <p>Available when true black or white is intended. These are not generated family stops.</p>
+          <p>Always available. Default families repeat these values at stops 0 and 100; custom layouts may omit them.</p>
         </div>
         <ol>
           <li><span class="color" style="--swatch:#000000"></span><span class="meta"><strong>Black</strong><code>#000000</code></span></li>

@@ -23,15 +23,9 @@ export const FULL_21_STOPS = [
   100,
 ] as const;
 
-export const DEFAULT_19_STOPS = [
-  5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
-] as const;
-
 export const COMPACT_11_STOPS = [
   0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
 ] as const;
-
-export const COMPACT_9_STOPS = [10, 20, 30, 40, 50, 60, 70, 80, 90] as const;
 
 export type PaletteAlgorithm = 'oklch-v1-experimental' | 'hct-v1-experimental';
 export type NeutralProfile = 'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom';
@@ -586,10 +580,18 @@ function applyAnchorCorrections(
 function assertAnchorSet(anchors: PaletteAnchor[], stops: number[]): void {
   const seen = new Set<string>();
   for (const anchor of anchors) {
-    normalizedHex(anchor.color);
+    const color = normalizedHex(anchor.color);
     if (!stops.includes(anchor.stop)) {
       throw new Error(
         `Anchor stop ${anchor.stop} is not present in the requested stop layout.`,
+      );
+    }
+    if (
+      (anchor.stop === 0 && color !== '#000000') ||
+      (anchor.stop === 100 && color !== '#ffffff')
+    ) {
+      throw new Error(
+        `Anchor stop ${anchor.stop} is reserved for exact ${anchor.stop === 0 ? 'black' : 'white'}; use an interior stop for a tinted endpoint.`,
       );
     }
     const key = `${anchor.mode}:${anchor.stop}`;

@@ -29,7 +29,7 @@ describe('renderPalettePreview', () => {
     expect(first).toContain('Exact theme values');
     expect(first).toContain('#000000');
     expect(first).toContain('#ffffff');
-    expect(first).toContain('not generated family stops');
+    expect(first).toContain('Default families repeat these values');
     expect(first).not.toContain('Shared endpoints');
     expect(first).not.toContain('does not certify accessibility');
     expect(first).toContain('grid-template-columns: 1fr');

@@ -130,7 +130,8 @@
  * @property {'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom'} [neutralProfile]
  * @property {'light-only' | 'dark-only' | 'light-and-dark'} [modeStrategy]
  * @property {number[]} [stops] Ordered stops shared by every requested family;
- * defaults to 5 through 95 in increments of 5. Decimal stops are supported.
+ * defaults to 0 through 100 in increments of 5. Decimal stops are supported,
+ * and authors may omit the repeated black and white endpoints.
  */
 
 /**

@@ -12,6 +12,7 @@ Evaluate whether the response:
 - selects `exact`, `bounded`, or `preferred` from the author's stated intent;
 - changes vibrancy only when requested;
 - preserves explicit custom and decimal stops;
+- includes default black and white endpoints unless the author removes them;
 - omits an accent when none is requested;
 - asks whether an ambiguous accent is one theme value or a generated family;
 - generates an `accent` family only when a ramp is explicitly requested.

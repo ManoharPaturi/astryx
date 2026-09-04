@@ -14,5 +14,6 @@
     "modeStrategy": "light-and-dark"
   },
   "palette-custom-stop": {"stopsInclude": 12.5},
-  "palette-custom-layout": {"customLayout": true, "stopCount": 5}
+  "palette-custom-layout": {"customLayout": true, "stopCount": 5},
+  "palette-omit-endpoints": {"stopsOmit": [0, 100]}
 }

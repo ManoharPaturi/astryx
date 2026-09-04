@@ -15,8 +15,8 @@ export {themeTemplate} from './template/template.mjs';
 export {themeTargets} from './targets/targets.mjs';
 export {themePaletteGenerate} from './palette/generate/generate.mjs';
 export {
-  COMPACT_9_STOPS,
-  DEFAULT_19_STOPS,
+  COMPACT_11_STOPS,
+  DEFAULT_21_STOPS,
   PALETTE_RECIPE,
   generatePaletteSet,
   generateTonalPalette,

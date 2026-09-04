@@ -4,11 +4,11 @@ import {createHash} from 'node:crypto';
 import {describe, expect, it} from 'vitest';
 import {
   generatePaletteSet as generatePrototypePaletteSet,
-  DEFAULT_19_STOPS as PROTOTYPE_DEFAULT_19_STOPS,
+  FULL_21_STOPS as PROTOTYPE_DEFAULT_21_STOPS,
 } from '../../../../../../apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts';
 import {
-  COMPACT_9_STOPS,
-  DEFAULT_19_STOPS,
+  COMPACT_11_STOPS,
+  DEFAULT_21_STOPS,
   PALETTE_RECIPE,
   generatePaletteSet,
   generateTonalPalette,
@@ -38,7 +38,7 @@ describe('astryx-oklch-v1 palette generator', () => {
       vibrancy: 50,
       neutralProfile: 'neutral-v1',
       modeStrategy: 'light-and-dark',
-      stops: [...PROTOTYPE_DEFAULT_19_STOPS],
+      stops: [...PROTOTYPE_DEFAULT_21_STOPS],
       families,
     });
 
@@ -66,7 +66,7 @@ describe('astryx-oklch-v1 palette generator', () => {
 
   it('locks the normative recipe fixtures independently from the Sandbox', () => {
     expect(candidateDigest({families})).toBe(
-      '90d280d8d0c7f4eeab97cebf0dc93a0183d4dd3ef9dc81e7357e65550efad103',
+      '78ca5bd2afe44d448dc7fd2889196c5a562a9d1f1ff8efcccc67aa1d8a94b76c',
     );
     expect(
       candidateDigest({
@@ -108,12 +108,13 @@ describe('astryx-oklch-v1 palette generator', () => {
     ).toBe('991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d');
   });
 
-  it('defaults to 19 family-specific stops without requiring that layout', () => {
+  it('defaults to 21 stops while allowing authors to omit endpoints', () => {
     expect(generatePaletteSet({families: [families[1]]}).request.stops).toEqual(
-      DEFAULT_19_STOPS,
+      DEFAULT_21_STOPS,
     );
-    expect(DEFAULT_19_STOPS).not.toContain(0);
-    expect(DEFAULT_19_STOPS).not.toContain(100);
+    expect(DEFAULT_21_STOPS).toHaveLength(21);
+    expect(DEFAULT_21_STOPS[0]).toBe(0);
+    expect(DEFAULT_21_STOPS.at(-1)).toBe(100);
     expect(
       generatePaletteSet({families: [families[1]], stops: [15, 40, 72]}).request
         .stops,
@@ -127,11 +128,11 @@ describe('astryx-oklch-v1 palette generator', () => {
   it('keeps shared stop values stable across full, compact, and custom layouts', () => {
     const family = {id: 'blue', name: 'Blue', seed: '#0074e2'};
     const full = generateTonalPalette({
-      stops: [...DEFAULT_19_STOPS],
+      stops: [...DEFAULT_21_STOPS],
       families: [family],
     });
     const compact = generateTonalPalette({
-      stops: [...COMPACT_9_STOPS],
+      stops: [...COMPACT_11_STOPS],
       families: [family],
     });
     const custom = generateTonalPalette({
@@ -140,7 +141,7 @@ describe('astryx-oklch-v1 palette generator', () => {
     });
 
     for (const mode of ['light', 'dark']) {
-      for (const stop of COMPACT_9_STOPS) {
+      for (const stop of COMPACT_11_STOPS) {
         expect(compact.palette.blue[mode][stop]).toBe(
           full.palette.blue[mode][stop],
         );
@@ -149,6 +150,31 @@ describe('astryx-oklch-v1 palette generator', () => {
       expect(custom.palette.blue[mode][80]).toBe(full.palette.blue[mode][80]);
       expect(custom.palette.blue[mode][12.5]).toMatch(/^#[0-9a-f]{6}$/);
     }
+  });
+
+  it('keeps default endpoints black and white and rejects tinted endpoint anchors', () => {
+    const candidate = generateTonalPalette({families: [families[1]]});
+    for (const mode of ['light', 'dark']) {
+      expect(candidate.palette.blue[mode][0]).toBe('#000000');
+      expect(candidate.palette.blue[mode][100]).toBe('#ffffff');
+    }
+    expect(() =>
+      generateTonalPalette({
+        families: [
+          {
+            ...families[1],
+            anchors: [
+              {
+                mode: 'light',
+                stop: 0,
+                color: '#001122',
+                policy: 'exact',
+              },
+            ],
+          },
+        ],
+      }),
+    ).toThrow('reserved for exact black');
   });
 
   it('rejects invalid stop layouts without prescribing a count', () => {

@@ -37,6 +37,10 @@
     {
       "id": "palette-custom-layout",
       "prompt": "Create a specialized five-stop palette for data visualization."
+    },
+    {
+      "id": "palette-omit-endpoints",
+      "prompt": "Generate the standard palette, but leave out the repeated black and white endpoints."
     }
   ]
 }

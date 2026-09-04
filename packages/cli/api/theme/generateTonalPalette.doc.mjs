@@ -14,7 +14,8 @@ export const doc = {
     'stable across layouts, and requested decimal stops are emitted explicitly. ' +
     'Anchor policies are intentional: exact preserves the chosen color at its stop; ' +
     'bounded permits movement within maxDeltaE; preferred treats it as guidance. ' +
-    'An anchor needs a mode and stop. Stops apply to every family in one request.',
+    'An anchor needs a mode and stop. Stops apply to every family in one request. ' +
+    'The default 0–100 layout includes exact black and white; a custom stop list can omit them.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'generateTonalPalette(input: TonalPaletteGenerationInput): TonalPaletteCandidate',

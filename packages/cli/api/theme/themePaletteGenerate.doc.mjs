@@ -9,8 +9,9 @@ export const doc = {
   summary: 'Generate an author-reviewable palette candidate from JSON input.',
   description:
     'Runs the versioned astryx-oklch-v1 recipe against an explicit generation request. ' +
-    'It defaults family ramps to 19 stops from 5 through 95, omitting repeated exact black ' +
-    'and white endpoints, but accepts any non-empty ordered numeric stop list. The result is ' +
+    'It defaults family ramps to 21 stops from 0 through 100, including exact black and ' +
+    'white endpoints, but accepts any non-empty ordered numeric stop list. Authors may omit ' +
+    'those repeated endpoints. The result is ' +
     'a candidate, not an adopted theme palette or an accessibility claim. With an output path ' +
     'it writes the candidate and a detached reproducibility receipt, and leaves existing ' +
     'author-owned files untouched unless overwrite is true. Shared stop numbers keep the same ' +

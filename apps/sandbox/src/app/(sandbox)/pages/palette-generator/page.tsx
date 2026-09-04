@@ -17,8 +17,7 @@ import {Text, Heading} from '@astryxdesign/core/Text';
 import {TextInput} from '@astryxdesign/core/TextInput';
 
 import {
-  COMPACT_9_STOPS,
-  DEFAULT_19_STOPS,
+  COMPACT_11_STOPS,
   FULL_21_STOPS,
   generatePaletteSet,
   parseStopList,
@@ -45,7 +44,7 @@ const MONO = "'JetBrains Mono', 'SF Mono', Menlo, monospace";
 type AlgorithmView = 'oklch' | 'hct' | 'compare';
 type LabView = 'generator' | 'themes';
 type VibrancyPreset = 'muted' | 'balanced' | 'vibrant';
-type StopPreset = 'default-19' | 'compact-9' | 'custom';
+type StopPreset = 'default-21' | 'compact-11' | 'custom';
 type EditableAnchor = {
   mode: PaletteMode;
   stop: number;
@@ -736,7 +735,8 @@ function ThemeComparisonView({
         </HStack>
         <Text type="supporting" color="secondary">
           {theme.description} Existing black and white endpoints are omitted
-          from this comparison because generated family ramps use stops 5–95.
+          from the difference summary because they are identical in every
+          generated family.
         </Text>
         {hasSharedReferences && (
           <Text
@@ -902,7 +902,7 @@ export default function PaletteGeneratorPage() {
     useState<NeutralProfile>('neutral-v1');
   const [modeStrategy, setModeStrategy] =
     useState<ModeStrategy>('light-and-dark');
-  const [stopPreset, setStopPreset] = useState<StopPreset>('default-19');
+  const [stopPreset, setStopPreset] = useState<StopPreset>('default-21');
   const [customStops, setCustomStops] = useState(
     '10, 20, 30, 40, 50, 60, 70, 80, 90',
   );
@@ -915,15 +915,15 @@ export default function PaletteGeneratorPage() {
   const stopResolution = useMemo(() => {
     try {
       const stops =
-        stopPreset === 'default-19'
-          ? [...DEFAULT_19_STOPS]
-          : stopPreset === 'compact-9'
-            ? [...COMPACT_9_STOPS]
+        stopPreset === 'default-21'
+          ? [...FULL_21_STOPS]
+          : stopPreset === 'compact-11'
+            ? [...COMPACT_11_STOPS]
             : parseStopList(customStops);
       return {stops, error: null};
     } catch (error) {
       return {
-        stops: [...DEFAULT_19_STOPS],
+        stops: [...FULL_21_STOPS],
         error: error instanceof Error ? error.message : String(error),
       };
     }
@@ -991,7 +991,7 @@ export default function PaletteGeneratorPage() {
         vibrancy,
         neutralProfile: 'custom',
         modeStrategy: themeModeStrategy,
-        stops: [...DEFAULT_19_STOPS],
+        stops: [...FULL_21_STOPS],
         families: selectedTheme.families.map(family => ({
           id: family.id,
           name: family.name,
@@ -1161,9 +1161,10 @@ export default function PaletteGeneratorPage() {
                     }))}
                   />
                   <Text type="supporting" color="secondary">
-                    Theme comparisons use the shared 5–95 range and each
-                    theme&apos;s supported mode. Matcha and Chocolate do not yet
-                    publish complete tonal ramps.
+                    Theme comparisons focus on the shared 5–95 colors and each
+                    theme&apos;s supported mode; the preview still includes the
+                    default black and white endpoints. Matcha and Chocolate do
+                    not yet publish complete tonal ramps.
                   </Text>
                   <HStack
                     gap={2}
@@ -1244,8 +1245,8 @@ export default function PaletteGeneratorPage() {
                       value={stopPreset}
                       onChange={value => setStopPreset(value as StopPreset)}
                       size="sm">
-                      <SegmentedControlItem value="default-19" label="19" />
-                      <SegmentedControlItem value="compact-9" label="9" />
+                      <SegmentedControlItem value="default-21" label="21" />
+                      <SegmentedControlItem value="compact-11" label="11" />
                       <SegmentedControlItem value="custom" label="Custom" />
                     </SegmentedControl>
                     {stopPreset === 'custom' && (
@@ -1261,7 +1262,7 @@ export default function PaletteGeneratorPage() {
                       <Text
                         type="supporting"
                         style={{color: 'var(--color-text-red, #b42318)'}}>
-                        {stopResolution.error} Showing 19-stop fallback.
+                        {stopResolution.error} Showing 21-stop fallback.
                       </Text>
                     )}
                   </VStack>
