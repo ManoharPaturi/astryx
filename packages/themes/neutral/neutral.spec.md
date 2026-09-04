@@ -3,7 +3,7 @@ schema_version: 2
 template_version: 1
 kind: theme
 id: theme:neutral
-authority: approved
+authority: current
 approved_by: rubyycheung
 approved_at: 2026-09-04
 review_triggers:
@@ -18,7 +18,6 @@ references:
     architecture:theme-compilation,
     architecture:component-theming-surface,
     spec:AST-006,
-    spec:AST-018,
   ]
 ---
 
@@ -104,9 +103,9 @@ Candidate source work contains complete light and dark ramps for neutral, red,
 orange, yellow, green, teal, cyan, blue, purple, and pink. The committed request,
 generated module, and receipt make the reviewed `astryx-oklch-v1` result
 reproducible. Draft `spec:AST-018` separately owns the cross-theme authoring and
-validation contract. Neutral's theme source references exact committed stops;
-regeneration is an explicit reviewed theme change and never occurs during a
-normal theme build.
+validation contract. Neutral's tests associate its selected runtime literals
+with exact committed stops; regeneration is an explicit reviewed theme change
+and never occurs during a normal theme build.
 
 ## Component and state mappings
 
@@ -207,11 +206,12 @@ or applying it merely because two contexts currently share a color.
 **Decider:** `rubyycheung`, `2026-09-02`
 
 Neutral's exact palette values and baseline mappings are approved as the stable
-starting point for subsequent color and contrast decisions. Theme mappings use
-direct references to the committed palette. The request, generated result,
-receipt, mapping diff, and visual review must change together, so regeneration
-cannot silently recolor the theme. This approval does not claim that every
-component context already passes its applicable contrast requirement.
+starting point for subsequent color and contrast decisions. The request,
+generated result, receipt, tested mappings, and visual review must change
+together, so regeneration cannot silently recolor the theme. Runtime output
+contains only selected values rather than the complete authoring palette. This
+approval does not claim that every component context already passes its
+applicable contrast requirement.
 
 Neutral is the repository reference implementation for palette-aware theme
 templates. Templates may reuse its ownership, review, and alignment workflow;

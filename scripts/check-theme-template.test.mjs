@@ -272,7 +272,11 @@ describe('theme template stays in sync with the theme system', () => {
     const receipt = JSON.parse(
       fs.readFileSync(NEUTRAL_GENERATED_RECEIPT, 'utf-8'),
     );
-    const generated = fs.readFileSync(NEUTRAL_GENERATED_PALETTE, 'utf-8');
+    const generated = fs
+      .readFileSync(NEUTRAL_GENERATED_PALETTE, 'utf-8')
+      // Repository lint adds this license to committed TypeScript. The receipt
+      // hashes the generator-owned bytes that follow it.
+      .replace('// Copyright (c) Meta Platforms, Inc. and affiliates.\n\n', '');
 
     expect(receipt.recipe).toBe(config.recipe);
     expect(receipt.request).toMatchObject(config);
