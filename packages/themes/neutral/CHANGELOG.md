@@ -1,5 +1,25 @@
 # @xds/theme-neutral
 
+# 0.5.3
+
+#### New Components
+
+- Reuse Neutral-owned local tokens for semantic status fills across badges, status dots, step indicators, and progress bars. (#5854)
+
+#### Fixes
+
+- Correct Neutral Banner interaction tints so light mode uses translucent light overlays and dark mode uses translucent dark overlays. (#5936)
+- Give Neutral segmented controls a roomier inset while preserving their outside height. (#5851)
+- Rename built-in syntax theme identifiers. (#5847)
+
+#### Contributors
+
+Thanks to everyone who contributed to this release:
+
+- @rubyycheung
+
+---
+
 # 0.5.2
 
 ---
