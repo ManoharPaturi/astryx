@@ -64,13 +64,15 @@ Usage: node scripts/score-ledger.mjs <subcommand> [options]
 
 Subcommands
   --check                 Ratchet / standing report for the components a PR touches.
-  --queue                 The auditor's work queue: unaudited first, then
-                          oldest-audited, then lowest-scoring.
+  --queue                 The auditor's work queue for packages with validated
+                          component-spec locations: unaudited first, then oldest
+                          audited, then lowest-scoring.
   --stats                 Distribution summary on the terminal.
   --record <Component>    Write one component's scorecard into the ledger.
   --file-issues <Component>
-                          File one GitHub issue per open BLOCK that has none,
-                          via gh, and write the numbers back into the ledger.
+                          Retired. Exits non-zero; component findings stay in
+                          the ledger and system-level trackers are filed once,
+                          deliberately.
 
 Options
   --ledger <path|url>       Ledger source. Default: the wiki raw URL.
@@ -82,14 +84,11 @@ Options
   --package <name>          --record: package, if the predicate cannot resolve it.
   --from <file|->           --record: scorecard JSON ('-' reads stdin).
   --allow-regression <why>  --record: permit a score drop or a new BLOCK.
-  --push                    --record/--file-issues: clone the wiki, apply, commit
-                            and push. Without --ledger it uses a cached shallow
-                            clone; the commit message names the component, the
-                            grade and the rubric version.
-  --dry-run                 --record: print the diff and the commit message and
-                            push nothing. --file-issues: print the issues,
-                            create nothing.
-  --repo <owner/name>       --file-issues: default facebook/astryx.
+  --push                    --record: clone the wiki, apply, commit and push.
+                            Without --ledger it uses a cached shallow clone; the
+                            commit message names the component, grade and rubric.
+  --dry-run                 --record: print the diff and commit message; push
+                            nothing.
   --json                    Machine-readable output where it applies.
 `.trim();
 
@@ -216,6 +215,13 @@ export const LEDGER_PACKAGES = Object.freeze([
   {name: 'lab', src: 'packages/lab/src', layout: 'nested'},
   {name: 'richtext', src: 'packages/richtext/src', layout: 'flat'},
 ]);
+
+/**
+ * Packages whose component records have a canonical, validated location today.
+ * Standalone packages remain visible in the ledger and sandbox, but do not enter
+ * the automated audit queue until the knowledge system can validate their specs.
+ */
+export const COMPONENT_SPEC_PACKAGES = Object.freeze(['core', 'lab']);
 
 /** The covered package names, for human-facing CLI messages. */
 const LEDGER_PACKAGE_NAMES = LEDGER_PACKAGES.map(p => p.name);
@@ -644,18 +650,26 @@ export function standingFor(component, entry, repo = DEFAULT_REPO) {
 // ---------------------------------------------------------------------------
 
 /**
- * The auditor's work queue: unaudited first (alphabetical), then audited
- * oldest-first, then lowest-scoring. Coverage grows before anything is
- * re-audited, and the weakest components come back around soonest.
+ * The auditor's work queue: only packages with a canonical, validated component-
+ * spec location are eligible. Within that set, unaudited components come first,
+ * then audited oldest-first and lowest-scoring. Other registered packages remain
+ * visible in the ledger and sandbox until their specification support lands.
  */
 export function buildQueue(roster, limit = Infinity) {
   const unaudited = roster
-    .filter(r => r.live && !isAudited(r.entry))
+    .filter(
+      r =>
+        r.live &&
+        COMPONENT_SPEC_PACKAGES.includes(r.package) &&
+        !isAudited(r.entry),
+    )
     .sort((a, b) => a.component.localeCompare(b.component))
     .map(r => ({component: r.component, package: r.package, why: 'never audited'}));
 
   const audited = roster
-    .filter(r => isAudited(r.entry))
+    .filter(
+      r => isAudited(r.entry) && COMPONENT_SPEC_PACKAGES.includes(r.package),
+    )
     .sort((a, b) => {
       const byDate = String(a.entry.lastAudited || '').localeCompare(
         String(b.entry.lastAudited || ''),
@@ -764,23 +778,46 @@ function fmtScore(n) {
  * The paste-to-an-agent request for an audit. One string, exported so the
  * sandbox page and the CLI cannot drift.
  */
-export const AUDIT_PROMPT = `Audit the Astryx component <Component> against the Component Audit Rubric:
+export const AUDIT_PROMPT = `Audit the Astryx component <Component> end to end.
+
+Start from the repository contract, not the checklist. Locate the component spec
+using the repository knowledge map; the conventional Core/Lab path is
+packages/{core,lab}/src/<Component>/<Component>.spec.md. If it is missing or
+incomplete, create or complete it first by following:
+https://github.com/facebook/astryx/blob/main/docs/contributing/component-specs.md
+
+Registered standalone packages remain visible in the ledger and sandbox but are
+excluded from the automated queue until the knowledge tooling supports a canonical
+component-spec location for them. Treat that missing support as one system-level
+specification gap; do not bypass the contract baseline.
+
+Only records with authority: current govern product behavior. Follow the
+component contract's applicable current family, design, architecture, and AST
+relationships. A draft may preserve evidence and open questions, but it cannot
+settle a finding; do not infer intended behavior from the implementation being
+audited.
+
+Then grade the whole component using the Component Audit Rubric for procedure,
+evidence, scoring, and ledger shape:
 https://github.com/facebook/astryx/wiki/Component-Audit-Rubric
 
-Grade the whole component, not a diff — follow the rubric's "Grading a whole
-component" section. Work every section, cite the rule id for each finding
-(A8, T6, P2 …), and capture screenshots of every state in light and dark by
-driving a real browser against Storybook. If you skip the screenshots, report
-the rendered-design section as not_measured rather than scoring it — never
-guess, and never score it zero.
+Work every section, cite the rule id for each finding (A8, T6, P2 …), and capture
+screenshots of every state in light and dark by driving a real browser against
+Storybook. If you skip the screenshots, report the rendered-design section as
+not_measured rather than scoring it—never guess and never score it zero.
 
-Then record the result, per the rubric's "Recording an audit" section. One
-command: it clones the wiki, applies the ratchet, commits and pushes.
+Before changing code, record and push the pre-fix scorecard, including every open
+BLOCK. Fix only findings with a settled answer in one atomic PR, re-audit, and put
+the before/after evidence in the PR. Do not publish the post-fix ledger row until
+the fix is on main; then record the landed main commit.
 
   <your scorecard JSON> | node scripts/score-ledger.mjs --record <Component> \\
     --from - --push
 
-Only record what you actually measured.`;
+Only record what you actually measured. Keep unresolved component findings in the
+ledger. File an issue only for a genuinely system-level gap. The Component Scores
+sandbox fetches the wiki ledger at runtime, so the new row appears without a
+sandbox rebuild.`;
 
 // ---------------------------------------------------------------------------
 // --push — the wiki write path
@@ -1625,16 +1662,8 @@ async function cmdRecord(args) {
  * is missing fixes it far more often than one whose write was rejected.
  */
 function warnOnRecord(component, {before, after}) {
-  // Every BLOCK is supposed to carry the issue it was filed as; that is where
-  // the page's links come from.
-  const unfiled = blockList(after).filter(b => !b.issue);
-  if (unfiled.length) {
-    console.log(
-      `::warning::score-ledger: ${unfiled.length} BLOCK(s) on ${component} have no issue ` +
-        `(${unfiled.map(b => b.id).join(', ')}). File them — ` +
-        `node scripts/score-ledger.mjs --file-issues ${component} --push`,
-    );
-  }
+  // Every BLOCK must still be named even when it intentionally has no issue.
+  // A count larger than the published list makes the ledger impossible to act on.
   const unattributed = openBlockCount(after) - blockList(after).length;
   if (unattributed > 0) {
     console.log(
@@ -1876,7 +1905,13 @@ async function main() {
   if (args.queue) return cmdQueue(args);
   if (args.stats) return cmdStats(args);
   if (args.record) return cmdRecord(args);
-  if (args['file-issues']) return cmdFileIssues(args);
+  if (args['file-issues']) {
+    console.error(
+      'score-ledger: --file-issues is retired. Keep component findings in the ledger; ' +
+        'create one shared tracker manually only for a genuinely system-level gap.',
+    );
+    return 1;
+  }
   console.log(USAGE);
   return 1;
 }

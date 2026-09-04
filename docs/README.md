@@ -28,6 +28,12 @@ the same component root. Their canonical id is
 parent component's `modules` list must agree. Private transform helpers do not
 require records.
 
+Use the [component-specification guide](contributing/component-specs.md) to create
+or complete a component contract from the current template, gather evidence
+without turning observed code into policy, link the applicable current owners,
+and prepare the exact-head approval and verification. A whole-component audit
+follows that workflow before it applies the wiki rubric for procedure and scoring.
+
 Component-local discovery and PR routing ignore hidden path segments,
 `*.generated.spec.md`, and fixture, test, generated, build-output, coverage, and
 `node_modules` directories. Those files are not knowledge records or spec-only

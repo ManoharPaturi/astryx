@@ -22,6 +22,7 @@ import http from 'node:http';
 import {describe, it, expect} from 'vitest';
 
 import {
+  AUDIT_PROMPT,
   SCORES_PAGE_URL,
   SECTION_WEIGHTS,
   SECTION_IDS,
@@ -71,6 +72,24 @@ const entry = (over = {}) => ({
 const withBlocks = (...blocks) => ({
   count: blocks.length,
   open: blocks.map(b => (typeof b === 'string' ? {id: b, summary: b, issue: null} : b)),
+});
+
+describe('the shared audit prompt', () => {
+  it('carries the specification-first, two-ledger-write journey into the sandbox', () => {
+    expect(AUDIT_PROMPT).toContain(
+      'packages/{core,lab}/src/<Component>/<Component>.spec.md',
+    );
+    expect(AUDIT_PROMPT).toMatch(/missing or\nincomplete, create or complete it first/);
+    expect(AUDIT_PROMPT).toContain('Only records with authority: current govern');
+    expect(AUDIT_PROMPT).toContain('record and push the pre-fix scorecard');
+    expect(AUDIT_PROMPT).toContain(
+      'excluded from the automated queue until the knowledge tooling supports',
+    );
+    expect(AUDIT_PROMPT).toContain(
+      'Do not publish the post-fix ledger row until\nthe fix is on main',
+    );
+    expect(AUDIT_PROMPT).toContain('appears without a\nsandbox rebuild');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -456,6 +475,16 @@ describe('roster, queue and stats', () => {
     expect(buildQueue(roster, 3)).toHaveLength(3);
   });
 
+  it('keeps standalone packages out until component-spec locations are supported', () => {
+    const q = buildQueue([
+      ...roster,
+      {component: 'RichTextEditor', package: 'richtext', live: true, entry: null},
+    ]);
+    expect(q.map(e => `${e.package}/${e.component}`)).not.toContain(
+      'richtext/RichTextEditor',
+    );
+  });
+
   it('joins the live roster with the ledger and flags orphan rows', () => {
     const ledger = {
       components: [entry({component: 'Beta'}), entry({component: 'Deleted'})],
@@ -702,6 +731,15 @@ function cli(argv, {cwd = REPO_ROOT, input, env} = {}) {
     return {code: e.status ?? 1, out: `${e.stdout || ''}${e.stderr || ''}`};
   }
 }
+
+describe('retired issue filing', () => {
+  it('refuses to create per-BLOCK issues', () => {
+    const result = cli(['--file-issues', 'Button', '--dry-run']);
+    expect(result.code).toBe(1);
+    expect(result.out).toMatch(/--file-issues is retired/);
+    expect(result.out).toMatch(/system-level gap/);
+  });
+});
 
 const ledgerWith = (...components) => ({
   ledgerVersion: 1,

@@ -19,7 +19,11 @@ nested `AGENTS.md`.
   `docs/README.md`.
 - Component work: read the component's `{Name}.spec.md` when one exists, then
   any `module:*` records it lists for the public module being changed, followed by
-  consumer docs, tests, and implementation.
+  consumer docs, tests, and implementation. For a whole-component audit, create
+  or complete a missing component spec first by following
+  [`docs/contributing/component-specs.md`](docs/contributing/component-specs.md),
+  then apply the current records it links before using the wiki rubric for
+  procedure and scoring.
 - Cross-component work: read the relevant contract under `docs/families/`,
   applicable design spec under `docs/design/`, and current architecture under
   `docs/architecture/`.

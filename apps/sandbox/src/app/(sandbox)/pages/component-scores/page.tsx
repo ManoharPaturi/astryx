@@ -878,14 +878,21 @@ export default function ComponentScoresPage() {
                 <Heading level={1}>Component Audits</Heading>
                 <Text>
                   To audit a component, open its <strong>Actions</strong> menu,
-                  choose <strong>Copy audit prompt</strong>, run the prompt
-                  against the component in the repository, then record and
-                  publish the completed result to the{' '}
+                  choose <strong>Copy audit prompt</strong>, and run the prompt
+                  against the repository. The prompt starts from the component's
+                  current specification and has you{' '}
+                  <Link
+                    href="https://github.com/facebook/astryx/blob/main/docs/contributing/component-specs.md"
+                    isExternalLink>
+                    write or complete that specification
+                  </Link>{' '}
+                  before grading when needed. Publish the pre-fix result to the{' '}
                   <Link href={LEDGER_WIKI_URL} isExternalLink>
                     central audit ledger
                   </Link>
-                  . This page automatically shows recorded scores and evidence;
-                  components without a recorded result remain{' '}
+                  , remediate and re-audit, then publish the post-fix row after
+                  the fix lands on main. This page fetches recorded scores and
+                  evidence at runtime; components without a result remain{' '}
                   <strong>TBD</strong>.
                 </Text>
                 <Link href={RUBRIC_URL} isExternalLink>
