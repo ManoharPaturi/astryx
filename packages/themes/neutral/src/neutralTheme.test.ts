@@ -16,6 +16,9 @@ const neutralPaletteStops = [
   100,
 ] as const;
 
+const lightDark = (light: string, dark: string) =>
+  `light-dark(${light}, ${dark})`;
+
 describe('neutral theme palette contract', () => {
   it('keeps the approved palette structurally valid', () => {
     expect(Object.keys(neutralPalettes)).toEqual([
@@ -43,22 +46,171 @@ describe('neutral theme palette contract', () => {
     }
   });
 
-  it('keeps representative explicit token values aligned with palette stops', () => {
-    expect(neutralTheme.tokens['--color-background-body']).toBe(
-      `light-dark(${neutralPalettes.neutral.light[95]}, ${neutralPalettes.neutral.dark[10]})`,
-    );
-    expect(neutralTheme.tokens['--color-background-blue']).toBe(
-      `light-dark(${neutralPalettes.blue.light[85]}, ${neutralPalettes.blue.dark[75]}3D)`,
-    );
-    expect(neutralTheme.tokens['--color-success']).toBe(
-      `light-dark(${neutralPalettes.green.light[30]}, ${neutralPalettes.green.dark[85]})`,
-    );
-    expect(neutralTheme.tokens['--color-warning']).toBe(
-      `light-dark(${neutralPalettes.yellow.light[30]}, ${neutralPalettes.yellow.dark[85]})`,
-    );
-    expect(neutralTheme.tokens['--color-error']).toBe(
-      `light-dark(${neutralPalettes.red.light[25]}, ${neutralPalettes.red.dark[85]})`,
-    );
+  it('keeps every categorical token aligned with its reviewed palette stops', () => {
+    const mappings = {
+      '--color-background-body': lightDark(
+        neutralPalettes.neutral.light[95],
+        neutralPalettes.neutral.dark[10],
+      ),
+      '--color-success': lightDark(
+        neutralPalettes.green.light[30],
+        neutralPalettes.green.dark[85],
+      ),
+      '--color-warning': lightDark(
+        neutralPalettes.yellow.light[30],
+        neutralPalettes.yellow.dark[85],
+      ),
+      '--color-error': lightDark(
+        neutralPalettes.red.light[25],
+        neutralPalettes.red.dark[85],
+      ),
+      '--color-background-red': lightDark(
+        neutralPalettes.red.light[85],
+        `${neutralPalettes.red.dark[75]}3D`,
+      ),
+      '--color-border-red': lightDark(
+        neutralPalettes.red.light[80],
+        neutralPalettes.red.dark[65],
+      ),
+      '--color-icon-red': lightDark(
+        neutralPalettes.red.light[30],
+        neutralPalettes.red.dark[75],
+      ),
+      '--color-text-red': lightDark(
+        neutralPalettes.red.light[25],
+        neutralPalettes.red.dark[85],
+      ),
+      '--color-background-orange': lightDark(
+        neutralPalettes.orange.light[85],
+        `${neutralPalettes.orange.dark[75]}3D`,
+      ),
+      '--color-border-orange': lightDark(
+        neutralPalettes.orange.light[80],
+        neutralPalettes.orange.dark[65],
+      ),
+      '--color-icon-orange': lightDark(
+        neutralPalettes.orange.light[30],
+        neutralPalettes.orange.dark[75],
+      ),
+      '--color-text-orange': lightDark(
+        neutralPalettes.orange.light[30],
+        neutralPalettes.orange.dark[85],
+      ),
+      '--color-background-yellow': lightDark(
+        neutralPalettes.yellow.light[90],
+        `${neutralPalettes.yellow.dark[75]}3D`,
+      ),
+      '--color-border-yellow': lightDark(
+        neutralPalettes.yellow.light[80],
+        neutralPalettes.yellow.dark[65],
+      ),
+      '--color-icon-yellow': lightDark(
+        neutralPalettes.yellow.light[30],
+        neutralPalettes.yellow.dark[75],
+      ),
+      '--color-text-yellow': lightDark(
+        neutralPalettes.yellow.light[30],
+        neutralPalettes.yellow.dark[85],
+      ),
+      '--color-background-green': lightDark(
+        neutralPalettes.green.light[85],
+        `${neutralPalettes.green.dark[75]}3D`,
+      ),
+      '--color-border-green': lightDark(
+        neutralPalettes.green.light[80],
+        neutralPalettes.green.dark[65],
+      ),
+      '--color-icon-green': lightDark(
+        neutralPalettes.green.light[30],
+        neutralPalettes.green.dark[75],
+      ),
+      '--color-text-green': lightDark(
+        neutralPalettes.green.light[30],
+        neutralPalettes.green.dark[85],
+      ),
+      '--color-background-teal': lightDark(
+        neutralPalettes.teal.light[85],
+        `${neutralPalettes.teal.dark[75]}3D`,
+      ),
+      '--color-border-teal': lightDark(
+        neutralPalettes.teal.light[80],
+        neutralPalettes.teal.dark[65],
+      ),
+      '--color-icon-teal': lightDark(
+        neutralPalettes.teal.light[30],
+        neutralPalettes.teal.dark[75],
+      ),
+      '--color-text-teal': lightDark(
+        neutralPalettes.teal.light[30],
+        neutralPalettes.teal.dark[85],
+      ),
+      '--color-background-cyan': lightDark(
+        neutralPalettes.cyan.light[85],
+        `${neutralPalettes.cyan.dark[75]}3D`,
+      ),
+      '--color-border-cyan': lightDark(
+        neutralPalettes.cyan.light[80],
+        neutralPalettes.cyan.dark[65],
+      ),
+      '--color-icon-cyan': lightDark(
+        neutralPalettes.cyan.light[30],
+        neutralPalettes.cyan.dark[75],
+      ),
+      '--color-text-cyan': lightDark(
+        neutralPalettes.cyan.light[30],
+        neutralPalettes.cyan.dark[85],
+      ),
+      '--color-background-blue': lightDark(
+        neutralPalettes.blue.light[85],
+        `${neutralPalettes.blue.dark[75]}3D`,
+      ),
+      '--color-border-blue': lightDark(
+        neutralPalettes.blue.light[80],
+        neutralPalettes.blue.dark[65],
+      ),
+      '--color-icon-blue': lightDark(
+        neutralPalettes.blue.light[30],
+        neutralPalettes.blue.dark[75],
+      ),
+      '--color-text-blue': lightDark(
+        neutralPalettes.blue.light[30],
+        neutralPalettes.blue.dark[85],
+      ),
+      '--color-background-purple': lightDark(
+        neutralPalettes.purple.light[85],
+        `${neutralPalettes.purple.dark[75]}3D`,
+      ),
+      '--color-border-purple': lightDark(
+        neutralPalettes.purple.light[80],
+        neutralPalettes.purple.dark[65],
+      ),
+      '--color-icon-purple': lightDark(
+        neutralPalettes.purple.light[30],
+        neutralPalettes.purple.dark[75],
+      ),
+      '--color-text-purple': lightDark(
+        neutralPalettes.purple.light[30],
+        neutralPalettes.purple.dark[85],
+      ),
+      '--color-background-pink': lightDark(
+        neutralPalettes.pink.light[85],
+        `${neutralPalettes.pink.dark[75]}3D`,
+      ),
+      '--color-border-pink': lightDark(
+        neutralPalettes.pink.light[80],
+        neutralPalettes.pink.dark[65],
+      ),
+      '--color-icon-pink': lightDark(
+        neutralPalettes.pink.light[30],
+        neutralPalettes.pink.dark[75],
+      ),
+      '--color-text-pink': lightDark(
+        neutralPalettes.pink.light[30],
+        neutralPalettes.pink.dark[85],
+      ),
+    };
+
+    expect(neutralTheme.tokens).toMatchObject(mappings);
   });
 });
 
