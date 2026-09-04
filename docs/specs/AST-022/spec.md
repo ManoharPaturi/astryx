@@ -86,12 +86,12 @@ change, and writes an equivalent local theme only after the author confirms.
 ### Explicit lifecycle choice
 
 - **FR1 — Following and owning are different promises.** Tooling that starts a new
-  application or product theme from an existing theme MUST default to an owned
-  starting point. Following the base requires an explicit author choice after the
-  tooling explains that upgrades may change inherited results. A local variant of
-  another theme in the same owned family MAY recommend following, but MUST still
-  make that relationship explicit. Tooling MUST NOT describe `extends` as a fully
-  independent copy.
+  theme from an existing theme MUST present following the base and taking a fully
+  owned starting point as explicit choices. It MUST explain that following receives
+  later base changes while ownership accepts local maintenance, and MUST receive an
+  author selection before writing. Tooling MAY recommend one choice from the
+  author's stated goal, but MUST NOT silently select it or describe `extends` as a
+  fully independent copy.
 - **FR2 — Following preserves current `extends` semantics.** A following theme
   retains its base dependency and may adopt the base's resolved token, component,
   media-surface, icon, indicator, syntax, and local-token changes after an
@@ -295,14 +295,15 @@ This spec moves from `proposed` to `shipped` only when:
 
 ## Decision log
 
-### DEC-1 — Default new application themes to an owned starting point
+### DEC-1 — Let authors explicitly choose whether to follow or own
 
 **Reference:** `spec:AST-022/DEC-1`
 **Decider:** `rubyycheung`, `2026-09-04`
 
-New application and product themes should own their starting source, consistent
-with the theme-owned palette model. Following a base remains useful for intentional
-variants, but requires an explicit choice after its upgrade behavior is explained.
+The palette remains owned by its theme regardless of the theme's inheritance
+choice. A theme author may reasonably prefer independent source or continuing base
+updates, so tooling explains both consequences and requires a selection. It may
+recommend a choice based on the stated goal, but does not choose silently.
 
 ### DEC-2 — Use one materialization engine for inheritance and generated scales
 
