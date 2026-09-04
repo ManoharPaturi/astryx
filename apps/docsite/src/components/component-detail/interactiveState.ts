@@ -293,9 +293,23 @@ function getCallbackTargetProp(type: string): string | null {
 /**
  * Wires controlled-component change handlers back into playground state so the
  * preview reflects interaction (clicking a Pagination page, etc.). A callback
- * whose first parameter names a value prop in `state` (page/onChange,
- * value/onChange, pageSize/onPageSizeChange) replaces its noop with one that
- * updates that prop. isOpen/onOpenChange stays gated behind canControlOpenState.
+ * whose first parameter names a value prop replaces its noop with one that
+ * updates that prop.
+ *
+ * A secondary paired callback (pageSize/onPageSizeChange, index/onIndexChange,
+ * ...) only bridges once its target already has a value in `state` — usually
+ * an explicit playground default — so a preview keeps whichever representative
+ * starting state its doc chose (e.g. a Lightbox gallery preview that opts out
+ * of index tracking).
+ *
+ * The literal `value`/`onChange` pair is different: it is a component's one
+ * primary controlled value, not an optional secondary feature, so it bridges
+ * as soon as `target` names a real prop — even one that is optional and has
+ * no seeded default. Without this, a component whose primary value has no
+ * playground default (Selector's `value`, matching its documented "closed
+ * with no value" state) renders its real preview but can never reflect a
+ * selection back into it (#5909 follow-up). isOpen/onOpenChange stays gated
+ * behind canControlOpenState regardless of which path admitted it.
  */
 export function buildRuntimePreviewState(
   state: Record<string, unknown>,
@@ -306,10 +320,11 @@ export function buildRuntimePreviewState(
     return state;
   }
 
+  const knobs = options?.knobs ?? [];
   const next: Record<string, unknown> = {...state};
   let changed = false;
 
-  for (const {row, control} of options?.knobs ?? []) {
+  for (const {row, control} of knobs) {
     if (control.kind !== 'callback') {
       continue;
     }
@@ -319,7 +334,12 @@ export function buildRuntimePreviewState(
       continue;
     }
     const target = getCallbackTargetProp(row.type);
-    if (target == null || !(target in state)) {
+    if (target == null) {
+      continue;
+    }
+    const isKnownProp = knobs.some(knob => knob.row.name === target);
+    const isPrimaryValueCallback = row.name === 'onChange' && isKnownProp;
+    if (!(target in state) && !isPrimaryValueCallback) {
       continue;
     }
     if (target === 'isOpen' && options?.canControlOpenState !== true) {
