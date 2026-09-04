@@ -4592,6 +4592,11 @@
       "aliases": []
     },
     {
+      "name": "template-table-inbox",
+      "path": "templates/table-inbox",
+      "aliases": []
+    },
+    {
       "name": "template-table-page",
       "path": "templates/table-page",
       "aliases": []

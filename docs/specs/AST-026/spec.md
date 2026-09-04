@@ -2,7 +2,7 @@
 schema_version: 1
 template_version: 1
 kind: system-spec
-id: spec:AST-018
+id: spec:AST-026
 authority: draft
 archive_reason: null
 superseded_by: null
@@ -106,7 +106,7 @@ and does not authorize publishing a production registry.
 
 ## Current-state impact
 
-The CLI already ships components, 161 blocks, and 46 ready page templates. The
+The CLI already ships components, 161 blocks, and 47 ready page templates. The
 docsite generator already discovers components, individual showcases and
 examples, blocks, pages, package versions, and source. The experiment adds a
 serializer over that existing catalog rather than a second discovery system.
@@ -137,7 +137,7 @@ creating a public re-export only.
 
 ### DEC-1 — Use shadcn as a compatibility protocol, not an Astryx foundation
 
-**Reference:** `spec:AST-018/DEC-1`
+**Reference:** `spec:AST-026/DEC-1`
 **Decider:** `josephfarina`, `2026-09-02`
 
 Generate standard registry JSON so an existing shadcn user can install Astryx
@@ -149,7 +149,7 @@ interoperability and requires Astryx adoption before Astryx can be discovered.
 
 ### DEC-2 — Copy composition, not component implementation
 
-**Reference:** `spec:AST-018/DEC-2`
+**Reference:** `spec:AST-026/DEC-2`
 **Decider:** `josephfarina`, `2026-09-02`
 
 A normal install keeps `@astryxdesign/core` or the owning Astryx package as a
@@ -161,7 +161,7 @@ upgrades and crosses private-import and uncompiled-StyleX boundaries.
 
 ### DEC-3 — Keep the first implementation experimental and draft-only
 
-**Reference:** `spec:AST-018/DEC-3`
+**Reference:** `spec:AST-026/DEC-3`
 **Decider:** `josephfarina`, `2026-09-02`
 
 Build and test the complete shape in a draft before making a public support
@@ -170,7 +170,7 @@ a stable production registry.
 
 ### DEC-4 — Derive stable IDs from docs and organize URLs by item kind
 
-**Reference:** `spec:AST-018/DEC-4`
+**Reference:** `spec:AST-026/DEC-4`
 **Decider:** `josephfarina`, `2026-09-03`
 
 Treat registry names and paths as public API before publication. Derive them
