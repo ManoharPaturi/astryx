@@ -238,6 +238,47 @@ describe('visual acceptance workflow concurrency', () => {
     );
   });
 
+  it('skips trusted visual evidence work when source CI fails', () => {
+    const value = workflow('pr-comment.yml');
+    const guardedSteps = [
+      [
+        'Download Storybook for trusted visual capture',
+        'Cross-check artifact identity',
+      ],
+      [
+        'Fetch the trusted visual baseline',
+        'Capture the trusted stable visual scope',
+      ],
+      [
+        'Capture the trusted stable visual scope',
+        'Derive trusted broad visual deferral',
+      ],
+      [
+        'Derive trusted broad visual deferral',
+        'The Storybook bundle is untrusted',
+      ],
+      [
+        'Derive trusted visual evidence and report',
+        'Resolve trusted visual evidence path',
+      ],
+      [
+        'Resolve trusted visual evidence path',
+        'Publish immutable visual evidence',
+      ],
+    ];
+
+    for (const [name, next] of guardedSteps) {
+      const start = value.indexOf(`      - name: ${name}`);
+      const end = value.indexOf(next, start + 1);
+      expect(start, `${name} start`).toBeGreaterThan(-1);
+      expect(end, `${name} end`).toBeGreaterThan(start);
+      const step = value.slice(start, end);
+      expect(step, name).toContain(
+        "steps.identity.outputs.source_conclusion == 'success'",
+      );
+    }
+  });
+
   it('uses the documented collaborator permission response shape', () => {
     const value = workflow('visual-acceptance.yml');
     const authorize = value.slice(
