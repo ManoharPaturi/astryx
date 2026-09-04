@@ -50,6 +50,13 @@ export const docs = {
       default: "'md'",
     },
     {
+      name: 'elevation',
+      type: "'none' | 'low' | 'med' | 'high'",
+      description:
+        'Resting shadow depth for floating (FAB-style) toggle buttons, mirroring Button. `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Ignored inside a ToggleButtonGroup, where the surface elevation is owned by the group.',
+      default: "'none'",
+    },
+    {
       name: 'isDisabled',
       type: 'boolean',
       description: 'Whether the button is disabled.',
