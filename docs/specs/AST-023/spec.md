@@ -76,11 +76,16 @@ does not run when the application loads.
 - **FR1 — Author intent precedes mechanism.** Interactive tooling MUST first ask
   what the author needs to add and where it will be used. It MUST explain whether
   the result is a token-only extension, a semantic component variant, or both
-  before asking the author to choose low-level `defineTheme` fields.
+  before asking the author to choose low-level `defineTheme` fields. The supported
+  command is `astryx theme scale extend`.
 - **FR2 — Cardinality is author-defined.** A request MAY add one or any finite
   number of values. Tooling MUST NOT encode an arbitrary product limit such as
-  exactly two additional display sizes. Names MUST be unique within the target
-  theme, and every requested value MUST be represented in the preview and output.
+  exactly two additional display sizes. An author MAY supply names, a count for
+  which tooling proposes names, or both. Proposed names require confirmation.
+  Names MUST be unique within the target theme, and every requested value MUST be
+  represented in the preview and output. An unusually large request produces a
+  warning and requires additional confirmation rather than failing against an
+  arbitrary design limit.
 - **FR3 — Initial implementation is focused.** The first supported recipes SHOULD
   cover additional typography roles and spacing values because Astryx has concrete
   examples for both. Motion and radius MAY adopt the same contract later. Tonal
@@ -94,9 +99,10 @@ does not run when the application loads.
 
 - **FR5 — Inputs are explicit and complete.** A request MUST identify the theme,
   scale domain, author-selected names or requested count, value strategy, and
-  intended output mode. A strategy MAY use explicit CSS values, continue a current
-  mathematical progression, or derive candidates from named anchors. Missing
-  information that changes output MUST prompt the author or fail with guidance.
+  intended output mode. The initial implementation supports explicit CSS values
+  and simple continuation of the selected existing progression. More complex
+  recipes require later evidence and contract changes. Missing information that
+  changes output MUST prompt the author or fail with guidance.
 - **FR6 — Generated values are candidates.** Formula-derived sizes, line heights,
   or spacing values are suggestions for review. Tooling MUST NOT describe them as
   inherently correct, accessible, or semantically appropriate.
@@ -104,10 +110,24 @@ does not run when the application loads.
   renumber, or change built-in or existing theme-local values unless the author
   explicitly requests a migration. Continuing a progression computes new values
   from the selected anchor and formula without rewriting earlier stops.
+- **FR7a — Names preserve direction and intent.** When only a count is supplied,
+  tooling MUST ask whether values extend above, below, or between existing values
+  before proposing names. It MUST preserve established ordering and MUST NOT assume
+  that `display-4` is larger when the current scale defines `display-1` as largest.
+  Semantic names such as `hero` MAY be proposed when sequential naming would be
+  misleading.
+- **FR7b — Irregularity is reviewable, not automatically invalid.** Valid CSS,
+  finite generation inputs, unique names, and collision freedom are hard
+  requirements. Repeated values, reversed progressions, or small differences
+  produce warnings but remain available for intentional specialized scales.
 - **FR8 — CSS values remain expressive.** Explicit extensions MAY use supported CSS
   values such as `rem`, `px`, `calc()`, `clamp()`, or references to existing tokens.
   Tooling MUST preserve author-provided valid expressions rather than forcing every
   value through one numeric generator.
+- **FR8a — Mode-specific values require explicit intent.** One value shared by
+  light and dark modes is the default for typography and spacing. A light/dark
+  tuple is allowed only when the author requests it, and the preview MUST show the
+  resulting layout in both modes.
 
 ### Theme-owned output
 
@@ -122,7 +142,9 @@ does not run when the application loads.
 - **FR11 — Token-only output is an explicit choice.** An author MAY request reusable
   local tokens without assigning them to a component. Tooling MUST label that mode
   clearly. Otherwise, every generated value MUST identify or create at least one
-  selected use site; an unexplained list of unused properties is insufficient.
+  selected use site; an unexplained list of unused properties is insufficient. The
+  CLI MUST ask the author to select those use sites or generate a copyable example;
+  it MUST NOT rewrite unselected application source automatically.
 - **FR12 — Use sites use supported theme mechanisms.** Typography roles SHOULD use
   typed `Text` or `Heading` component variants. Component-specific spacing SHOULD
   use component overrides or a documented local style. Tooling MUST NOT invent a
@@ -131,6 +153,11 @@ does not run when the application loads.
   custom component prop value, the supported theme-build augmentation MUST make it
   available to TypeScript consumers. The preview MUST identify the build step and
   fail when the requested value cannot participate in that flow.
+- **FR13a — References fail closed.** Before renaming or removing an extension,
+  tooling MUST locate references in supported theme and application source and
+  report their exact locations. A remaining reference MUST fail validation, type
+  checking, or the theme build rather than falling back silently. This follows the
+  same safety model as removing or renaming a referenced palette stop.
 
 ### Semantics and accessibility
 
@@ -152,7 +179,9 @@ does not run when the application loads.
 - **FR17 — Preview shows the extension in context.** Typography previews MUST show
   the existing and proposed roles together, including names, values, line heights,
   and representative text. Spacing previews MUST show measured gaps alongside the
-  existing scale and at least one selected use context when one exists.
+  existing scale and at least one selected use context when one exists. The preview
+  MUST also report the number of added tokens, CSS rules, and type declarations and
+  the approximate generated file-size change.
 - **FR18 — Changes remain reviewable.** A revision preview MUST distinguish existing,
   added, changed, and removed values without separating corresponding comparisons.
   A new-extension preview MAY omit change labels but MUST use the same underlying
@@ -236,51 +265,32 @@ This spec moves from `proposed` to `shipped` only when:
 - custom component values pass the existing type-augmentation workflow;
 - typography examples keep visual roles separate from heading semantics;
 - existing scale values remain unchanged unless a migration is explicitly selected;
+- rename and removal checks report every supported remaining reference and fail
+  closed;
+- mode-specific values require explicit selection and comparison in both modes;
 - new and revision previews use one consistent comparison layout; and
+- previews disclose generated token, CSS, type, and approximate file-size cost;
 - failures are atomic and successful output is deterministic.
 
 ## Open questions
 
-- What CLI verb best describes adding values without implying that the universal
-  Astryx scale changes: `theme scale extend`, `theme tokens add`, or an intent-led
-  prompt under `theme create` and `theme edit`?
-- Should the first typography recipe accept an author-selected count and propose
-  names, require explicit names, or support both?
-- How should proposed display names preserve the current ordering, where
-  `display-1` is larger than `display-2` and `display-3`? Would role names such as
-  `hero` and `hero-large` be clearer than implying that `display-4` is larger?
-- Which progression rules should typography and spacing offer initially, and which
-  should remain explicit-value-only until there is enough design evidence?
-- Should monotonic progression, minimum differentiation, and duplicate values be
-  hard requirements or review warnings? A specialized scale may intentionally
-  repeat or reverse values.
 - Should responsive expressions such as `clamp()` participate in a numeric scale
   preview, or appear as separately identified semantic roles because they do not
   have one fixed size?
-- How should tooling discover application-owned style use sites without rewriting
-  source the author did not select?
 - How should custom component values remain typed for projects that do not run
   `astryx theme build` during local development?
-- When an extension value is renamed or removed, which command or validation step
-  should locate every remaining token and component reference?
-- Should light/dark tuples be supported for every extension domain, or only when a
-  demonstrated use case justifies mode-dependent typography or spacing?
-- What practical resource guard should prevent accidental generation of thousands
-  of values while preserving the contract that Astryx imposes no design-level
-  cardinality limit?
-- How should previews expose the CSS and type-output cost of a large extension so
-  authors can distinguish legitimate breadth from accidental token proliferation?
 
 ## Decision log
 
 ### DEC-1 — Do not impose a fixed extension count
 
 **Reference:** `spec:AST-023/DEC-1`
-**Decider:** pending
+**Decider:** `rubyycheung`, `2026-09-04`
 
 The number of additional values follows the theme's needs. Two display roles are a
 motivating example, not an API boundary. A finite request is required for reviewable
-output, but the system does not impose an arbitrary count.
+output, but the system does not impose an arbitrary design limit. Unusually large
+requests warn, show their output cost, and require additional confirmation.
 
 ### DEC-2 — Keep extensions theme-local by default
 
@@ -299,3 +309,48 @@ proposal later.
 The CLI assists with intent, calculation, preview, and source generation. Accepted
 values use `localTokens`, component variants, local styles, and the existing theme
 build rather than adding another runtime scale resolver.
+
+### DEC-4 — Use an explicit scale-extension command
+
+**Reference:** `spec:AST-023/DEC-4`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+The command is `astryx theme scale extend`. It distinguishes adding theme-local
+scale values from the existing `defineTheme({extends})` inheritance relationship.
+
+### DEC-5 — Accept names, a count, or both
+
+**Reference:** `spec:AST-023/DEC-5`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Authors who know the intended roles may name them directly. When only a count is
+provided, tooling asks which direction the scale extends, proposes non-conflicting
+names, and requires confirmation rather than guessing from existing numbering.
+
+### DEC-6 — Start with explicit values and simple continuation
+
+**Reference:** `spec:AST-023/DEC-6`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+The first recipe accepts explicit CSS values or continues one selected existing
+progression. More sophisticated generation remains later work. Irregular but valid
+results produce review warnings rather than blocking intentional author choices.
+
+### DEC-7 — Never rewrite unselected use sites
+
+**Reference:** `spec:AST-023/DEC-7`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+The author selects files or component variants to update. Otherwise, tooling emits
+a copyable example or explicit token-only output. Renaming and removal first scan
+supported sources, and unresolved references fail instead of falling back, matching
+the accepted-palette reference policy.
+
+### DEC-8 — Mode differences and large output require visible intent
+
+**Reference:** `spec:AST-023/DEC-8`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Typography and spacing use one value across modes unless the author explicitly
+requests a tuple and reviews both layouts. Large requests remain possible but warn,
+require confirmation, and disclose generated token, CSS, type, and file-size cost.
