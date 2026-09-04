@@ -9,8 +9,11 @@ export const doc = {
   summary: 'Generate an OKLCH palette candidate for human review',
   description:
     'Reads an explicit JSON request and runs the versioned astryx-oklch-v1 recipe. ' +
-    'The command defaults to 21 stops but accepts any non-empty ordered numeric stop list. ' +
-    'Without --out it prints a preview. With --out it writes candidate JSON and a detached ' +
+    'The command defaults to 19 stops (5 through 95) but accepts any non-empty ordered ' +
+    'numeric stop list, including decimals. Stops apply to every family in the request. ' +
+    'For anchors, exact preserves the chosen color at its mode and stop; bounded allows ' +
+    'movement within maxDeltaE; preferred uses the color as guidance. ' +
+    'Without --out it prints a preview. With --out it writes a candidate file and detached ' +
     'receipt. --preview writes a standardized, self-contained HTML review artifact. ' +
     'TypeScript output is directly importable and contains no generator dependency. ' +
     'JSON is also supported. Existing author-owned files are left untouched unless --overwrite is explicit.',
@@ -20,7 +23,8 @@ export const doc = {
     {
       flag: '-o, --out <path>',
       param: 'options.out',
-      description: 'Write candidate JSON and a sibling receipt file',
+      description:
+        'Write a candidate TypeScript or JSON file and a sibling receipt',
     },
     {
       flag: '--preview <path>',

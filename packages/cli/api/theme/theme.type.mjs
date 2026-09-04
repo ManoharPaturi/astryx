@@ -103,11 +103,14 @@
  * A generated palette candidate. The palette is still subject to author review
  * and is not connected to runtime theme values.
  * @typedef {object} TonalPaletteAnchor
- * @property {'light' | 'dark'} mode
- * @property {number} stop
+ * @property {'light' | 'dark'} mode Mode containing the anchored stop.
+ * @property {number} stop Existing requested stop where the anchor applies.
  * @property {string} color
- * @property {'exact' | 'bounded' | 'preferred'} policy
- * @property {number} [maxDeltaE]
+ * @property {'exact' | 'bounded' | 'preferred'} policy `exact` preserves the
+ * chosen color at that stop; `bounded` permits adjustment within `maxDeltaE`;
+ * `preferred` treats the color as guidance and blends toward it.
+ * @property {number} [maxDeltaE] Required non-negative perceptual-distance
+ * limit for a `bounded` anchor.
  */
 
 /**
@@ -122,10 +125,12 @@
 /**
  * @typedef {object} TonalPaletteGenerationInput
  * @property {TonalPaletteFamilyInput[]} families
- * @property {number} [vibrancy]
+ * @property {number} [vibrancy] Chroma control from 0 (most muted) through 50
+ * (default) to 100 (most vivid).
  * @property {'neutral-v1' | 'warm-v1' | 'cool-v1' | 'custom'} [neutralProfile]
  * @property {'light-only' | 'dark-only' | 'light-and-dark'} [modeStrategy]
- * @property {number[]} [stops]
+ * @property {number[]} [stops] Ordered stops shared by every requested family;
+ * defaults to 5 through 95 in increments of 5. Decimal stops are supported.
  */
 
 /**

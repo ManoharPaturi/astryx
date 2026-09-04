@@ -11,7 +11,10 @@ export const doc = {
     'Runs the versioned astryx-oklch-v1 authoring recipe. The returned candidate ' +
     'contains exact hex values for review; it does not modify a theme, write files, ' +
     'perform semantic mapping, or make accessibility claims. Stop numbers remain ' +
-    'stable across layouts, and requested decimal stops are emitted explicitly.',
+    'stable across layouts, and requested decimal stops are emitted explicitly. ' +
+    'Anchor policies are intentional: exact preserves the chosen color at its stop; ' +
+    'bounded permits movement within maxDeltaE; preferred treats it as guidance. ' +
+    'An anchor needs a mode and stop. Stops apply to every family in one request.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'generateTonalPalette(input: TonalPaletteGenerationInput): TonalPaletteCandidate',
@@ -21,7 +24,7 @@ export const doc = {
       name: 'input',
       type: 'TonalPaletteGenerationInput',
       description:
-        'Families and seeds plus optional modes, stops, anchors, vibrancy, and neutral profile.',
+        'Families and seeds plus optional modes, shared stops, anchors, vibrancy from 0 to 100 (default 50), and neutral profile. Only generate an accent family when one is explicitly requested; clarify whether an ambiguous accent means one theme value or a tonal family.',
       required: true,
     },
   ],
@@ -45,6 +48,14 @@ export const doc = {
     {
       label: 'Preserve a required brand color',
       code: "generateTonalPalette({stops: [50], families: [{id: 'brand', seed: '#0074e2', anchors: [{mode: 'light', stop: 50, color: '#1682d5', policy: 'exact'}]}]});",
+    },
+    {
+      label: 'Allow limited anchor movement',
+      code: "generateTonalPalette({stops: [50], families: [{id: 'brand', seed: '#0074e2', anchors: [{mode: 'light', stop: 50, color: '#1682d5', policy: 'bounded', maxDeltaE: 2}]}]});",
+    },
+    {
+      label: 'Use an anchor as guidance',
+      code: "generateTonalPalette({stops: [50], families: [{id: 'pink', seed: '#ff4db8', anchors: [{mode: 'light', stop: 50, color: '#ff4db8', policy: 'preferred'}]}]});",
     },
     {
       label: 'Generate an optional accent family',

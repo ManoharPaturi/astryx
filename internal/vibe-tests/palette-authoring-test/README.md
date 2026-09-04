@@ -3,8 +3,9 @@
 This focused prompt set checks whether an agent translates ordinary author
 language into the intended palette-generation controls.
 
-Run each `prompt` with a fresh agent that can discover the shipped CLI docs. Do
-not include `expectedDecision` in the agent prompt; it is evaluation-only.
+Run each entry in `prompts.json` with a fresh agent that can discover the
+shipped CLI docs. Keep `expected-decisions.json` hidden until scoring so the
+agent cannot see the answer key.
 
 Evaluate whether the response:
 
