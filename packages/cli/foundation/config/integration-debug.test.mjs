@@ -94,14 +94,14 @@ afterEach(() => {
 
 describe('installing an integration is enough', () => {
   it('records the run with no `debug` anywhere in the app config', async () => {
-    integration('telemetry-integration');
-    config(['telemetry-integration']);
+    integration('debug logs-integration');
+    config(['debug logs-integration']);
     expect(
       fs.readFileSync(path.join(tmpDir, 'astryx.config.mjs'), 'utf-8'),
     ).not.toMatch(/debug/);
 
     expect(await runOneCommand()).toBe(true);
-    expect(fired()).toEqual(['telemetry-integration']);
+    expect(fired()).toEqual(['debug logs-integration']);
   });
 
   it('records nothing when the integration exports no handler', async () => {
@@ -125,12 +125,12 @@ describe('installing an integration is enough', () => {
 
 describe('the app config does not displace them, and they do not displace it', () => {
   it('calls the app handler and the integration handler, app first', async () => {
-    integration('telemetry-integration');
-    config(['telemetry-integration'], true);
+    integration('debug logs-integration');
+    config(['debug logs-integration'], true);
 
     await runOneCommand();
 
-    expect(fired()).toEqual(['app', 'telemetry-integration']);
+    expect(fired()).toEqual(['app', 'debug logs-integration']);
   });
 
   it('keeps the others when one integration handler throws', async () => {
@@ -146,8 +146,8 @@ describe('the app config does not displace them, and they do not displace it', (
 describe('an app can refuse an inherited handler', () => {
   it('drops integration handlers under astryx.inheritDebug false', async () => {
     packageJson({inheritDebug: false});
-    integration('telemetry-integration');
-    config(['telemetry-integration'], true);
+    integration('debug logs-integration');
+    config(['debug logs-integration'], true);
 
     await runOneCommand();
 
@@ -156,21 +156,21 @@ describe('an app can refuse an inherited handler', () => {
 
   it('keeps them under an explicit true', async () => {
     packageJson({inheritDebug: true});
-    integration('telemetry-integration');
-    config(['telemetry-integration']);
+    integration('debug logs-integration');
+    config(['debug logs-integration']);
 
     await runOneCommand();
 
-    expect(fired()).toEqual(['telemetry-integration']);
+    expect(fired()).toEqual(['debug logs-integration']);
   });
 
   it('keeps them when package.json says nothing about astryx', async () => {
-    integration('telemetry-integration');
-    config(['telemetry-integration']);
+    integration('debug logs-integration');
+    config(['debug logs-integration']);
 
     await runOneCommand();
 
-    expect(fired()).toEqual(['telemetry-integration']);
+    expect(fired()).toEqual(['debug logs-integration']);
   });
 });
 
@@ -179,8 +179,8 @@ describe('loading the project twice delivers once', () => {
   // so `--help` and parse errors are recorded, and again when the command
   // reads the project for its own reasons.
   it('does not double-deliver across two Project.loads', async () => {
-    integration('telemetry-integration');
-    config(['telemetry-integration'], true);
+    integration('debug logs-integration');
+    config(['debug logs-integration'], true);
 
     begin({argv: ['docs']});
     setCommand('docs');
@@ -188,6 +188,6 @@ describe('loading the project twice delivers once', () => {
     await Project.load(tmpDir);
     finish({exitCode: 0});
 
-    expect(fired()).toEqual(['app', 'telemetry-integration']);
+    expect(fired()).toEqual(['app', 'debug logs-integration']);
   });
 });

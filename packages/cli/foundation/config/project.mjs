@@ -270,7 +270,7 @@ export class Project {
       // Integrations may contribute a handler too, as a `debug` NAMED export
       // from their manifest module. Both destinations receive the event: an
       // app that sets `debug` to watch its own runs must not thereby drop out
-      // of an integration's telemetry, and an integration must not silence the
+      // of an integration's debug logs, and an integration must not silence the
       // app. Passed as one ordered list rather than appended one at a time,
       // because Project.load can run more than once in a process and appending
       // would deliver twice.

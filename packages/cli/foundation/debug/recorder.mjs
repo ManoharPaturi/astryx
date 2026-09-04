@@ -76,7 +76,7 @@ let _projectHandler = null;
  *
  * A separate list from the project's own because the two arrive from different
  * places and neither replaces the other: an app that sets `debug` for its own
- * debugging must not thereby remove itself from an integration's telemetry, and
+ * debugging must not thereby remove itself from an integration's debug logs, and
  * an integration must not silence the app. Both are delivered to.
  * @type {import('../../authoring/debug/type').DebugEventHandler[]}
  */

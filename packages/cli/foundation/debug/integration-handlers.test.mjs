@@ -81,7 +81,7 @@ describe('an integration can supply the handler', () => {
 describe('the project and its integrations both win', () => {
   // The case that motivated the feature. Under fallback semantics an app that
   // set `debug` for its own debugging would silently drop out of every
-  // integration's telemetry — invisibly, because nothing reports a handler
+  // integration's debug logs — invisibly, because nothing reports a handler
   // that was never called.
   it('calls the project handler AND the integration handlers', () => {
     const fromConfig = vi.fn();
