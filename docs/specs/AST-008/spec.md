@@ -80,10 +80,10 @@ outside Core theme normalization and runtime behavior.
   neutral profiles; exact, bounded, and preferred anchors; an explicit stop
   layout; light and dark strategy; target gamut and encoding; and every other
   output-affecting parameter. Astryx tooling SHOULD default family ramps to the
-  19-stop `5, 10, …, 95` layout, while accepting any non-empty author-defined
+  21-stop `0, 5, …, 100` layout, while accepting any non-empty author-defined
   numeric stop list. Compact and specialized layouts are valid author choices,
-  not exceptions. Exact black and white are ordinary theme values, not repeated
-  default outputs of every generated color family.
+  not exceptions. Stops 0 and 100 resolve to exact black and white in generated
+  families. Authors MAY omit those repeated endpoints with a custom stop list.
 - **FR2a — Custom stop syntax is exact.** Every stop MUST be a finite JSON number
   from 0 through 100 inclusive. Stops MUST be unique and strictly increasing.
   Integer and decimal stops are valid; equivalent numeric spellings such as `5`
@@ -104,7 +104,9 @@ outside Core theme normalization and runtime behavior.
   monotonicity, exact anchors, and bounded-anchor tolerances are hard constraints.
   Intensity, optical balance, and preferred anchors are optimization preferences.
   A conflict MUST fail clearly rather than moving an exact anchor, weakening a
-  tolerance, substituting a profile, or changing the stop layout.
+  tolerance, substituting a profile, or changing the stop layout. An anchor MUST
+  NOT turn stop 0 or 100 into a chromatic value; a conflicting endpoint anchor
+  fails with guidance to use an interior stop.
 - **FR5 — Recipes are deterministic and versioned.** A recipe identity MUST pin
   color space, constants, profiles, schedules, anchors, gamut handling, precision,
   rounding, serialization, and tie-breaking. The same normalized request MUST
@@ -223,9 +225,10 @@ The first production recipe is defined here rather than by mutable Sandbox code:
   (hue 75, chroma 0.018), `cool-v1` (hue 250, chroma 0.018), and `custom`
   (the normalized neutral seed).
 - Stop numbers retain the same literal tone meaning in both modes. Dark ramps
-  multiply chroma by 0.85 without silently shifting the requested tone. A custom
-  stop 0 therefore resolves to exact black in either mode, and a custom stop 100
-  resolves to exact white. The default family layout emits neither endpoint.
+  multiply chroma by 0.85 without silently shifting the requested tone. Stop 0
+  therefore resolves to exact black in either mode, and stop 100 resolves to
+  exact white. Both endpoints are included by default and MAY be omitted by an
+  explicit custom layout.
 - Out-of-gamut OKLCH candidates preserve lightness and hue while chroma is found
   by 20 iterations of binary search over `[0, 0.4]`.
 - Exact anchors replace their stop. Bounded anchors move toward the requested
@@ -307,9 +310,10 @@ Both use the same `astryx-oklch-v1` engine. Neither enters Core or `defineTheme(
 
 **Decider:** `rubyycheung`, `2026-09-03`
 
-The first production generator defaults each family to 19 meaningful chromatic
-or neutral stops from 5 through 95 and accepts any explicit non-empty numeric
-stop list. It does not repeat exact black and white in every family. The
+The first production generator defaults each family to the familiar 21-position
+`0, 5, …, 100` layout and accepts any explicit non-empty numeric stop list.
+Stops 0 and 100 repeat exact black and white in each generated family so authors
+can retain a complete coordinate range or remove the endpoints explicitly. The
 generated candidate becomes author-owned after review and acceptance. Generator
 defaults therefore do not become palette-validity rules.
 
@@ -317,7 +321,7 @@ Generated palettes are reviewable starting points. Authors may adjust
 family-level inputs and regenerate until the palette matches their intended
 expression; only the explicitly approved output becomes the theme-owned palette.
 
-Rejected: requiring every accepted palette to use the generator's 19-stop
+Rejected: requiring every accepted palette to use the generator's 21-stop
 default. Themes may need compact or specialized palettes for iconography,
 illustration, visualization, or brand expression.
 
