@@ -245,7 +245,7 @@ The following canonical candidate fixtures use SHA-256 over UTF-8 canonical JSON
 
 | Fixture                | Request summary                                                                                | Candidate bytes | SHA-256                                                            |
 | ---------------------- | ---------------------------------------------------------------------------------------------- | --------------: | ------------------------------------------------------------------ |
-| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 19 default stops |            3227 | `90d280d8d0c7f4eeab97cebf0dc93a0183d4dd3ef9dc81e7357e65550efad103` |
+| `default-three-family` | Neutral `#777777`, blue `#0074e2`, orange `#d57113`; both modes; vibrancy 50; 21 default stops |            3527 | `78ca5bd2afe44d448dc7fd2889196c5a562a9d1f1ff8efcccc67aa1d8a94b76c` |
 | `exact-anchor`         | Blue `#0074e2`; light only; stops 20, 50, 80; exact stop-50 anchor `#1682d5`                   |             242 | `e3dbd30b3eb1e4c2a0350e1321ef44bf16c3ae48ac46ada0dad04368cdd6e4a1` |
 | `single-custom-stop`   | Red `#d62830`; dark only; stop 40                                                              |             189 | `d54fe4d202d7bd49f8a286e97eadf9786fe71e21f15e0058975877581b7e025b` |
 | `high-tone-balance`    | Green `#358a3a`, teal `#0c7365`, cyan `#0c6f82`; both modes; stops 60, 80, 95                  |             825 | `991080568a4e1c1a4b1b23e1d9908fcdd688607aac6be4c55cd216b74ebe7c3d` |
