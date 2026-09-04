@@ -3,9 +3,9 @@ schema_version: 2
 template_version: 1
 kind: theme
 id: theme:neutral
-authority: draft
-approved_by: null
-approved_at: null
+authority: approved
+approved_by: rubyycheung
+approved_at: 2026-09-04
 review_triggers:
   [tokens, palette-values, component-mappings, contrast, artifacts]
 verified_by: [scripts/check-badge-contrast.test.mjs]
@@ -24,12 +24,13 @@ references:
 
 # Neutral theme specification
 
-This draft is a theme-record example and a factual inventory. It does not decide
+This record is the current approved palette and baseline-remap record. It does not decide
 cross-theme local-token, palette-generation, compiler, or artifact APIs;
 current `spec:AST-006` owns the accepted local-token contract. This record keeps
-Neutral's package adoption separate. DEC-2 approves the palette and baseline
-remap as a decision anchor; the proposed local-token roles and additional
-component mappings remain unapproved while this record is draft.
+Neutral's package adoption separate. DEC-2 ratifies the exact palette and
+baseline remap shipped by this change. The proposed local-token roles and
+additional component mappings remain proposals; they are not part of this
+release and must not be treated as an approved public contract.
 
 ## Intent and audience
 
@@ -173,11 +174,10 @@ exports, generated CSS, or generic theme-build artifacts.
 
 ## Decision log
 
-The decisions below record settled input for the portions they name. The final
-Neutral local-token values, mappings, and rendered-evidence ratification remain
-separate from the approved palette baseline. This record remains
-`authority: draft`, `approved_by: null`, and `approved_at: null` until its
-remaining open questions are resolved.
+The decisions below record settled input for the portions they name. This
+record's approval covers the exact palette and baseline remap only. The
+remaining local-token roles, mappings, and rendered-evidence questions stay
+explicitly proposed for a later review and release.
 
 ### DEC-1 — Own one exact Neutral filled-accent-status role
 
