@@ -33,7 +33,8 @@ Astryx should therefore support two explicit workflows:
 - **Own:** resolve the current authoring inputs into reviewable local source that
   no longer depends on the selected base theme or on mutable generation formulas.
 
-Materialization is the shared technical operation behind taking an owned snapshot.
+Materialization is the shared technical operation behind taking a fully owned
+snapshot.
 It resolves inherited and generated theme-authoring values, previews the exact
 change, and writes an equivalent local theme only after the author confirms.
 
@@ -59,8 +60,9 @@ change, and writes an equivalent local theme only after the author confirms.
 
 - **Following theme:** source with an `extends` relationship. Re-resolving it may
   adopt changes from the selected base theme.
-- **Owned snapshot:** local theme source whose configurable values do not require
-  the selected base theme or mutable scale-generation behavior to reproduce.
+- **Fully owned snapshot:** local theme source containing every resolved value
+  exposed by the public theme-authoring contract. Reproducing it does not require
+  the selected base theme or mutable scale-generation behavior.
 - **Materialize:** resolve inherited and generated authoring inputs into explicit,
   reviewable local source.
 - **Detach:** materialize a following theme and remove its `extends` relationship.
@@ -97,9 +99,9 @@ change, and writes an equivalent local theme only after the author confirms.
   for consumption, but flattening at runtime or build time MUST NOT be presented as
   source independence.
 - **FR3 — An owned start writes local source.** Choosing a base only as a starting
-  point MUST create reviewable source owned by the new theme. Subsequent changes to
-  the selected base MUST NOT alter that source unless the author explicitly runs an
-  update or comparison workflow.
+  point MUST create a fully owned snapshot. Subsequent changes to the selected base
+  or Core theme defaults MUST NOT alter its saved theme values unless the author
+  explicitly runs a migration or comparison workflow.
 
 ### Materialization boundary
 
@@ -112,6 +114,11 @@ change, and writes an equivalent local theme only after the author confirms.
   CSS or JavaScript build artifact alone is insufficient because it does not give
   the author an editable theme definition. Output MUST be suitable for committing,
   reviewing, and rebuilding with the supported theme toolchain.
+- **FR5a — Full ownership includes all resolved public theme values.** A fully owned
+  snapshot MUST write every value exposed by the public theme-authoring contract,
+  including values currently equal to Core defaults. Output that records only
+  differences remains dependent on future Core defaults and MUST NOT be labeled
+  fully owned.
 - **FR6 — Theme ownership has an honest boundary.** Materialization freezes the
   theme values expressible through the current public authoring contract. It MUST
   state the Astryx version used and MUST NOT claim to freeze internal component
@@ -134,14 +141,13 @@ change, and writes an equivalent local theme only after the author confirms.
 - **FR9 — Writes are atomic and opt-in.** Preview is the default. Writing requires
   an explicit author action, uses a temporary destination, validates the complete
   result, and replaces target files only after success. Existing modified output
-  MUST NOT be overwritten without explicit confirmation. An author MAY detach by
-  adding resolved values to the existing theme and removing `extends`; tooling MUST
-  NOT require creation of a second theme. A sibling output remains an available
-  comparison option.
-- **FR10 — Partial ownership is explicit.** An author MAY choose to freeze only
+  MUST NOT be overwritten without explicit confirmation. Detach updates the
+  selected existing theme by adding its resolved values and removing `extends`; it
+  does not create a second theme or require callers to change imports.
+- **FR10 — Partial materialization is explicit.** An author MAY choose to freeze only
   selected generated scales while continuing to follow a base. The preview and
   receipt MUST identify every retained dependency. A partial operation MUST NOT be
-  labeled detached or fully owned.
+  labeled detached or owned.
 
 ### Equivalence and review
 
@@ -164,7 +170,7 @@ change, and writes an equivalent local theme only after the author confirms.
 - **FR14 — Repeated output is stable.** With the same source, versions, options,
   and environment-independent inputs, materialization MUST produce byte-identical
   generated files and receipts except for an explicitly excluded invocation time.
-- **FR14a — Future comparison is read-only.** An owned snapshot MAY later compare
+- **FR14a — Future comparison is read-only.** A fully owned snapshot MAY later compare
   itself with a newer release of its former base using receipt metadata. The
   comparison MUST be explicitly requested, MUST show the proposed structural and
   visual differences, and MUST NOT update the owned source or recreate inheritance
@@ -277,15 +283,6 @@ This spec moves from `proposed` to `shipped` only when:
   relationship; freeze converts selected generated scales into explicit values.
   They use the same materialization engine but communicate different outcomes. Is
   one guided command clearer, or do separate verbs make the consequences safer?
-- **Should in-place detach or sibling output be the default?** Both are supported.
-  Updating the existing theme preserves imports and avoids application changes, but
-  a sibling is safer for side-by-side review. Which should the CLI preselect after
-  it has shown the complete diff?
-- **How complete should an owned snapshot be?** Emitting every resolved public
-  theme value provides the strongest independence from Core default changes but
-  may produce a very large file and require ongoing maintenance. Emitting only
-  differences is easier to review but continues to follow Core defaults. Should
-  the CLI offer both levels, and which one is allowed to claim full ownership?
 - **How should large component maps be represented?** One generated theme file is
   easy to import but difficult to review. Splitting tokens, component overrides,
   media surfaces, and registries into deterministic modules is clearer but creates
@@ -350,3 +347,22 @@ explicit keep-or-copy choice.
 
 Receipts retain the former base identity and version so an author may request a
 future comparison. Comparison does not update the theme or recreate inheritance.
+
+### DEC-7 — Detach updates the existing theme
+
+**Reference:** `spec:AST-022/DEC-7`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+Detach exists only as an exit from a previously chosen `extends` relationship. It
+adds the resolved values to the selected theme and removes `extends`, preserving the
+theme name and caller imports. Version control and the required preview provide the
+before/after comparison; the operation does not create a second theme.
+
+### DEC-8 — Full ownership includes every public theme value
+
+**Reference:** `spec:AST-022/DEC-8`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+A differences-only file still inherits unspecified Core defaults and therefore is
+not fully owned. A fully owned snapshot includes every resolved value available
+through the public theme-authoring contract, even when that output is larger.
