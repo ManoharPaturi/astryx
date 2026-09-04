@@ -47,6 +47,23 @@
     }
   },
   {
+    "component": "PowerSearch",
+    "storyId": "core-powersearch--with-date-filters",
+    "dims": [
+      "D2"
+    ],
+    "setup": {
+      "click": [
+        "button:has-text(\"Created: is between\")",
+        "button[aria-label=\"Open calendar\"]"
+      ]
+    },
+    "selectors": {
+      "prev": "button[aria-label=\"Previous month\"]",
+      "next": "button[aria-label=\"Next month\"]"
+    }
+  },
+  {
     "component": "RadioList",
     "storyId": "core-radiolist--rich-content",
     "dims": [
