@@ -73,6 +73,7 @@ describe('themePaletteGenerate', () => {
     );
     expect(receipt.recipe).toBe('astryx-oklch-v1');
     expect(receipt.candidateSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(candidate).toContain('// prettier-ignore');
     expect(candidate).toContain('export const palette =');
     expect(candidate).not.toContain('generateTonalPalette');
   });
