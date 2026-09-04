@@ -13,7 +13,8 @@ export const doc = {
     'and white endpoints, but accepts any non-empty ordered numeric stop list. The result is ' +
     'a candidate, not an adopted theme palette or an accessibility claim. With an output path ' +
     'it writes the candidate and a detached reproducibility receipt, and leaves existing ' +
-    'author-owned files untouched unless overwrite is true.',
+    'author-owned files untouched unless overwrite is true. Shared stop numbers keep the same ' +
+    'value across layouts, and decimal stops become explicit keys in generated output.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'themePaletteGenerate(configPath: string, options?: {out?: string, preview?: string, overwrite?: boolean}, ctx?: {cwd?: string}): ThemePaletteGenerateResponse',

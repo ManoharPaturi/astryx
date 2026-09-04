@@ -10,7 +10,8 @@ export const doc = {
   description:
     'Runs the versioned astryx-oklch-v1 authoring recipe. The returned candidate ' +
     'contains exact hex values for review; it does not modify a theme, write files, ' +
-    'perform semantic mapping, or make accessibility claims.',
+    'perform semantic mapping, or make accessibility claims. Stop numbers remain ' +
+    'stable across layouts, and requested decimal stops are emitted explicitly.',
   importPath: '@astryxdesign/cli/api',
   signature:
     'generateTonalPalette(input: TonalPaletteGenerationInput): TonalPaletteCandidate',
@@ -40,6 +41,18 @@ export const doc = {
     {
       label: 'Generate one family',
       code: "generateTonalPalette({families: [{id: 'blue', seed: '#0074e2'}]});",
+    },
+    {
+      label: 'Preserve a required brand color',
+      code: "generateTonalPalette({stops: [50], families: [{id: 'brand', seed: '#0074e2', anchors: [{mode: 'light', stop: 50, color: '#1682d5', policy: 'exact'}]}]});",
+    },
+    {
+      label: 'Generate an optional accent family',
+      code: "generateTonalPalette({families: [{id: 'accent', seed: '#ff4db8'}]});",
+    },
+    {
+      label: 'Generate an explicit intermediate stop',
+      code: "generateTonalPalette({stops: [12.5, 50], families: [{id: 'blue', seed: '#0074e2'}]});",
     },
   ],
   command: 'theme palette generate',

@@ -100,7 +100,7 @@ function toneAdjustedHue(hue, tone) {
   const normalized = normalizeHue(hue);
   if (normalized < 40 || normalized >= 70 || tone >= 50) return normalized;
   const darkening = clamp((50 - tone) / 40, 0, 1);
-  return normalizeHue(normalized - 18 * Math.sqrt(darkening));
+  return normalizeHue(normalized - 8 * Math.sqrt(darkening));
 }
 
 function toneChromaEnvelope(tone) {

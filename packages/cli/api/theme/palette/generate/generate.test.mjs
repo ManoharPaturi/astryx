@@ -92,6 +92,32 @@ describe('themePaletteGenerate', () => {
     expect(result.data.receipt).toBe('ocean.palette.receipt.json');
   });
 
+  it('emits requested decimal stops as literal TypeScript keys', () => {
+    const cwd = fixture();
+    fs.writeFileSync(
+      path.join(cwd, 'palette.config.json'),
+      JSON.stringify({
+        modeStrategy: 'light-only',
+        stops: [12.5, 50],
+        families: [{id: 'blue', seed: '#0074e2'}],
+      }),
+    );
+
+    themePaletteGenerate(
+      'palette.config.json',
+      {out: 'ocean.palette.ts'},
+      {cwd},
+    );
+
+    const candidate = fs.readFileSync(
+      path.join(cwd, 'ocean.palette.ts'),
+      'utf-8',
+    );
+    expect(candidate).toContain('"12.5":');
+    expect(candidate).toContain('export const palette =');
+    expect(candidate).toContain('as const');
+  });
+
   it('writes a standardized preview without requiring palette output', () => {
     const cwd = fixture();
     const result = themePaletteGenerate(

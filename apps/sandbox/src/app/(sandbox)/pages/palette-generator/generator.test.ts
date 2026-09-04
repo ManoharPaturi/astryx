@@ -301,7 +301,7 @@ describe('experimental palette generator', () => {
     );
 
     expect(tone30.H).toBeGreaterThan(35);
-    expect(tone30.H).toBeLessThan(48);
+    expect(tone30.H).toBeLessThan(50);
     expect(tone30.C).toBeGreaterThan(0.1);
     expect(result.families[0].light?.diagnostics.hueIdentityRisk).toBeNull();
   });

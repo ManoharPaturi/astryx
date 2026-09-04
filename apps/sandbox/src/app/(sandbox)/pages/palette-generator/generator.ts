@@ -250,7 +250,7 @@ function toneAdjustedHue(
   }
 
   const darkening = clamp((50 - tone) / 40, 0, 1);
-  return normalizeHue(normalized - 18 * Math.sqrt(darkening));
+  return normalizeHue(normalized - 8 * Math.sqrt(darkening));
 }
 
 function toneChromaEnvelope(tone: number): number {

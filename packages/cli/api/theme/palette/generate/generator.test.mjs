@@ -7,12 +7,15 @@ import {
   DEFAULT_19_STOPS as PROTOTYPE_DEFAULT_19_STOPS,
 } from '../../../../../../apps/sandbox/src/app/(sandbox)/pages/palette-generator/generator.ts';
 import {
+  COMPACT_9_STOPS,
   DEFAULT_19_STOPS,
   PALETTE_RECIPE,
   generatePaletteSet,
   generateTonalPalette,
+  perceptualDelta,
   validateStops,
 } from './generator.mjs';
+import {hexToOklch} from './color.mjs';
 
 const families = [
   {id: 'neutral', name: 'Neutral', seed: '#777777', kind: 'neutral'},
@@ -63,7 +66,7 @@ describe('astryx-oklch-v1 palette generator', () => {
 
   it('locks the normative recipe fixtures independently from the Sandbox', () => {
     expect(candidateDigest({families})).toBe(
-      '72f2fca4236dfc76e3fc60444fd6268583f05a840b5e8aa7631b8da126d0cc78',
+      '90d280d8d0c7f4eeab97cebf0dc93a0183d4dd3ef9dc81e7357e65550efad103',
     );
     expect(
       candidateDigest({
@@ -119,6 +122,33 @@ describe('astryx-oklch-v1 palette generator', () => {
       generatePaletteSet({families: [families[1]], stops: [40]}).families[0]
         .light.colors,
     ).toEqual({40: expect.stringMatching(/^#[0-9a-f]{6}$/)});
+  });
+
+  it('keeps shared stop values stable across full, compact, and custom layouts', () => {
+    const family = {id: 'blue', name: 'Blue', seed: '#0074e2'};
+    const full = generateTonalPalette({
+      stops: [...DEFAULT_19_STOPS],
+      families: [family],
+    });
+    const compact = generateTonalPalette({
+      stops: [...COMPACT_9_STOPS],
+      families: [family],
+    });
+    const custom = generateTonalPalette({
+      stops: [12.5, 50, 80],
+      families: [family],
+    });
+
+    for (const mode of ['light', 'dark']) {
+      for (const stop of COMPACT_9_STOPS) {
+        expect(compact.palette.blue[mode][stop]).toBe(
+          full.palette.blue[mode][stop],
+        );
+      }
+      expect(custom.palette.blue[mode][50]).toBe(full.palette.blue[mode][50]);
+      expect(custom.palette.blue[mode][80]).toBe(full.palette.blue[mode][80]);
+      expect(custom.palette.blue[mode][12.5]).toMatch(/^#[0-9a-f]{6}$/);
+    }
   });
 
   it('rejects invalid stop layouts without prescribing a count', () => {
@@ -186,5 +216,65 @@ describe('astryx-oklch-v1 palette generator', () => {
         message: 'Anchor stop 30 is not present in the requested stop layout.',
       },
     ]);
+  });
+
+  it('distinguishes exact, bounded, and preferred authoring policies', () => {
+    const target = '#1682d5';
+    const generate = (policy, maxDeltaE) =>
+      generateTonalPalette({
+        modeStrategy: 'light-only',
+        stops: [50],
+        families: [
+          {
+            id: 'blue',
+            name: 'Blue',
+            seed: '#0074e2',
+            anchors: [
+              {
+                mode: 'light',
+                stop: 50,
+                color: target,
+                policy,
+                ...(maxDeltaE == null ? {} : {maxDeltaE}),
+              },
+            ],
+          },
+        ],
+      }).palette.blue.light[50];
+
+    const exact = generate('exact');
+    const bounded = generate('bounded', 2);
+    const preferred = generate('preferred');
+
+    expect(exact).toBe(target);
+    expect(perceptualDelta(bounded, target)).toBeLessThanOrEqual(2.01);
+    expect(preferred).not.toBe(target);
+    expect(new Set([exact, bounded, preferred]).size).toBe(3);
+  });
+
+  it('generates an accent family only when the author declares one', () => {
+    const withoutAccent = generateTonalPalette({
+      stops: [50],
+      families: [families[1]],
+    });
+    const withAccent = generateTonalPalette({
+      stops: [50],
+      families: [{id: 'accent', name: 'Accent', seed: '#ff4db8'}],
+    });
+
+    expect(withoutAccent.palette).not.toHaveProperty('accent');
+    expect(withAccent.palette.accent.light[50]).toMatch(/^#[0-9a-f]{6}$/);
+    expect(withAccent.palette.accent.dark[50]).toMatch(/^#[0-9a-f]{6}$/);
+  });
+
+  it('uses vibrancy to make the generated families more muted or vivid', () => {
+    const generate = vibrancy =>
+      generateTonalPalette({
+        vibrancy,
+        stops: [50],
+        families: [families[1]],
+      }).palette.blue.light[50];
+
+    expect(hexToOklch(generate(25)).C).toBeLessThan(hexToOklch(generate(75)).C);
   });
 });
