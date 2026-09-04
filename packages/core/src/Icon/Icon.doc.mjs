@@ -48,8 +48,9 @@ export const docs = {
     },
     {
       name: 'size',
-      type: "'xsm' | 'sm' | 'md' | 'lg'",
-      description: 'Icon size.',
+      type: "'xsm' | 'sm' | 'md' | 'lg' | theme-owned size",
+      description:
+        'Icon size. Themes may add typed size names with generated width, height, and font-size styling.',
       default: "'md'",
     },
     {
@@ -152,8 +153,8 @@ export const docsZh = {
     },
     {
       name: 'size',
-      type: "'xsm' | 'sm' | 'md' | 'lg'",
-      description: '图标尺寸。',
+      type: "'xsm' | 'sm' | 'md' | 'lg' | 主题自有尺寸",
+      description: '图标尺寸。主题可以添加带类型的自定义尺寸名称。',
       default: "'md'",
     },
     {

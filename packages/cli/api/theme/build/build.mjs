@@ -47,10 +47,7 @@ import {
   collectThemingTargets,
   targetsByKey,
 } from '../../../foundation/discovery/theming-targets.mjs';
-import {
-  collectUnloadedFonts,
-  formatFontLoadingHelp,
-} from './font-warning.mjs';
+import {collectUnloadedFonts, formatFontLoadingHelp} from './font-warning.mjs';
 
 // Import shared theme processing from core. `astryx theme build` MUST produce the
 // exact same CSS as the `<Theme>` runtime, so it has exactly one generation
@@ -343,7 +340,6 @@ function readComponentDeclarations(pascalName) {
   return contents;
 }
 
-
 /** @type {Map<string, Array<{moduleName: string, interfacePrefix: string}>>} */
 const _augmentationTargetCache = new Map();
 
@@ -402,7 +398,8 @@ async function resolveAugmentationTargetCandidates(componentName) {
     for (const entry of entries) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '__tests__') continue;
+        if (entry.name === 'node_modules' || entry.name === '__tests__')
+          continue;
         await scan(full);
         continue;
       }
@@ -539,12 +536,13 @@ async function generateVariantDeclarationsAsync(themeDef) {
       if (values.size === 0) continue;
 
       const propPascal = prop.charAt(0).toUpperCase() + prop.slice(1);
-      const target = (await resolveAugmentationTargetCandidates(component)).find(
-        candidate =>
-          componentHasAugmentableInterface(
-            candidate.moduleName,
-            `${candidate.interfacePrefix}${propPascal}Map`,
-          ),
+      const target = (
+        await resolveAugmentationTargetCandidates(component)
+      ).find(candidate =>
+        componentHasAugmentableInterface(
+          candidate.moduleName,
+          `${candidate.interfacePrefix}${propPascal}Map`,
+        ),
       );
 
       // Only augment interfaces that actually exist as an extension point in
@@ -1031,6 +1029,60 @@ function validatePrivateVars(themeDef) {
   return errors;
 }
 
+const BUILTIN_ICON_SIZES = new Set(['xsm', 'sm', 'md', 'lg']);
+const REQUIRED_ICON_SIZE_PROPERTIES = ['width', 'height', 'fontSize'];
+
+/**
+ * Generated type augmentation makes every custom Icon size callable, so each
+ * name must have a complete standalone rule. Requiring all three properties
+ * keeps component and registry icon rendering equivalent.
+ *
+ * @param {{components?: Record<string, Record<string, unknown>>}} themeDef
+ * @returns {string[]}
+ */
+function validateCustomIconSizes(themeDef) {
+  const iconRules = themeDef.components?.icon;
+  if (!iconRules || typeof iconRules !== 'object') return [];
+
+  const customSizes = new Set();
+  for (const key of Object.keys(iconRules)) {
+    for (const pair of key.split('+')) {
+      const colon = pair.indexOf(':');
+      if (colon === -1 || pair.slice(0, colon) !== 'size') continue;
+      const value = pair.slice(colon + 1);
+      if (value && !BUILTIN_ICON_SIZES.has(value)) customSizes.add(value);
+    }
+  }
+
+  const errors = [];
+  for (const size of customSizes) {
+    const standalone = iconRules[`size:${size}`];
+    if (
+      standalone == null ||
+      typeof standalone !== 'object' ||
+      Array.isArray(standalone)
+    ) {
+      errors.push(
+        `Custom Icon size "${size}" needs a standalone ` +
+          `components.icon["size:${size}"] rule.`,
+      );
+      continue;
+    }
+
+    const missing = REQUIRED_ICON_SIZE_PROPERTIES.filter(
+      property => !Object.hasOwn(standalone, property),
+    );
+    if (missing.length > 0) {
+      errors.push(
+        `Custom Icon size "${size}" must define ${REQUIRED_ICON_SIZE_PROPERTIES.join(
+          ', ',
+        )}; missing ${missing.join(', ')}.`,
+      );
+    }
+  }
+  return errors;
+}
+
 /**
  * Compile a defineTheme file to CSS + JS + .d.ts (and an optional
  * `.variants.d.ts`). Performs the writes and returns a `theme.build` receipt,
@@ -1117,6 +1169,15 @@ export async function themeBuild(
   if (privateVarErrors.length > 0) {
     logger.error(
       `\n  ${privateVarErrors.length} private var error(s). Use standard CSS properties instead.`,
+    );
+  }
+
+  const customIconErrors = validateCustomIconSizes(themeDef);
+  if (customIconErrors.length > 0) {
+    throw new AstryxError(
+      customIconErrors.join('\n'),
+      undefined,
+      ERROR_CODES.ERR_THEME_INVALID,
     );
   }
 

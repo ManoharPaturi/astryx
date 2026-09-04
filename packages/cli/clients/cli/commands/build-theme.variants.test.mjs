@@ -55,7 +55,9 @@ beforeAll(() => {
 
 let tmpDir;
 beforeEach(() => {
-  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'astryx-build-theme-variants-'));
+  tmpDir = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'astryx-build-theme-variants-'),
+  );
 });
 afterEach(() => {
   fs.rmSync(tmpDir, {recursive: true, force: true});
@@ -92,7 +94,7 @@ describe('theme build custom-variant augmentations', () => {
     expect(dts).not.toMatch(/XDSButtonVariantMap/);
   });
 
-  it('skips props with no augmentation point (Button size, Heading type)', async () => {
+  it('emits Icon custom sizes and skips props with no augmentation point', async () => {
     const themeFile = writeTheme(
       tmpDir,
       `export default {
@@ -104,6 +106,9 @@ describe('theme build custom-variant augmentations', () => {
             'size:jumbo': { paddingBlock: '40px' },
           },
           heading: { 'type:hero': { fontSize: '80px' } },
+          icon: {
+            'size:hero': { width: '3rem', height: '3rem', fontSize: '3rem' },
+          },
         },
       };\n`,
     );
@@ -118,12 +123,44 @@ describe('theme build custom-variant augmentations', () => {
     expect(fs.existsSync(variantsPath)).toBe(true);
     const dts = fs.readFileSync(variantsPath, 'utf-8');
 
-    // The augmentable variant is emitted…
+    // The augmentable values are emitted…
     expect(dts).toMatch(/interface ButtonVariantMap\b/);
+    expect(dts).toMatch(/interface IconSizeMap\b/);
+    expect(dts).toContain("declare module '@astryxdesign/core/Icon'");
+    expect(dts).toContain("'hero': true;");
     // …but closed literal-union props get no dead augmentation.
     expect(dts).not.toMatch(/ButtonSizeMap/);
     expect(dts).not.toMatch(/HeadingTypeMap/);
     expect(dts).not.toContain("declare module '@astryxdesign/core/Heading'");
+  });
+
+  it('rejects incomplete or combination-only custom Icon sizes', async () => {
+    const themeFile = writeTheme(
+      tmpDir,
+      `export default {
+        name: 'variants-theme',
+        tokens: { '--color-bg': '#fff' },
+        components: {
+          icon: {
+            'size:hero': { width: '3rem', height: '3rem' },
+            'size:poster+color:accent': { width: '4rem', height: '4rem', fontSize: '4rem' },
+          },
+        },
+      };\n`,
+    );
+
+    const result = await runCli(
+      ['theme', 'build', path.relative(tmpDir, themeFile)],
+      tmpDir,
+    );
+
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain(
+      'Custom Icon size "hero" must define width, height, fontSize; missing fontSize.',
+    );
+    expect(result.stderr).toContain(
+      'Custom Icon size "poster" needs a standalone',
+    );
   });
 
   it('does not emit a .variants.d.ts when every custom value is non-augmentable', async () => {
@@ -172,6 +209,7 @@ describe('theme build custom-variant augmentations', () => {
           progressbar: { 'variant:customProgressBar': { backgroundColor: 'transparent' } },
           section: { 'variant:customSection': { backgroundColor: 'transparent' } },
           statusdot: { 'variant:customStatusDot': { backgroundColor: 'transparent' } },
+          icon: { 'size:customIcon': { width: '2rem', height: '2rem', fontSize: '2rem' } },
           text: { 'color:customTextColor': { color: 'currentColor' } },
           token: { 'color:customTokenColor': { backgroundColor: 'transparent' } },
         },
@@ -185,7 +223,10 @@ describe('theme build custom-variant augmentations', () => {
     );
     expect(result.code).toBe(0);
 
-    const projectDir = path.join(CLI_ROOT, `.tmp-variant-consumer-${process.pid}`);
+    const projectDir = path.join(
+      CLI_ROOT,
+      `.tmp-variant-consumer-${process.pid}`,
+    );
     fs.rmSync(projectDir, {recursive: true, force: true});
     fs.mkdirSync(projectDir);
     fs.copyFileSync(
@@ -213,6 +254,7 @@ describe('theme build custom-variant augmentations', () => {
         `import {ProgressBar} from '@astryxdesign/core/ProgressBar';\n` +
         `import {Section} from '@astryxdesign/core/Section';\n` +
         `import {StatusDot} from '@astryxdesign/core/StatusDot';\n` +
+        `import {Icon} from '@astryxdesign/core/Icon';\n` +
         `import {Text} from '@astryxdesign/core/Text';\n` +
         `import {Token} from '@astryxdesign/core/Token';\n\n` +
         `export function Probe() {\n` +
@@ -232,6 +274,7 @@ describe('theme build custom-variant augmentations', () => {
         `      <ProgressBar label="Progress" value={50} variant="customProgressBar" />\n` +
         `      <Section variant="customSection">Section</Section>\n` +
         `      <StatusDot label="Status" variant="customStatusDot" />\n` +
+        `      <Icon icon="check" size="customIcon" />\n` +
         `      <Text color="customTextColor">Text</Text>\n` +
         `      <Token label="Token" color="customTokenColor" />\n` +
         `    </>\n` +
@@ -258,10 +301,14 @@ describe('theme build custom-variant augmentations', () => {
     );
 
     try {
-      execFileSync('pnpm', ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'], {
-        cwd: projectDir,
-        stdio: 'pipe',
-      });
+      execFileSync(
+        'pnpm',
+        ['exec', 'tsc', '--project', 'tsconfig.json', '--noEmit'],
+        {
+          cwd: projectDir,
+          stdio: 'pipe',
+        },
+      );
     } finally {
       fs.rmSync(projectDir, {recursive: true, force: true});
     }

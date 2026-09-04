@@ -31,6 +31,7 @@ import {getIcon} from './globalIconRegistry';
 import type {IconName, NamespacedIconName} from './globalIconRegistry';
 import {mergeProps} from '../utils';
 import {themeProps} from '../utils/themeProps';
+import type {IconSizeMap} from './index';
 
 // =============================================================================
 // Styles
@@ -178,7 +179,12 @@ const spanSizeStyles = stylex.create({
 // =============================================================================
 
 export type IconColor = keyof typeof colorStyles;
-export type IconSize = keyof typeof sizeStyles;
+export type IconSize = keyof IconSizeMap;
+type BuiltinIconSize = keyof typeof sizeStyles;
+
+function resolveBuiltinIconSize(size: IconSize): BuiltinIconSize {
+  return size === 'xsm' || size === 'sm' || size === 'lg' ? size : 'md';
+}
 
 /**
  * Type for icon components that can be passed to Icon.
@@ -308,6 +314,7 @@ export function Icon({
   // Derive ARIA from `label`: decorative (aria-hidden) by default, or a
   // meaningful image (role="img" + aria-label) when `label` is non-empty.
   const a11yProps = getIconA11yProps(label);
+  const baselineSize = resolveBuiltinIconSize(size);
 
   // String mode: resolve from icon registry, wrap in styled span
   if (typeof icon === 'string') {
@@ -316,6 +323,7 @@ export function Icon({
         name={icon}
         color={color}
         size={size}
+        baselineSize={baselineSize}
         a11yProps={a11yProps}
         className={className}
         style={style}
@@ -341,7 +349,12 @@ export function Icon({
       // precedence as escape hatches.
       {...mergeProps(
         themeProps('icon', {size, color}),
-        stylex.props(styles.root, colorStyles[color], sizeStyles[size], xstyle),
+        stylex.props(
+          styles.root,
+          colorStyles[color],
+          sizeStyles[baselineSize],
+          xstyle,
+        ),
         className ?? undefined,
         style,
       )}
@@ -367,6 +380,7 @@ function IconFromRegistry({
   name,
   color,
   size,
+  baselineSize,
   a11yProps,
   className,
   style,
@@ -376,6 +390,7 @@ function IconFromRegistry({
   name: IconName | NamespacedIconName;
   color: IconColor;
   size: IconSize;
+  baselineSize: BuiltinIconSize;
   a11yProps: {role: 'img'; 'aria-label': string} | {'aria-hidden': 'true'};
   className?: string;
   style?: React.CSSProperties;
@@ -410,7 +425,7 @@ function IconFromRegistry({
         stylex.props(
           styles.span,
           colorStyles[color],
-          spanSizeStyles[size],
+          spanSizeStyles[baselineSize],
           xstyle,
         ),
         className ?? undefined,

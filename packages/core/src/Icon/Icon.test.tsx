@@ -19,6 +19,12 @@ import {resetThemes} from '../theme/themeRegistry';
 import {Icon} from './Icon';
 import {registerIcons, resetIcons} from './globalIconRegistry';
 
+declare module './index' {
+  interface IconSizeMap {
+    hero: true;
+  }
+}
+
 describe('Icon', () => {
   it('renders the icon component', () => {
     render(<Icon icon={TestIcon} data-testid="icon" />);
@@ -145,6 +151,27 @@ describe('Icon', () => {
       expect(style.fontSize).toBe(expected);
       unmount();
     }
+  });
+
+  it('accepts a custom component-mode size and keeps the md baseline until theme CSS applies', () => {
+    render(<Icon icon={TestIcon} size="hero" data-testid="icon" />);
+
+    const icon = screen.getByTestId('icon');
+    expect(icon).toHaveAttribute('data-size', 'hero');
+    expect(icon).toHaveClass('hero');
+    expect(getComputedStyle(icon).width).toBe('1.25rem');
+    expect(getComputedStyle(icon).height).toBe('1.25rem');
+  });
+
+  it('accepts a custom registry size and keeps the md baseline until theme CSS applies', () => {
+    render(<Icon icon="check" size="hero" data-testid="icon" />);
+
+    const icon = screen.getByTestId('icon');
+    expect(icon).toHaveAttribute('data-size', 'hero');
+    expect(icon).toHaveClass('hero');
+    expect(getComputedStyle(icon).width).toBe('1.25rem');
+    expect(getComputedStyle(icon).height).toBe('1.25rem');
+    expect(getComputedStyle(icon).fontSize).toBe('1.25rem');
   });
 
   it('forwards ref correctly', () => {
