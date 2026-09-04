@@ -44,6 +44,9 @@ change, and writes an equivalent local theme only after the author confirms.
   specification pull request.
 - Define tonal palette generation, accepted palette validation, semantic color
   recommendations, or contextual contrast analysis.
+- Define how authors create new typography, spacing, motion, or radius values
+  beyond Astryx's built-in scales. Theme-local scale extension is owned by the
+  separate AST-023 proposal.
 - Promise that a snapshot freezes component implementations across Astryx package
   upgrades. It freezes theme-authoring inputs, not the library code that consumes
   them.
@@ -63,8 +66,6 @@ change, and writes an equivalent local theme only after the author confirms.
 - **Detach:** materialize a following theme and remove its `extends` relationship.
 - **Freeze:** materialize selected generated scales while retaining any intended
   inheritance relationship.
-- **Extend:** add theme-owned values beyond a built-in scale without admitting
-  those names to Astryx's universal token contract.
 - **Unresolved executable value:** an inherited icon, indicator, syntax definition,
   or other value that tooling cannot safely express as generated source.
 
@@ -177,26 +178,6 @@ change, and writes an equivalent local theme only after the author confirms.
   tooling. It MUST NOT delay accepted-palette, palette-generation, validation, or
   theme-adoption work that preserves the current `defineTheme` boundary.
 
-### Intent-led authoring
-
-- **FR19 — Tooling starts with the author's goal.** Theme authoring guidance and
-  interactive CLI flows MUST distinguish these intents before recommending a
-  `defineTheme` field: follow an existing theme, own a copied starting point,
-  generate a built-in scale from concise settings, freeze generated values, extend
-  a scale with theme-local values, or apply values through semantic tokens and
-  component variants. Authors MUST NOT need to understand normalization internals
-  before choosing the correct lifecycle.
-- **FR20 — Scale extensions remain theme-owned by default.** Additional typography,
-  spacing, motion, radius, or color values that are not part of the universal
-  Astryx contract MUST be written as explicit theme-local values. Tooling MUST NOT
-  add a project-specific step to the global `TokenName` set merely because one
-  theme needs it.
-- **FR21 — Generated extensions include their use sites.** When tooling helps add a
-  value such as two display sizes or a large homepage spacing role, it MUST generate
-  or identify the semantic token, component variant, or local style that consumes
-  it. Producing an unused custom-property list is insufficient. Any generated
-  component prop value MUST participate in the supported type-augmentation flow.
-
 ## Proposed author flow
 
 ### Start a theme
@@ -229,24 +210,6 @@ The exact command names remain an implementation decision. A possible split is
 `astryx theme detach` for inheritance and `astryx theme freeze` for generated
 scales, both backed by the same materialization engine.
 
-### Extend an owned scale
-
-```text
-Describe the need
-        |
-        +-- Two additional display roles
-        |      Create theme-local values and typed Text variants
-        |
-        +-- A larger homepage spacing role
-               Create a theme-local value and identify its local use sites
-
-Preview names and values -> author adjusts -> write explicit local source
-```
-
-An extension is not automatically a new Astryx-wide token. Promotion to the
-universal contract remains a separate design-system decision based on repeated
-cross-theme need.
-
 ## Current-state impact
 
 Today, `defineTheme({extends})` correctly flattens a base into the resolved
@@ -263,10 +226,9 @@ configuration or freeze its current result deliberately.
 The CLI has theme templates and build output, but it does not currently provide a
 general operation that removes `extends`, expands every supported generated scale,
 preserves source-level registry references, and verifies equivalent authoring
-source. `localTokens` and component variants can express project-specific scale
-extensions today, but authors must currently know those lower-level mechanisms and
-wire their use sites manually. Intent-led generation and materialization follow this
-proposed contract.
+source. That implementation follows this proposed contract. Creating new values
+beyond built-in scales is related authoring work but is specified independently by
+AST-023.
 
 ## Verification
 
@@ -277,7 +239,6 @@ proposed contract.
 | FR8–FR10  | Executable-registry, overwrite, partial-freeze, and injected-failure tests                                   | An icon is stringified, a target is partly overwritten, or retained inheritance is hidden.                                        |
 | FR11–FR14 | Normalized-theme equivalence, deterministic snapshots, receipt schema, and preview tests                     | Before and after differ silently, output changes across identical runs, or a receipt omits a dependency.                          |
 | FR15–FR18 | Compatibility fixtures and legacy-color migration comparison                                                 | An unchanged convenience config renders differently, migration hides a color delta, or lifecycle work blocks palette foundations. |
-| FR19–FR21 | Intent-routing, local-scale generation, use-site, and type-augmentation fixtures                             | Tooling recommends the wrong lifecycle, creates a global project-specific token, or emits an unused or untyped extension.         |
 
 ### Completion criteria
 
@@ -292,17 +253,19 @@ This spec moves from `proposed` to `shipped` only when:
 - generated source and receipts are deterministic;
 - legacy color migration uses the supported palette generator without silently
   changing existing `defineTheme({color})` behavior; and
-- intent-led authoring covers follow, own, generate, freeze, extend, and apply
-  without requiring authors to choose a low-level mechanism first;
-- generated scale extensions remain theme-owned and connect to an explicit,
-  type-safe use site; and
 - consumer guidance clearly distinguishes theme-source ownership from freezing the
   Astryx component library itself.
 
 ## Open questions
 
+- Should new theme creation recommend an owned snapshot by default, or should the
+  default vary between application themes, reusable theme packages, and local
+  variants of another owned theme?
 - Should the CLI expose one ownership-oriented command or separate `detach` and
   `freeze` commands backed by the same materialization engine?
+- Does detaching replace the original theme source, create a sibling owned theme,
+  or require the author to choose? Which default is least likely to disrupt an
+  existing import graph?
 - Which inherited icon, indicator, and syntax exports are stable enough for the
   CLI to preserve as source imports, and what guided fallback should exist for
   project-local executable values?
@@ -311,9 +274,16 @@ This spec moves from `proposed` to `shipped` only when:
   smaller but continues to follow Core default changes.
 - What source format best keeps large materialized component maps understandable
   and reviewable without weakening equivalence?
-- Which initial scale-extension recipes have enough demonstrated author need to
-  ship: additional display roles, spacing roles, motion durations, radii, or some
-  smaller subset?
+- What constitutes equivalence for values that are textually different but compute
+  the same today, such as a palette reference versus a copied hex value or a
+  `calc()` expression versus its current result?
+- Should a theme-owned palette reference be preserved by default during detach, or
+  should the author choose between retaining the reference and copying its current
+  value?
+- How should a later Astryx upgrade report the difference between the owned snapshot
+  and the latest base without turning ownership back into an implicit dependency?
+- At what release boundary can `defineTheme({color})` be marked deprecated, and
+  what migration evidence must exist before that warning appears?
 
 ## Decision log
 
