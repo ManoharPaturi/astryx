@@ -45,7 +45,14 @@
       "maintained": true,
       "entry": "neutralTheme.ts",
       "exportName": "neutralTheme",
-      "files": ["neutralTheme.ts", "neutralPalettes.ts", "icons.tsx"]
+      "files": [
+        "neutralTheme.ts",
+        "icons.tsx",
+        "neutralPalettes.ts",
+        "neutralPalettes.generated.ts",
+        "neutralPalettes.generated.receipt.json",
+        "palette.config.json"
+      ]
     },
     {
       "slug": "stone",

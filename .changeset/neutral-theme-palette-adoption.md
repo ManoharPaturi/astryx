@@ -3,9 +3,9 @@
 '@astryxdesign/cli': patch
 ---
 
-[fix] Add Neutral's theme-owned OKLCH palette reference, remap semantic and
-categorical color tokens to reviewed explicit values, and test both the palette
-shape and intentional mappings. The palette remains authoring data outside the
-runtime theme; the CLI template ships the same reference.
+[fix] Add Neutral's reproducible, theme-owned OKLCH palette, remap semantic and
+categorical color tokens through reviewed direct stop references, and test the
+request, receipt, generated result, and intentional mappings together. The CLI
+template ships the same authoring artifacts.
 
 @rubyycheung

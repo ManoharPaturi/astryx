@@ -30,6 +30,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {describe, it, expect} from 'vitest';
 
@@ -46,6 +47,22 @@ const NEUTRAL_PALETTE = path.join(
 const NEUTRAL_PALETTE_TEMPLATE = path.join(
   REPO_ROOT,
   'packages/cli/assets/templates/themes/neutral/neutralPalettes.ts',
+);
+const NEUTRAL_GENERATED_PALETTE = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/src/neutralPalettes.generated.ts',
+);
+const NEUTRAL_GENERATED_RECEIPT = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/src/neutralPalettes.generated.receipt.json',
+);
+const NEUTRAL_PALETTE_CONFIG = path.join(
+  REPO_ROOT,
+  'packages/themes/neutral/palette.config.json',
+);
+const NEUTRAL_TEMPLATE_DIR = path.join(
+  REPO_ROOT,
+  'packages/cli/assets/templates/themes/neutral',
 );
 
 const template = fs.readFileSync(TEMPLATE, 'utf-8');
@@ -226,8 +243,41 @@ function templateComponentKeys() {
 
 describe('theme template stays in sync with the theme system', () => {
   it('keeps the shipped Neutral palette template aligned with its owner', () => {
-    expect(fs.readFileSync(NEUTRAL_PALETTE_TEMPLATE, 'utf-8')).toBe(
-      fs.readFileSync(NEUTRAL_PALETTE, 'utf-8'),
+    for (const [source, output] of [
+      [NEUTRAL_PALETTE, NEUTRAL_PALETTE_TEMPLATE],
+      [
+        NEUTRAL_GENERATED_PALETTE,
+        path.join(NEUTRAL_TEMPLATE_DIR, 'neutralPalettes.generated.ts'),
+      ],
+      [
+        NEUTRAL_GENERATED_RECEIPT,
+        path.join(
+          NEUTRAL_TEMPLATE_DIR,
+          'neutralPalettes.generated.receipt.json',
+        ),
+      ],
+      [
+        NEUTRAL_PALETTE_CONFIG,
+        path.join(NEUTRAL_TEMPLATE_DIR, 'palette.config.json'),
+      ],
+    ]) {
+      expect(fs.readFileSync(output, 'utf-8')).toBe(
+        fs.readFileSync(source, 'utf-8'),
+      );
+    }
+  });
+
+  it('keeps Neutral generation inputs and output aligned with its receipt', () => {
+    const config = JSON.parse(fs.readFileSync(NEUTRAL_PALETTE_CONFIG, 'utf-8'));
+    const receipt = JSON.parse(
+      fs.readFileSync(NEUTRAL_GENERATED_RECEIPT, 'utf-8'),
+    );
+    const generated = fs.readFileSync(NEUTRAL_GENERATED_PALETTE, 'utf-8');
+
+    expect(receipt.recipe).toBe(config.recipe);
+    expect(receipt.request).toMatchObject(config);
+    expect(createHash('sha256').update(generated).digest('hex')).toBe(
+      receipt.candidateSha256,
     );
   });
 

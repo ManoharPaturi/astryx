@@ -33,19 +33,30 @@ If you're using `@astryxdesign/build` for StyleX source compilation, import from
 
 ## Approved palette
 
-The repository keeps Neutral's approved palette in `src/neutralPalettes.ts` for
-theme authoring and audits. It is not part of `defineTheme`, the built theme, or
-runtime CSS. Neutral currently uses 21 numbered stops in each light and dark
-ramp, but that layout is a Neutral decision rather than a requirement for other
-themes.
+The repository keeps Neutral's generation request in `palette.config.json`, the
+exact `astryx-oklch-v1` output in `src/neutralPalettes.generated.ts`, and its
+generation receipt beside that file. `src/neutralPalettes.ts` provides the stable
+theme-local import. Neutral currently uses 21 numbered stops in each light and
+dark ramp, but that layout is a Neutral decision rather than a requirement for
+other themes.
 
 Neutral is the reference implementation for palette-aware theme templates.
 Templates may follow its ownership, review, and alignment workflow without
 copying its colors or stop layout.
 
-Use semantic theme tokens in components. When a theme color is selected from the
-palette, retain the reviewed hex value explicitly in the theme so later palette
-edits cannot silently recolor rendered UI.
+Use semantic theme tokens in components. Neutral's theme source directly
+references reviewed palette stops; changing the generated palette is therefore
+a theme change and must include the regenerated receipt, token diff, tests, and
+visual review.
+
+Regenerate the candidate and its receipt with:
+
+```bash
+astryx theme palette generate packages/themes/neutral/palette.config.json \
+  --out packages/themes/neutral/src/neutralPalettes.generated.ts \
+  --overwrite
+pnpm bundle:cli-themes
+```
 
 ### CSS import
 

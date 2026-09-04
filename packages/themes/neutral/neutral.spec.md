@@ -100,14 +100,13 @@ not authorize a broader meaning.
 
 ## Tonal palette definitions
 
-Candidate source work contains complete light and separately tuned dark ramps for
-neutral, red, orange, yellow, green, teal, cyan, blue, purple, and pink. This is
-useful theme-owned inventory and evidence. Draft `spec:AST-018` separately owns
-the proposed cross-theme authoring and validation contract and the boundary
-between approved stops and intentional deviations. Neutral's token and
-component mappings retain their selected color values explicitly; the palette is
-the stable reference used to select and verify those values, not a live dependency
-that automatically changes rendered output.
+Candidate source work contains complete light and dark ramps for neutral, red,
+orange, yellow, green, teal, cyan, blue, purple, and pink. The committed request,
+generated module, and receipt make the reviewed `astryx-oklch-v1` result
+reproducible. Draft `spec:AST-018` separately owns the cross-theme authoring and
+validation contract. Neutral's theme source references exact committed stops;
+regeneration is an explicit reviewed theme change and never occurs during a
+normal theme build.
 
 ## Component and state mappings
 
@@ -208,18 +207,20 @@ or applying it merely because two contexts currently share a color.
 **Decider:** `rubyycheung`, `2026-09-02`
 
 Neutral's exact palette values and baseline mappings are approved as the stable
-starting point for subsequent color and contrast decisions. Theme mappings retain
-their selected explicit values so palette changes cannot silently recolor the
-theme. This approval does not claim that every component context already passes
-its applicable contrast requirement.
+starting point for subsequent color and contrast decisions. Theme mappings use
+direct references to the committed palette. The request, generated result,
+receipt, mapping diff, and visual review must change together, so regeneration
+cannot silently recolor the theme. This approval does not claim that every
+component context already passes its applicable contrast requirement.
 
 Neutral is the repository reference implementation for palette-aware theme
 templates. Templates may reuse its ownership, review, and alignment workflow;
 they do not inherit Neutral's values, mappings, or stop layout as requirements.
 
-Rejected: treating the palette as a live source that automatically rewrites theme
-mappings, or requiring complete component-level contrast conformance before the
-palette can serve as the baseline for measuring and improving those mappings.
+Rejected: regenerating the palette during a normal build, updating generated
+values without reviewing affected mappings, or requiring complete component-level
+contrast conformance before the palette can serve as the baseline for measuring
+and improving those mappings.
 
 ## Open questions
 
