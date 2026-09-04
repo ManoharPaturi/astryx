@@ -24,6 +24,7 @@ applies_to:
     packages/core/src/Divider/,
     packages/core/src/Table/,
     packages/core/src/Toolbar/,
+    packages/core/src/TabList/,
     packages/core/src/Layer/,
   ]
 verified_by:
@@ -33,6 +34,8 @@ verified_by:
     packages/core/src/Layout/LayoutSlots.test.tsx,
     packages/core/src/Layout/overlayPaddingReset.test.tsx,
     packages/core/src/Layout/__tests__/edgeCompensation.test.tsx,
+    apps/storybook/stories/TabList.stories.tsx,
+    .github/scripts/story-play-guard.js,
   ]
 deciding_specs: []
 ---
@@ -78,14 +81,15 @@ The protocol has four layers:
 | ------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Container publisher | Card, Section, Dialog                                  | Resolve component padding and publish logical-edge and Layout inset variables through `container()`           |
 | Region publisher    | LayoutHeader, LayoutContent, LayoutFooter, LayoutPanel | Publish baseline or explicit-padding geometry; automatic outer-edge publication has the conformance gap below |
-| Bleed consumer      | Section, Layout, Divider, Table                        | Subtract inherited inset on the edges each component is designed to escape                                    |
+| Bleed consumer      | Section, Layout, Divider, Table, TabList               | Subtract inherited inset on the edges each component is designed to escape                                    |
 | Alignment consumer  | Toolbar and edge-compensating child components         | Read the current inline inset to align visible content rather than stacked touch-target padding               |
 | Boundary owner      | Layer surfaces and dialog-based overlay roots          | Apply `overlayPaddingReset` before descendants read inherited page geometry                                   |
 
 The participant list is the shared container system, not a Layout-owned family:
-Section and Layout publish or redistribute insets, Table and Divider consume
-bleed geometry, and Toolbar consumes alignment geometry. Participation here does
-not by itself make Table or Divider a member of `family:layout-regions`.
+Section and Layout publish or redistribute insets, Table, Divider, and TabList
+consume bleed geometry, and Toolbar consumes alignment geometry. Participation here
+does not by itself make Table, Divider, or TabList a member of
+`family:layout-regions`.
 
 `--_section-padding-propagated` is separate from the public
 `--astryx-section-padding` property. The private value carries one ancestor
@@ -170,8 +174,8 @@ evidence, not part of this documentation stack.
   alignment adjustment for marked edge content.
 - Card, Section, Dialog, and Layout region implementations — publish their
   current geometry.
-- Section, Layout, Divider, Table, and Toolbar implementations — consume the
-  current geometry for bleed or alignment.
+- Section, Layout, Divider, Table, TabList, and Toolbar implementations — consume
+  the current geometry for bleed or alignment.
 - Overlay roots — apply the reset at the visual boundary.
 
 ## Deciding specs
@@ -181,12 +185,12 @@ boundaries.
 
 ## Verification
 
-| Invariant  | Evidence                                                               | Failure signal                                                                                                                                     |
-| ---------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INV2, INV5 | `Section.test.tsx` per-edge and nested-propagation tests               | A per-edge prop leaves a stale geometry variable, or nested Sections lose the shipped propagation order                                            |
-| INV4       | Layout source review plus `Layout.test.tsx` and `LayoutSlots.test.tsx` | Slot presence stops selecting the shipped applied outer/inner edge styles; exact republished geometry remains limited by the named conformance gap |
-| INV6       | `overlayPaddingReset.test.tsx`                                         | An overlay inherits page inset, loses its theme's Section padding, or lets ancestor Section propagation cross the boundary                         |
-| INV3, INV7 | `Layout/__tests__/edgeCompensation.test.tsx` plus component tests      | An unmarked child is compensated, or marked edge content loses direct-child discoverability                                                        |
+| Invariant  | Evidence                                                                                                                                         | Failure signal                                                                                                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INV2, INV5 | `Section.test.tsx` per-edge and nested-propagation tests                                                                                         | A per-edge prop leaves a stale geometry variable, or nested Sections lose the shipped propagation order                                                                                                          |
+| INV4       | Layout source review plus `Layout.test.tsx` and `LayoutSlots.test.tsx`                                                                           | Slot presence stops selecting the shipped applied outer/inner edge styles; exact republished geometry remains limited by the named conformance gap                                                               |
+| INV6       | `overlayPaddingReset.test.tsx`                                                                                                                   | An overlay inherits page inset, loses its theme's Section padding, or lets ancestor Section propagation cross the boundary                                                                                       |
+| INV3, INV7 | `Layout/__tests__/edgeCompensation.test.tsx`, component tests, and the required Chromium `FullBleedGeometry` story through `story-play-guard.js` | An unmarked child is compensated, marked edge content loses direct-child discoverability, or the real `LayoutHeader paddingBlockEnd={0}` → `TabList isFullBleed` composition drifts from the shared content line |
 
 The current suite does not provide one browser matrix that compares computed
 padding and bleed across every publisher and consumer. Component tests and the
