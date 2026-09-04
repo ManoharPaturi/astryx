@@ -81,6 +81,22 @@ change, and writes an equivalent local theme only after the author confirms.
 | CLI authoring surface      | Discovery, preview, source generation, receipts, safe writes, and actionable failures.         |
 | Palette specifications     | Palette generation, accepted palette ownership, and exact palette-reference behavior.          |
 
+## Choosing a lifecycle
+
+The choice controls who is responsible for future theme changes. Neither option is
+universally better, so authoring tools must explain both before writing.
+
+| Choice                       | Benefits                                                                                                                                             | Tradeoffs                                                                                                                                      | Best fit                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Follow a base with `extends` | Smaller source; receives reviewed fixes, new theme coverage, and coordinated updates from the base; convenient for related variants.                 | Upgrading the base may change the child theme; reviewers must consider inherited changes; reproducing the source requires the base dependency. | A variant that intentionally stays aligned with another theme, especially when both are maintained together. |
+| Take a fully owned snapshot  | Every public theme value is explicit and locally reviewable; base and Core default changes do not alter saved values; the author can diverge freely. | Larger source; the author maintains copied values; later fixes and new coverage from the former base are not adopted automatically.            | A product or application theme that prioritizes control and visual stability.                                |
+| Detach an existing theme     | Preserves the theme's current resolved values, name, and imports while ending a previously chosen base relationship.                                 | Produces a larger change to review; future base improvements require an explicit comparison and adoption.                                      | A following theme whose author later decides to own its current appearance.                                  |
+| Freeze selected generators   | Makes chosen generated values explicit without requiring a complete detach.                                                                          | Retained base and generator dependencies can still change other values; the result is partial materialization, not full ownership.             | A theme that wants control over one scale while intentionally continuing to follow elsewhere.                |
+
+The CLI MUST describe the selected result in these terms. It MUST NOT use
+“self-contained,” “detached,” or “fully owned” for output that still depends on an
+unreported base or mutable generator.
+
 ## Requirements
 
 ### Explicit lifecycle choice
