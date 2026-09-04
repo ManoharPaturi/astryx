@@ -44,14 +44,19 @@ CollapsibleGroupContext.displayName = 'CollapsibleGroupContext';
 export type CollapsibleGroupDensity = 'compact' | 'balanced' | 'spacious';
 
 /**
- * Which side of the trigger the chevron sits on.
+ * Which side of the trigger the chevron sits on, or `none` to draw no chevron
+ * at all.
  *
  * `end` is the default trailing indicator. `start` is the leading disclosure
  * arrow used by tree and file-browser patterns, and it changes the glyph as
  * well as the side: a leading arrow points into the row when closed and turns
- * down when open, matching TreeList.
+ * down when open, matching TreeList. `none` hands the affordance to the
+ * trigger's own content.
+ *
+ * One prop rather than a side plus a boolean, because a side and "no chevron"
+ * cannot both be true and a pair of props would let a caller say so.
  */
-export type CollapsibleChevronPlacement = 'start' | 'end';
+export type CollapsibleChevronPlacement = 'start' | 'end' | 'none';
 
 /**
  * Presentation value provided by CollapsibleGroup so each Collapsible can

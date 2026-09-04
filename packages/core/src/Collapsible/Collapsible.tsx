@@ -240,7 +240,8 @@ export interface CollapsibleProps extends BaseProps {
   onOpenChange?: (isOpen: boolean) => void;
 
   /**
-   * Which side of the trigger the chevron sits on.
+   * Which side of the trigger the chevron sits on, or `none` to draw no
+   * chevron at all.
    *
    * - `end` (default): a trailing indicator, pushed against the trigger's far
    *   edge. Reads as "this row has more", and leaves the start of the row for
@@ -250,6 +251,13 @@ export interface CollapsibleProps extends BaseProps {
    *   to use when the labels form a scannable column that the arrows sit in
    *   front of. The glyph changes with the side: a leading arrow points into
    *   the row when closed and turns down when open, matching TreeList.
+   * - `none`: no chevron, and the trigger content is the whole row. For a
+   *   trigger that carries its own affordance — an icon that becomes an arrow
+   *   under the pointer, a switch, a caret drawn into a graphic. It does not
+   *   change the semantics: the trigger is still a button with aria-expanded,
+   *   so the state stays legible to assistive tech. It does mean nothing on
+   *   screen says "this opens" unless the trigger says it, so supply
+   *   something that does.
    *
    * Inside a CollapsibleGroup this defaults to the group's `chevronPlacement`.
    *
@@ -348,9 +356,9 @@ export function Collapsible({
   const density = presentation?.density ?? null;
   // The item wins over the group so a single row can differ, but the group is
   // the level this is normally set at — mixed sides in one list read as a bug.
-  const placement =
-    chevronPlacement ?? presentation?.chevronPlacement ?? 'end';
+  const placement = chevronPlacement ?? presentation?.chevronPlacement ?? 'end';
   const isChevronAtStart = placement === 'start';
+  const hasChevron = placement !== 'none';
 
   // Links the trigger to the region it shows/hides so assistive tech can move
   // from the button to its controlled content (disclosure pattern).
@@ -417,15 +425,20 @@ export function Collapsible({
             isDisabled && styles.triggerDisabled,
           ),
         )}>
-        {isChevronAtStart && chevron}
+        {hasChevron && isChevronAtStart && chevron}
+        {/* The label fills the row whenever nothing trails it — with a leading
+            chevron because the label is what follows it, and with no chevron
+            at all because there is nothing else in the button. Leaving it
+            shrink-wrapped would strand a trigger that aligns its own content
+            against the far edge. */}
         <span
           {...stylex.props(
             styles.triggerLabel,
-            isChevronAtStart && styles.triggerLabelFill,
+            (isChevronAtStart || !hasChevron) && styles.triggerLabelFill,
           )}>
           {trigger}
         </span>
-        {!isChevronAtStart && chevron}
+        {hasChevron && !isChevronAtStart && chevron}
       </button>
       <div
         id={contentId}

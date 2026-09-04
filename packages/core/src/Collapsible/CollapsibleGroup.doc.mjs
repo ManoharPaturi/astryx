@@ -43,8 +43,8 @@ export const docs = {
     },
     {
       name: 'chevronPlacement',
-      type: "'start' | 'end'",
-      description: "Which side of the trigger the items' chevrons sit on. Set here rather than per item: a list whose arrows change sides row to row reads as a mistake. An individual Collapsible can still override it.",
+      type: "'start' | 'end' | 'none'",
+      description: "Which side of the trigger the items' chevrons sit on, or 'none' to draw none and let each trigger carry its own affordance. Set here rather than per item: a list whose arrows change sides row to row reads as a mistake. An individual Collapsible can still override it.",
       default: "'end'",
     },
     {
@@ -105,8 +105,8 @@ export const docsZh = {
     },
     {
       name: 'chevronPlacement',
-      type: "'start' | 'end'",
-      description: '组内项目箭头位于触发器的哪一侧。建议在此统一设置而非逐项设置：同一列表中箭头左右不一致会显得像缺陷。单个 Collapsible 仍可覆盖此设置。',
+      type: "'start' | 'end' | 'none'",
+      description: "组内项目箭头位于触发器的哪一侧，或用 'none' 完全不绘制箭头，由触发器自行提供提示。建议在此统一设置而非逐项设置：同一列表中箭头左右不一致会显得像缺陷。单个 Collapsible 仍可覆盖此设置。",
       default: "'end'",
     },
     {
@@ -130,7 +130,7 @@ export const docsDense = {
     onChange: 'callback on open items change',
     hasDividers: "draw hairline dividers between items; enables wrapper div + 'balanced' density; use bare Collapsible children",
     density: "row padding 'compact' | 'balanced' | 'spacious'; defaults 'balanced' with dividers, else unpadded",
-    chevronPlacement: "chevron side for items: 'end' (default, trailing) | 'start' (leading disclosure arrow, TreeList glyph); per-item prop wins",
+    chevronPlacement: "chevron side for items: 'end' (default, trailing) | 'start' (leading disclosure arrow, TreeList glyph) | 'none' (no chevron; trigger supplies its own affordance); per-item prop wins",
     children: 'Collapsible instances to coordinate',
   },
 };

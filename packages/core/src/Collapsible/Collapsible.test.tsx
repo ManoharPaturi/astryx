@@ -595,6 +595,77 @@ describe('Collapsible', () => {
       expect(label).toHaveStyle({flexGrow: 1});
     });
 
+    it('draws no chevron when placement is none', () => {
+      render(
+        <Collapsible trigger="A" chevronPlacement="none" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      expect(button.querySelector('svg')).toBeNull();
+      expect(button.children).toHaveLength(1);
+    });
+
+    it('keeps the disclosure semantics with no chevron', async () => {
+      // The chevron is the picture of the state, not the state itself. Drop it
+      // and a screen reader must still hear the trigger as a disclosure that
+      // is currently shut, and hear it open.
+      const user = userEvent.setup();
+      render(
+        <Collapsible
+          trigger="A"
+          chevronPlacement="none"
+          defaultIsOpen={false}
+          data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      expect(button).toHaveAttribute('aria-expanded', 'false');
+      await user.click(button);
+      expect(button).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('gives the label the whole row when there is no chevron', () => {
+      // Same reason as a leading chevron: nothing trails the label, so a
+      // shrink-wrapped one would strand a trigger that aligns its own content
+      // against the far edge.
+      render(
+        <Collapsible trigger="A" chevronPlacement="none" data-testid="item">
+          Body
+        </Collapsible>,
+      );
+      const button = within(screen.getByTestId('item')).getByRole('button');
+      const label = [...button.children].find(
+        el => el.textContent?.trim() !== '',
+      );
+      expect(label).toHaveStyle({flexGrow: 1});
+    });
+
+    it('takes none from the surrounding group, and lets an item opt back in', () => {
+      render(
+        <CollapsibleGroup type="single" chevronPlacement="none">
+          <Collapsible trigger="A" value="a" data-testid="bare">
+            Body
+          </Collapsible>
+          <Collapsible
+            trigger="B"
+            value="b"
+            chevronPlacement="end"
+            data-testid="marked">
+            Body
+          </Collapsible>
+        </CollapsibleGroup>,
+      );
+      expect(
+        within(screen.getByTestId('bare'))
+          .getByRole('button')
+          .querySelector('svg'),
+      ).toBeNull();
+      const {chevronIndex, labelIndex} = triggerParts('marked');
+      expect(chevronIndex).toBeGreaterThan(labelIndex);
+    });
+
     it('does not leak the group placement into a nested collapsible', () => {
       // Collapsible resets the presentation context around its children, so a
       // collapsible nested in an item's body keeps its own default.

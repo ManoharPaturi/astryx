@@ -98,9 +98,10 @@ export interface CollapsibleGroupProps extends Omit<
   density?: CollapsibleGroupDensity;
 
   /**
-   * Which side of the trigger the items' chevrons sit on. Set here rather than
-   * per item: a list whose arrows change sides row to row reads as a bug. An
-   * individual Collapsible can still override it.
+   * Which side of the trigger the items' chevrons sit on, or `none` to draw no
+   * chevrons and let each trigger carry its own affordance. Set here rather
+   * than per item: a list whose arrows change sides row to row reads as a bug.
+   * An individual Collapsible can still override it.
    * @default 'end'
    */
   chevronPlacement?: CollapsibleChevronPlacement;
