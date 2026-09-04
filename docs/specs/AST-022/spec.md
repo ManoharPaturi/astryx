@@ -258,32 +258,56 @@ This spec moves from `proposed` to `shipped` only when:
 
 ## Open questions
 
-- Should new theme creation recommend an owned snapshot by default, or should the
-  default vary between application themes, reusable theme packages, and local
-  variants of another owned theme?
-- Should the CLI expose one ownership-oriented command or separate `detach` and
-  `freeze` commands backed by the same materialization engine?
-- Does detaching replace the original theme source, create a sibling owned theme,
-  or require the author to choose? Which default is least likely to disrupt an
-  existing import graph?
-- Which inherited icon, indicator, and syntax exports are stable enough for the
-  CLI to preserve as source imports, and what guided fallback should exist for
-  project-local executable values?
-- Should an owned-start template materialize every resolved token or only values
-  that differ from Core defaults? The former is more independent; the latter is
-  smaller but continues to follow Core default changes.
-- What source format best keeps large materialized component maps understandable
-  and reviewable without weakening equivalence?
-- What constitutes equivalence for values that are textually different but compute
-  the same today, such as a palette reference versus a copied hex value or a
-  `calc()` expression versus its current result?
-- Should a theme-owned palette reference be preserved by default during detach, or
-  should the author choose between retaining the reference and copying its current
-  value?
-- How should a later Astryx upgrade report the difference between the owned snapshot
-  and the latest base without turning ownership back into an implicit dependency?
-- At what release boundary can `defineTheme({color})` be marked deprecated, and
-  what migration evidence must exist before that warning appears?
+- **What should new themes do by default?** An owned snapshot gives an application
+  control and visual stability, but it also takes responsibility for maintaining
+  the copied values. Following a base keeps source smaller and receives its fixes,
+  but upgrades may change the result. Should the default vary between application
+  themes, reusable theme packages, and local variants of another owned theme?
+- **Should the CLI expose `detach`, `freeze`, or both?** Detach removes a base-theme
+  relationship; freeze converts selected generated scales into explicit values.
+  They use the same materialization engine but communicate different outcomes. Is
+  one guided command clearer, or do separate verbs make the consequences safer?
+- **Where should detached output go?** Replacing the original source is convenient
+  but can immediately affect every import and is harder to undo outside version
+  control. Creating a sibling theme is safer for comparison but requires callers
+  to switch imports deliberately. Should the CLI default to a sibling and offer
+  replacement only as an explicit option?
+- **How should icons, indicators, and syntax definitions survive?** These values
+  may contain React nodes or other executable code that cannot be reconstructed
+  from resolved data. Stable public exports can remain explicit imports, while
+  project-local values may already have safe source references. Should an
+  untraceable executable value stop the entire operation, or can the author supply
+  a replacement import before writing?
+- **How complete should an owned snapshot be?** Emitting every resolved public
+  theme value provides the strongest independence from Core default changes but
+  may produce a very large file and require ongoing maintenance. Emitting only
+  differences is easier to review but continues to follow Core defaults. Should
+  the CLI offer both levels, and which one is allowed to claim full ownership?
+- **How should large component maps be represented?** One generated theme file is
+  easy to import but difficult to review. Splitting tokens, component overrides,
+  media surfaces, and registries into deterministic modules is clearer but creates
+  more files. Which source shape best balances reviewability and faithful rebuilds?
+- **What counts as equivalent?** A palette reference and its current hex value may
+  render identically today while having different future behavior. The same is true
+  of a `calc()` expression and its current computed result. Should equivalence
+  require identical authoring intent, identical normalized theme data, identical
+  compiled output, or a documented combination?
+- **Should owned palette references be preserved?** Keeping a reference to the same
+  theme's committed palette maintains one source of truth and remains locally
+  owned. Copying the current hex removes indirection but allows the palette and
+  theme token to drift. Should local references remain by default while external
+  palette dependencies require an explicit keep-or-copy decision?
+- **How should authors compare with future base updates?** An owned snapshot should
+  not silently reconnect to its former base. A comparison command could use the
+  receipt's base identity and version to produce an optional diff against a newer
+  release. What evidence should it show, and how can it avoid implying that the
+  author must accept the update?
+- **When can legacy color configuration be deprecated?** A warning before the new
+  palette generator, mapping workflow, visual comparison, and migration command are
+  dependable would leave existing authors without a safe path. Which adoption,
+  fixture, documentation, and release criteria must be satisfied before
+  `defineTheme({color})` is marked deprecated, and which later major release may
+  remove it?
 
 ## Decision log
 
