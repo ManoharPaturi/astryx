@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-03T11:38:06.334Z",
+  "context": {
+    "sha": "5c32f2b9c7e7c1dc0333fd29a9c297b5ebccadbe",
+    "runId": "33748097477",
+    "runAttempt": "1",
+    "headSha": "5c32f2b9c7e7c1dc0333fd29a9c297b5ebccadbe",
+    "baseSha": "aa565777492bcc208e3fc1a3534888f7ec40c046",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Stepper"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Stepper/Step.tsx",
+        "packages/core/src/Stepper/Stepper.tsx",
+        "packages/core/src/Stepper/StepperContext.ts"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T06:00:40.805Z",
+    "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 14,
+    "unchanged": 0,
+    "changed": 2,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [
+    {
+      "key": "core-stepper--default__neutral-light",
+      "diffPixels": 5451,
+      "diffRatio": 0.006931,
+      "sizeChanged": false,
+      "storyId": "core-stepper--default",
+      "title": "Core/Stepper",
+      "name": "Default",
+      "component": "Stepper",
+      "theme": "neutral",
+      "mode": "light",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    },
+    {
+      "key": "core-stepper--default__neutral-dark",
+      "diffPixels": 5325,
+      "diffRatio": 0.006771,
+      "sizeChanged": false,
+      "storyId": "core-stepper--default",
+      "title": "Core/Stepper",
+      "name": "Default",
+      "component": "Stepper",
+      "theme": "neutral",
+      "mode": "dark",
+      "reasons": [
+        "trusted:pr-scope"
+      ]
+    }
+  ],
+  "added": [
+    "core-stepper--default__butter-light",
+    "core-stepper--default__butter-dark",
+    "core-stepper--default__chocolate-light",
+    "core-stepper--default__chocolate-dark",
+    "core-stepper--default__gothic-light",
+    "core-stepper--default__gothic-dark",
+    "core-stepper--default__matcha-light",
+    "core-stepper--default__matcha-dark",
+    "core-stepper--default__stone-light",
+    "core-stepper--default__stone-dark",
+    "core-stepper--default__y2k-light",
+    "core-stepper--default__y2k-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

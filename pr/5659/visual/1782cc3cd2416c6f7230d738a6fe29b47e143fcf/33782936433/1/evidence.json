@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "repo": "facebook/astryx",
+  "pr": 5659,
+  "headSha": "1782cc3cd2416c6f7230d738a6fe29b47e143fcf",
+  "testedSha": "1782cc3cd2416c6f7230d738a6fe29b47e143fcf",
+  "baseSha": "aa565777492bcc208e3fc1a3534888f7ec40c046",
+  "run": {
+    "id": 33782936433,
+    "attempt": 1
+  },
+  "capture": {
+    "platform": "linux-arm64",
+    "browser": "chromium-149.0.7827.0",
+    "viewport": {
+      "width": 1024,
+      "height": 768
+    }
+  },
+  "deltas": [
+    {
+      "key": "core-stepper--default__neutral-light",
+      "kind": "changed",
+      "beforeSha256": "c9ebffc893487b715423cb1557b64b96484883cd45713e873f505c9a3fcf9ebc",
+      "shot": {
+        "sha256": "3d13dcc60edae8aa32a96a1fa0f6759703c08273384c4446f82ab297ca8231e5",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-stepper--default",
+        "title": "Core/Stepper",
+        "name": "Default",
+        "component": "Stepper",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    },
+    {
+      "key": "core-stepper--default__neutral-dark",
+      "kind": "changed",
+      "beforeSha256": "e9946d1325e88fe0d4a836e124389abc73ac38df5707c21ad164d8bca661dc36",
+      "shot": {
+        "sha256": "590a63f10da20c829d2ceed2063f81354af5eacf6bf6c50835070032b4cafae8",
+        "width": 1024,
+        "height": 768,
+        "storyId": "core-stepper--default",
+        "title": "Core/Stepper",
+        "name": "Default",
+        "component": "Stepper",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ],
+        "packageName": "@astryxdesign/core",
+        "packageNames": [
+          "@astryxdesign/core"
+        ],
+        "stableVisual": true,
+        "themePackageName": "@astryxdesign/theme-neutral",
+        "stableThemeVisual": true,
+        "membershipSource": "accepted-capture"
+      }
+    }
+  ],
+  "verdict": {
+    "version": 1,
+    "status": "changed",
+    "generatedAt": "2026-09-03T17:43:18.851Z",
+    "context": {
+      "sha": "1782cc3cd2416c6f7230d738a6fe29b47e143fcf",
+      "runId": "33782936433",
+      "runAttempt": "1",
+      "headSha": "1782cc3cd2416c6f7230d738a6fe29b47e143fcf",
+      "baseSha": "aa565777492bcc208e3fc1a3534888f7ec40c046",
+      "ref": "refs/heads/main",
+      "trustedScope": {
+        "hasStableVisual": true,
+        "broadStableVisual": false,
+        "stableComponents": [
+          "Stepper"
+        ],
+        "stableCoreFiles": [
+          "packages/core/src/Stepper/Step.tsx",
+          "packages/core/src/Stepper/Stepper.tsx",
+          "packages/core/src/Stepper/StepperContext.ts"
+        ],
+        "stableThemes": [],
+        "canaryPackages": []
+      }
+    },
+    "platform": "linux-arm64",
+    "baseline": {
+      "capturedAt": "2026-09-03T16:04:27.248Z",
+      "sha": "5d873281643e752567722ecb691325de1b8b2f86",
+      "platform": "linux-arm64"
+    },
+    "counts": {
+      "total": 2,
+      "unchanged": 0,
+      "changed": 2,
+      "added": 0,
+      "removed": 0,
+      "failed": 0
+    },
+    "changes": [
+      {
+        "key": "core-stepper--default__neutral-light",
+        "diffPixels": 5451,
+        "diffRatio": 0.006931,
+        "sizeChanged": false,
+        "storyId": "core-stepper--default",
+        "title": "Core/Stepper",
+        "name": "Default",
+        "component": "Stepper",
+        "theme": "neutral",
+        "mode": "light",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      },
+      {
+        "key": "core-stepper--default__neutral-dark",
+        "diffPixels": 5325,
+        "diffRatio": 0.006771,
+        "sizeChanged": false,
+        "storyId": "core-stepper--default",
+        "title": "Core/Stepper",
+        "name": "Default",
+        "component": "Stepper",
+        "theme": "neutral",
+        "mode": "dark",
+        "reasons": [
+          "trusted:pr-scope"
+        ]
+      }
+    ],
+    "added": [],
+    "removed": [],
+    "failures": [],
+    "targeting": {
+      "unexercisedOverrides": [],
+      "undeclaredTargets": [],
+      "uncoveredTargets": []
+    }
+  }
+}

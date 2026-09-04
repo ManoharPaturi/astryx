@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-02T21:02:01.813Z",
+  "context": {
+    "sha": "eb3b9a7a0c99759460a9bdfca445df63c1fea41e",
+    "runId": "33680104028",
+    "runAttempt": "1",
+    "headSha": "eb3b9a7a0c99759460a9bdfca445df63c1fea41e",
+    "baseSha": "4a48880b5c3de9609e6421850bb88718ea562797",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "Collapsible"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/Collapsible/Collapsible.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T06:00:40.805Z",
+    "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 14,
+    "unchanged": 2,
+    "changed": 0,
+    "added": 12,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-collapsible--single-mode__butter-light",
+    "core-collapsible--single-mode__butter-dark",
+    "core-collapsible--single-mode__gothic-light",
+    "core-collapsible--single-mode__gothic-dark",
+    "core-collapsible--single-mode__stone-light",
+    "core-collapsible--single-mode__stone-dark",
+    "core-collapsible--single-mode__y2k-light",
+    "core-collapsible--single-mode__y2k-dark",
+    "core-collapsible--single-mode__matcha-light",
+    "core-collapsible--single-mode__matcha-dark",
+    "core-collapsible--single-mode__chocolate-light",
+    "core-collapsible--single-mode__chocolate-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}

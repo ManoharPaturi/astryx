@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "repository": "facebook/astryx",
+  "pullRequest": {
+    "number": 5987,
+    "headSha": "22b0389db011e2ed6bbedf68cb9ac8f4973caa16",
+    "headRef": "codex/neutral-palette-adoption",
+    "headRepository": "facebook/astryx",
+    "headRepositoryId": "1131202426"
+  },
+  "sourceRun": {
+    "id": 33901385952,
+    "attempt": 1,
+    "conclusion": "success"
+  },
+  "targets": {
+    "storybook": {
+      "available": true,
+      "path": "pr/5987/",
+      "indexSha256": "b1897f3f4703faf8ebc0206d5d9223d232a0528f87b91aed5b2877c19b7952cd"
+    },
+    "sandbox": {
+      "available": true,
+      "path": "pr/5987/sandbox/",
+      "indexSha256": "926a0ec872b5577d28e1efc3995f89844b4d187839499dec0167237900e1b42c"
+    }
+  }
+}

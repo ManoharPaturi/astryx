@@ -1,0 +1,1 @@
+import{i as e}from"./preload-helper-CT_b8DTk.js";import{n as t}from"./Text-BNMPGNrc.js";import{t as n}from"./Heading--UUUimcA.js";var r=e((()=>{t(),n()}));export{r as t};

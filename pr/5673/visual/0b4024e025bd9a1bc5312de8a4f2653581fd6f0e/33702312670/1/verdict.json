@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "status": "changed",
+  "generatedAt": "2026-09-03T01:36:12.993Z",
+  "context": {
+    "sha": "0b4024e025bd9a1bc5312de8a4f2653581fd6f0e",
+    "runId": "33702312670",
+    "runAttempt": "1",
+    "headSha": "0b4024e025bd9a1bc5312de8a4f2653581fd6f0e",
+    "baseSha": "677d68ea8f64bb0f9539cb499f4537bd98d2d7ca",
+    "ref": "refs/heads/main",
+    "trustedScope": {
+      "hasStableVisual": true,
+      "broadStableVisual": false,
+      "stableComponents": [
+        "CheckboxInput",
+        "Field",
+        "Switch"
+      ],
+      "stableCoreFiles": [
+        "packages/core/src/CheckboxInput/CheckboxInput.tsx",
+        "packages/core/src/Field/FieldLabel.tsx",
+        "packages/core/src/Switch/Switch.tsx"
+      ],
+      "stableThemes": [],
+      "canaryPackages": []
+    }
+  },
+  "platform": "linux-arm64",
+  "baseline": {
+    "capturedAt": "2026-09-02T06:00:40.805Z",
+    "sha": "42129ab27c8c93c9f364197b68998037b9f93255",
+    "platform": "linux-arm64"
+  },
+  "counts": {
+    "total": 42,
+    "unchanged": 12,
+    "changed": 0,
+    "added": 30,
+    "removed": 0,
+    "failed": 0
+  },
+  "changes": [],
+  "added": [
+    "core-checkboxinput--default__butter-light",
+    "core-checkboxinput--default__butter-dark",
+    "core-checkboxinput--default__chocolate-light",
+    "core-checkboxinput--default__chocolate-dark",
+    "core-checkboxinput--default__gothic-light",
+    "core-checkboxinput--default__gothic-dark",
+    "core-checkboxinput--default__matcha-light",
+    "core-checkboxinput--default__matcha-dark",
+    "core-checkboxinput--default__stone-light",
+    "core-checkboxinput--default__stone-dark",
+    "core-checkboxinput--default__y2k-light",
+    "core-checkboxinput--default__y2k-dark",
+    "core-field--default__butter-light",
+    "core-field--default__butter-dark",
+    "core-field--default__chocolate-light",
+    "core-field--default__chocolate-dark",
+    "core-field--default__matcha-light",
+    "core-field--default__matcha-dark",
+    "core-field--default__stone-light",
+    "core-field--default__stone-dark",
+    "core-switch--default__butter-light",
+    "core-switch--default__butter-dark",
+    "core-switch--default__chocolate-light",
+    "core-switch--default__chocolate-dark",
+    "core-switch--default__gothic-light",
+    "core-switch--default__gothic-dark",
+    "core-switch--default__matcha-light",
+    "core-switch--default__matcha-dark",
+    "core-switch--default__y2k-light",
+    "core-switch--default__y2k-dark"
+  ],
+  "removed": [],
+  "failures": [],
+  "targeting": {
+    "unexercisedOverrides": [],
+    "undeclaredTargets": [],
+    "uncoveredTargets": []
+  }
+}
