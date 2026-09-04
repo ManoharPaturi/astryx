@@ -35,14 +35,15 @@ contract.
 
 ## Non-goals
 
-- Add product-specific heading names to Astryx's built-in portable types.
+- Add product-specific heading names to the options Astryx provides in every
+  theme.
 - Infer an `h1`–`h6` level from a visual type name or font size.
 - Allow visual styling to repair an incorrect document outline.
 - Add arbitrary Heading sizes without a theme declaration or local source.
 - Replace `Text`, typography tokens, or the existing type-scale generator.
 - Define how additional typography values are calculated; scale-extension
   authoring is covered separately by AST-023.
-- Expand the universal font-weight vocabulary in this change.
+- Expand the font-weight choices available in every theme in this change.
 
 ## Terms
 
@@ -201,7 +202,8 @@ Themes and applications that use only the three built-in display types require n
 migration. A theme that already emits `heading['type:<custom>']` CSS currently has
 an unusable typed selector; after implementation and rebuild, its generated
 declarations will make that existing local name available to consumers that import
-the theme artifact. No custom name becomes part of Astryx's universal contract.
+the theme artifact. No custom name becomes an option that every Astryx theme must
+support.
 
 ## Verification
 
@@ -271,14 +273,15 @@ may offer to create both mappings together, but it must show and confirm each us
 This prevents a Text treatment from silently becoming a heading treatment while
 still avoiding duplicate value definitions.
 
-### DEC-5 — Keep component weight props portable and named
+### DEC-5 — Keep component weight choices consistent across themes
 
 **Reference:** `spec:AST-024/DEC-5`
 **Decider:** `rubyycheung`, `2026-09-04`
 
-`Heading.weight` and `Text.weight` continue to use portable names. The active theme
-decides whether a name such as `bold` resolves to 700, 750, or another supported
-value. A custom visual type may also declare an exact weight in theme source.
+`Heading.weight` and `Text.weight` continue to use the same named choices in every
+theme. The active theme decides whether a name such as `bold` resolves to 700, 750,
+or another supported value. A custom visual type may also declare an exact weight
+in theme source.
 
 Rejected: accepting arbitrary numeric values directly at each component call site,
 which would couple application source to one font and bypass theme ownership.
