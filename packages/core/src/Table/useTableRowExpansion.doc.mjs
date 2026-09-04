@@ -41,6 +41,13 @@ export const docs = {
       description:
         'Control which rows are expandable. Non-expandable rows show no chevron, no context-menu action, and never render a panel. Defaults to all rows expandable.',
     },
+    {
+      name: 'hasRowClickExpansion',
+      type: 'boolean',
+      description:
+        'Toggle a row by clicking anywhere on it, not only on its chevron. A pointer-only convenience layered over the chevron, which stays the accessible control for keyboard and assistive tech. Clicks on interactive cell content (buttons, links, form controls) or on a text selection do not toggle, and non-expandable rows stay inert.',
+      default: 'false',
+    },
   ],
   examples: [
     {
@@ -106,5 +113,7 @@ export const docsDense = {
       'Render the full-width detail panel below an expanded row. Receives the row item.',
     getIsItemExpandable:
       'Control which rows are expandable. Defaults to all rows expandable.',
+    hasRowClickExpansion:
+      'Toggle a row by clicking anywhere on it, not just the chevron; pointer-only, skips interactive cell content and text selections. Defaults to false.',
   },
 };

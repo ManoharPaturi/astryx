@@ -62,6 +62,17 @@ export interface UseTableRowExpansionConfig<T extends Record<string, unknown>> {
    * context-menu action, and never render a panel. @default all rows expandable
    */
   getIsItemExpandable?: (item: T) => boolean;
+  /**
+   * Toggle a row by clicking anywhere on it, not only on its chevron.
+   *
+   * This is a pointer-only convenience layered over the chevron: keyboard and
+   * assistive-tech users toggle via the chevron button (which stays the
+   * accessible control). Clicks originating from interactive cell content
+   * (buttons, links, form controls) or a text selection do not toggle.
+   * Non-expandable rows stay inert.
+   * @default false (only the chevron toggles expansion).
+   */
+  hasRowClickExpansion?: boolean;
 }
 
 // =============================================================================
@@ -131,6 +142,13 @@ const expansionStyles = stylex.create({
   expandedCell: {
     paddingBlock: spacingVars['--spacing-4'],
     paddingInlineEnd: spacingVars['--spacing-5'],
+  },
+  /** Whole-row-click expansion: signal the row is interactive. */
+  clickableRow: {
+    cursor: {
+      default: 'pointer',
+      ':is(:disabled,[aria-disabled="true"])': 'default',
+    },
   },
 });
 
@@ -264,6 +282,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
     getRowKey,
     renderExpanded,
     getIsItemExpandable,
+    hasRowClickExpansion,
   } = config;
 
   const t = useTranslator();
@@ -360,8 +379,41 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
           return props;
         }
         const key = getRowKey(item);
+
+        // Whole-row-click expansion (opt-in), applied before the collapsed
+        // early-return: a collapsed row is precisely the one a click has to
+        // reach, since opening it is the whole point.
+        const withClick = hasRowClickExpansion
+          ? {
+              ...props,
+              htmlProps: {
+                ...props.htmlProps,
+                onClick: (event: React.MouseEvent<HTMLTableRowElement>) => {
+                  // Don't hijack clicks on interactive cell content (the
+                  // chevron already stops propagation, but a composed
+                  // selection checkbox, link, or action button does not) or a
+                  // text selection.
+                  const target = event.target as HTMLElement;
+                  if (
+                    target.closest(
+                      'button, a, input, select, textarea, [role="button"], [role="checkbox"], [contenteditable="true"]',
+                    )
+                  ) {
+                    return;
+                  }
+                  if ((window.getSelection()?.toString() ?? '') !== '') {
+                    return;
+                  }
+                  props.htmlProps.onClick?.(event);
+                  onToggle(key);
+                },
+              },
+              xstyle: [...props.xstyle, expansionStyles.clickableRow],
+            }
+          : props;
+
         if (!expandedKeys.has(key)) {
-          return props;
+          return withClick;
         }
 
         const panel = (
@@ -375,10 +427,10 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
         );
 
         return {
-          ...props,
-          afterRow: props.afterRow ? (
+          ...withClick,
+          afterRow: withClick.afterRow ? (
             <>
-              {props.afterRow}
+              {withClick.afterRow}
               {panel}
             </>
           ) : (
@@ -392,6 +444,7 @@ export function useTableRowExpansion<T extends Record<string, unknown>>(
       getRowKey,
       renderExpanded,
       getIsItemExpandable,
+      hasRowClickExpansion,
       onToggle,
       t,
       expansionColumn,

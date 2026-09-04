@@ -59,11 +59,15 @@ function Harness({
   isItemExpandable,
   renderExpanded = defaultRenderExpanded,
   density,
+  hasRowClickExpansion,
+  columnsOverride,
 }: {
   initialExpanded?: Set<string>;
   isItemExpandable?: (item: Row) => boolean;
   renderExpanded?: (item: Row) => React.ReactNode;
   density?: 'compact' | 'balanced' | 'spacious';
+  hasRowClickExpansion?: boolean;
+  columnsOverride?: TableColumn<Row>[];
 }) {
   const [expandedKeys, setExpandedKeys] = useState(initialExpanded);
   const expansion = useTableRowExpansion<Row>({
@@ -81,11 +85,12 @@ function Harness({
     getRowKey: item => item.id,
     renderExpanded,
     getIsItemExpandable: isItemExpandable,
+    hasRowClickExpansion,
   });
   return (
     <Table
       data={rows}
-      columns={columns}
+      columns={columnsOverride ?? columns}
       idKey="id"
       density={density}
       plugins={{expansion}}
@@ -229,6 +234,96 @@ describe('useTableRowExpansion (detail panel)', () => {
     render(<Harness initialExpanded={new Set(['a'])} density="spacious" />);
     expect(screen.getByTestId('panel').closest('td')).toHaveStyle({
       paddingInlineStart: 'calc(40px + var(--spacing-4))',
+    });
+  });
+
+  describe('whole-row-click expansion', () => {
+    const rowFor = (name: string) =>
+      screen.getByText(name).closest('tr') as HTMLTableRowElement;
+
+    it('leaves the row body inert by default', () => {
+      render(<Harness />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('expands a collapsed row when its body is clicked', () => {
+      // The collapsed row is the one that has to respond: the early return
+      // that skips panel rendering must not skip the click handler with it.
+      render(<Harness hasRowClickExpansion />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.getByTestId('panel')).toHaveTextContent('Ada: Ada bio');
+    });
+
+    it('collapses an expanded row when its body is clicked', () => {
+      render(<Harness hasRowClickExpansion initialExpanded={new Set(['a'])} />);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('does not double-toggle when the chevron itself is clicked', () => {
+      // The chevron stops propagation, so the row handler must not also fire —
+      // two toggles would land back where they started.
+      render(<Harness hasRowClickExpansion />);
+      fireEvent.click(screen.getAllByRole('button', {name: /expand row/i})[0]);
+      expect(screen.getByTestId('panel')).toBeInTheDocument();
+    });
+
+    it('yields to interactive cell content', () => {
+      // A composed link or action button does not stop propagation the way the
+      // chevron does, so the row handler has to check what was hit.
+      const onAction = vi.fn();
+      render(
+        <Harness
+          hasRowClickExpansion
+          columnsOverride={[
+            {
+              key: 'name',
+              header: 'Name',
+              renderCell: item => (
+                <button type="button" onClick={onAction}>
+                  {`Act on ${item.name}`}
+                </button>
+              ),
+            },
+          ]}
+        />,
+      );
+      fireEvent.click(screen.getByText('Act on Ada'));
+      expect(onAction).toHaveBeenCalledTimes(1);
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+    });
+
+    it('yields to a text selection', () => {
+      // Dragging across a cell to copy it ends in a click. Toggling then would
+      // shift the row out from under the text the reader just selected.
+      render(<Harness hasRowClickExpansion />);
+      const selection = {toString: () => 'Ada'} as Selection;
+      const spy = vi.spyOn(window, 'getSelection').mockReturnValue(selection);
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+      spy.mockRestore();
+    });
+
+    it('leaves non-expandable rows inert', () => {
+      render(
+        <Harness
+          hasRowClickExpansion
+          isItemExpandable={item => item.id !== 'a'}
+        />,
+      );
+      fireEvent.click(screen.getByText('Ada'));
+      expect(screen.queryByTestId('panel')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByText('Bo'));
+      expect(screen.getByTestId('panel')).toHaveTextContent('Bo: Bo bio');
+    });
+
+    it('marks the row as interactive only when the click is wired up', () => {
+      const {unmount} = render(<Harness hasRowClickExpansion />);
+      expect(rowFor('Ada')).toHaveStyle({cursor: 'pointer'});
+      unmount();
+      render(<Harness />);
+      expect(rowFor('Ada')).not.toHaveStyle({cursor: 'pointer'});
     });
   });
 
