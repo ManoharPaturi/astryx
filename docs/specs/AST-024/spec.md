@@ -227,12 +227,7 @@ This spec moves from `proposed` to `shipped` only when:
 
 ## Open questions
 
-- Should one declared visual-role name automatically become available to both
-  `Text` and `Heading`, or should authors enroll it independently on each component
-  whose semantics they intend to use?
-- Should a future proposal allow raw numeric variable-font weights on `Heading`
-  and `Text`, or should component props continue using portable named weights while
-  themes map those names to numeric values?
+None.
 
 ## Decision log
 
@@ -262,3 +257,28 @@ without coupling typography to accessibility semantics.
 Add the existing named `TextWeight` vocabulary to Heading and make an explicit prop
 override the type or level default. Do not add a second weight vocabulary or raw
 numeric values in the first change.
+
+### DEC-4 — Enroll visual roles independently by component
+
+**Reference:** `spec:AST-024/DEC-4`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+A visual-role name does not automatically become available to both `Text` and
+`Heading`. Authors enroll it on each component whose semantics they intend to use.
+The underlying theme-local typography values may be shared, and authoring tooling
+may offer to create both mappings together, but it must show and confirm each use.
+
+This prevents a Text treatment from silently becoming a heading treatment while
+still avoiding duplicate value definitions.
+
+### DEC-5 — Keep component weight props portable and named
+
+**Reference:** `spec:AST-024/DEC-5`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+`Heading.weight` and `Text.weight` continue to use portable names. The active theme
+decides whether a name such as `bold` resolves to 700, 750, or another supported
+value. A custom visual type may also declare an exact weight in theme source.
+
+Rejected: accepting arbitrary numeric values directly at each component call site,
+which would couple application source to one font and bypass theme ownership.
