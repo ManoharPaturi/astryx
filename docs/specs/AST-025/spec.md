@@ -116,7 +116,9 @@ the parent component's layout accommodate it.
 - **FR10 — Both rendering paths agree.** Every custom size MUST resolve the same
   icon box for a supplied SVG component and a registry-backed icon. A complete
   declaration sets width and height and supplies the font-size behavior required by
-  1em registry artwork.
+  1em registry artwork. Authoring tooling MUST accept one canonical size value and
+  write the required properties; authors MUST NOT have to enter the same value three
+  times.
 - **FR11 — Missing theme CSS has a safe fallback.** Before the owning theme CSS is
   available, a custom size MUST use the built-in `md` box rather than render without
   dimensions or inherit an unrelated ambient font size.
@@ -227,10 +229,6 @@ This spec moves from `proposed` to `shipped` only when:
 - Should a component with an internal icon expose a dedicated `iconSize` prop, a
   documented icon-slot target, or choose between them based on whether the size is
   part of its public layout contract?
-- Should theme build require `fontSize` explicitly for every custom Icon size, or
-  synthesize it from width when width and height are equal?
-- Should a future authoring command generate a named Icon size alongside a matching
-  parent-component size, or always keep those as two separately confirmed changes?
 
 ## Decision log
 
@@ -260,3 +258,26 @@ theme-owned name usable by `IconProps`.
 Authors may supply exact values and review them. Formula-based suggestions may be
 added as optional authoring assistance but are never required and never rerun in
 the application build.
+
+### DEC-4 — Expand one authored size into both rendering contracts
+
+**Reference:** `spec:AST-025/DEC-4`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+The author supplies one canonical size value. Tooling writes width and height for
+direct SVG components and the matching font-size behavior required by 1em
+registry-backed artwork. The generated theme source remains explicit, but the
+author does not have to repeat the same input three times.
+
+### DEC-5 — Keep parent-component sizing separate and explicit
+
+**Reference:** `spec:AST-025/DEC-5`
+**Decider:** `rubyycheung`, `2026-09-04`
+
+A larger glyph does not automatically resize its Button, IconButton, input, row, or
+other parent. Authoring tooling may identify a likely layout mismatch and offer a
+matching parent change, but it presents that as a separate choice that the author
+must confirm.
+
+Rejected: silently coupling a custom Icon size to parent padding, dimensions, or
+interactive hit-target changes.
