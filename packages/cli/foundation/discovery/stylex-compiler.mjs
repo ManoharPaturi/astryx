@@ -17,6 +17,10 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import jscodeshift from 'jscodeshift';
+
+/** One parser instance, reused. */
+const tsx = jscodeshift.withParser('tsx');
 
 /**
  * StyleX compiler plugins. Swizzled StyleX source is inert without one.
@@ -47,21 +51,6 @@ const BUILD_CONFIG_FILES = [
   '.babelrc', '.babelrc.json', '.babelrc.js',
   'postcss.config.js', 'postcss.config.mjs', 'postcss.config.cjs', 'postcss.config.json',
 ];
-
-/**
- * Blank out comments while preserving offsets.
- *
- * A bare substring search counted a commented-out `// stylex()` as wiring and
- * reported a working setup for a project whose components render unstyled.
- *
- * @param {string} src
- * @returns {string}
- */
-function stripComments(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-    .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, ' '));
-}
 
 /**
  * Which of these plugins does this package DECLARE, walking up to `root`?
@@ -95,15 +84,23 @@ export function declaredStyleXCompilers(pkgDir, root = pkgDir) {
 }
 
 /**
- * Is one of `plugins` referenced by a build config from `pkgDir` up to `root`,
- * in live code rather than a comment or prose?
+ * Is one of `plugins` wired into the EXPORTED config from `pkgDir` up to
+ * `root`?
  *
- * Text search on purpose — evaluating a consumer's build config is exactly the
- * code execution these callers refuse to do. A match must look like a
- * specifier or a call, so the plugin merely NAMED in a TODO does not count.
+ * PARSED, not pattern-matched, for the same reason the input walk is: text
+ * cannot tell active configuration from something that merely looks like it.
+ * Every heuristic here produced a false green in turn — a commented-out
+ * plugin, a plugin named in prose, an import never used, a call whose result
+ * was discarded, and finally `plugins: [stylex()]` on an object the config
+ * never exports. That last one is decisive: only the exported object reaches
+ * the bundler, so only the exported object can answer the question.
+ *
+ * Fails closed. A config that cannot be parsed, or whose export cannot be
+ * followed, returns false — the caller then reports the compiler unverified
+ * rather than assuming it runs.
  *
  * @param {string} pkgDir
- * @param {string} plugins
+ * @param {string|string[]} plugins
  * @param {string} [root]
  * @returns {boolean}
  */
@@ -111,73 +108,32 @@ export function isStyleXConfigured(pkgDir, plugins, root = pkgDir) {
   const names = Array.isArray(plugins) ? plugins : [plugins];
   if (names.length === 0) return false;
 
-  /**
-   * The contents of every `plugins:`/`presets:` array in a config.
-   *
-   * Wiring means the plugin reaches the bundler's plugin list. Accepting any
-   * call of the import counted `const unused = stylex();` beside
-   * `plugins: []` — the plugin runs nowhere and the app compiles no StyleX.
-   * Extracting the list and asking whether the plugin is IN it is the check
-   * that matches what the bundler actually does.
-   */
-  const pluginLists = (/** @type {string} */ code) => {
-    /** @type {string[]} */
-    const lists = [];
-    // Find the `plugins:` key in a copy whose STRING CONTENTS are blanked, so
-    // a quoted string that happens to contain "plugins: ['x']" is not read as
-    // a plugin list — then slice the ORIGINAL, whose strings still hold the
-    // plugin names the list legitimately contains.
-    const masked = code.replace(/(['"])(?:\\.|(?!\1)[^\\\n])*\1/g, m => m[0] + ' '.repeat(m.length - 2) + m[0]);
-    for (const m of masked.matchAll(/\b(?:plugins|presets)\s*:\s*\[/g)) {
-      let i = m.index + m[0].length;
-      let depth = 1;
-      const start = i;
-      while (i < masked.length && depth > 0) {
-        if (masked[i] === '[') depth += 1;
-        else if (masked[i] === ']') depth -= 1;
-        i += 1;
-      }
-      lists.push(code.slice(start, i - 1));
-    }
-    return lists;
-  };
-
-  const referenced = (/** @type {string} */ src) => {
-    const code = stripComments(src);
-    const lists = pluginLists(code);
-    return names.some(n => {
-      const esc = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      // Named directly in a plugin list: `plugins: ['x']` or `plugins: [x()]`.
-      const inList = lists.some(l =>
-        new RegExp(`['"\`]${esc}['"\`]|\\b${esc}\\s*\\(`).test(l),
-      );
-      if (inList) return true;
-      // Imported, then that binding used in a plugin list.
-      const bind =
-        new RegExp(`import\\s+(?:\\*\\s+as\\s+)?(\\w+)[^;]*?from\\s*['"\`]${esc}['"\`]`).exec(code) ??
-        new RegExp(`(?:const|let|var)\\s+(\\w+)\\s*=\\s*require\\s*\\(\\s*['"\`]${esc}['"\`]`).exec(code);
-      if (!bind) return false;
-      const id = bind[1];
-      return lists.some(l => new RegExp(`\\bnew\\s+${id}\\b|\\b${id}\\s*\\(|(^|[,\\s])${id}\\s*(,|$)`).test(l));
-    });
-  };
-
   let dir = pkgDir;
   for (let i = 0; i < 12; i++) {
     for (const name of BUILD_CONFIG_FILES) {
       const fp = path.join(dir, name);
       if (!fs.existsSync(fp)) continue;
+      let src;
       try {
-        if (referenced(fs.readFileSync(fp, 'utf-8'))) return true;
+        src = fs.readFileSync(fp, 'utf-8');
       } catch {
-        /* unreadable: try the next one */
+        continue;
       }
+      if (name.endsWith('.json') || name === '.babelrc') {
+        // JSON config: the whole document IS the exported config.
+        try {
+          if (jsonMentionsPlugin(JSON.parse(src), names)) return true;
+        } catch {
+          /* unparseable JSON proves nothing */
+        }
+        continue;
+      }
+      if (exportedConfigWiresPlugin(src, names)) return true;
     }
-    // package.json can carry babel/postcss config inline; JSON has no comments.
+    // package.json can carry babel/postcss config inline.
     try {
       const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf-8'));
-      const blob = JSON.stringify({babel: pkg.babel, postcss: pkg.postcss});
-      if (names.some(n => blob.includes(n))) return true;
+      if (jsonMentionsPlugin({babel: pkg.babel, postcss: pkg.postcss}, names)) return true;
     } catch {
       /* fine */
     }
@@ -187,6 +143,178 @@ export function isStyleXConfigured(pkgDir, plugins, root = pkgDir) {
     dir = parent;
   }
   return false;
+}
+
+/**
+ * Does a JSON config name one of these plugins anywhere in it?
+ *
+ * JSON has no comments, no imports and no dead code — every value in it is
+ * live configuration, so a plain search over the parsed structure is exact.
+ *
+ * @param {unknown} value
+ * @param {string[]} names
+ * @returns {boolean}
+ */
+function jsonMentionsPlugin(value, names) {
+  if (typeof value === 'string') return names.includes(value);
+  if (Array.isArray(value)) return value.some(v => jsonMentionsPlugin(v, names));
+  if (value && typeof value === 'object') {
+    return Object.values(value).some(v => jsonMentionsPlugin(v, names));
+  }
+  return false;
+}
+
+/**
+ * Parse a JS/TS config and ask whether its EXPORTED value wires a plugin.
+ *
+ * @param {string} src
+ * @param {string[]} names
+ * @returns {boolean}
+ */
+function exportedConfigWiresPlugin(src, names) {
+  let root;
+  try {
+    root = tsx(src);
+  } catch {
+    return false; // unparseable: prove nothing
+  }
+
+  // Which local bindings came from one of the plugin packages?
+  /** @type {Set<string>} */
+  const bindings = new Set();
+  root.find(jscodeshift.ImportDeclaration).forEach(path => {
+    if (!names.includes(path.value.source.value)) return;
+    for (const spec of path.value.specifiers ?? []) {
+      if (spec.local?.name) bindings.add(spec.local.name);
+    }
+  });
+  root.find(jscodeshift.VariableDeclarator).forEach(path => {
+    const init = path.value.init;
+    if (!init || init.type !== 'CallExpression') return;
+    const callee = init.callee;
+    if (!(callee.type === 'Identifier' && callee.name === 'require')) return;
+    const arg = init.arguments[0];
+    if (!arg || !names.includes(arg.value)) return;
+    if (path.value.id?.type === 'Identifier') bindings.add(path.value.id.name);
+  });
+
+  // Follow every export to the object it actually yields, then look only at
+  // the plugins/presets arrays inside THAT object.
+  for (const exported of exportedValues(root)) {
+    if (nodeWiresPlugin(exported, names, bindings, root)) return true;
+  }
+  return false;
+}
+
+/**
+ * The value nodes a config module exports: `export default X`,
+ * `module.exports = X`, and `export const config = X`.
+ *
+ * @param {any} root
+ * @returns {any[]}
+ */
+function exportedValues(root) {
+  /** @type {any[]} */
+  const out = [];
+  root.find(jscodeshift.ExportDefaultDeclaration).forEach(p => out.push(p.value.declaration));
+  root.find(jscodeshift.AssignmentExpression).forEach(p => {
+    const left = p.value.left;
+    const isModuleExports =
+      left.type === 'MemberExpression' &&
+      left.object?.type === 'Identifier' &&
+      left.object.name === 'module' &&
+      left.property?.name === 'exports';
+    const isExportsDot =
+      left.type === 'MemberExpression' &&
+      left.object?.type === 'Identifier' &&
+      left.object.name === 'exports';
+    if (isModuleExports || isExportsDot) out.push(p.value.right);
+  });
+  root.find(jscodeshift.ExportNamedDeclaration).forEach(p => {
+    const decl = p.value.declaration;
+    if (decl?.type !== 'VariableDeclaration') return;
+    for (const d of decl.declarations) if (d.init) out.push(d.init);
+  });
+  return out;
+}
+
+/**
+ * Does this exported value wire one of the plugins?
+ *
+ * Resolves an identifier export (`export default config`) back to its
+ * declaration, and a factory call (`defineConfig({...})`) to its argument, so
+ * the common config shapes are followed rather than guessed at.
+ *
+ * @param {any} node
+ * @param {string[]} names
+ * @param {Set<string>} bindings
+ * @param {any} root
+ * @param {number} [depth]
+ * @returns {boolean}
+ */
+function nodeWiresPlugin(node, names, bindings, root, depth = 0) {
+  if (!node || depth > 6) return false;
+
+  if (node.type === 'Identifier') {
+    let found = false;
+    root
+      .find(jscodeshift.VariableDeclarator, {id: {type: 'Identifier', name: node.name}})
+      .forEach(p => {
+        if (p.value.init && nodeWiresPlugin(p.value.init, names, bindings, root, depth + 1)) {
+          found = true;
+        }
+      });
+    return found;
+  }
+
+  // `defineConfig({...})`, `withX({...})` — look inside the arguments.
+  if (node.type === 'CallExpression') {
+    return (node.arguments ?? []).some(a => nodeWiresPlugin(a, names, bindings, root, depth + 1));
+  }
+
+  if (node.type === 'ObjectExpression') {
+    for (const prop of node.properties ?? []) {
+      const key = prop.key?.name ?? prop.key?.value;
+      if ((key === 'plugins' || key === 'presets') && arrayWiresPlugin(prop.value, names, bindings)) {
+        return true;
+      }
+      // Nested config sections (`build: {plugins: [...]}`) still reach the
+      // bundler, so recurse — but only through the exported object's own tree.
+      if (prop.value && nodeWiresPlugin(prop.value, names, bindings, root, depth + 1)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Is a plugin named, called, or passed inside this plugins array?
+ *
+ * @param {any} node
+ * @param {string[]} names
+ * @param {Set<string>} bindings
+ * @returns {boolean}
+ */
+function arrayWiresPlugin(node, names, bindings) {
+  if (!node || node.type !== 'ArrayExpression') return false;
+  return (node.elements ?? []).some(function check(el) {
+    if (!el) return false;
+    if (el.type === 'StringLiteral' || el.type === 'Literal') return names.includes(el.value);
+    if (el.type === 'Identifier') return bindings.has(el.name);
+    if (el.type === 'CallExpression') {
+      const c = el.callee;
+      if (c?.type === 'Identifier' && bindings.has(c.name)) return true;
+      return (el.arguments ?? []).some(check);
+    }
+    if (el.type === 'NewExpression') {
+      return el.callee?.type === 'Identifier' && bindings.has(el.callee.name);
+    }
+    // `isProd && stylex()`, `cond ? stylex() : null`, `[stylex(), {}]`
+    if (el.type === 'LogicalExpression') return check(el.left) || check(el.right);
+    if (el.type === 'ConditionalExpression') return check(el.consequent) || check(el.alternate);
+    if (el.type === 'ArrayExpression') return (el.elements ?? []).some(check);
+    if (el.type === 'SpreadElement') return check(el.argument);
+    return false;
+  });
 }
 
 /**

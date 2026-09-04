@@ -38,7 +38,11 @@
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import jscodeshift from 'jscodeshift';
 import {createRequire} from 'node:module';
+
+/** One parser instance, reused: constructing it per file is measurable. */
+const tsx = jscodeshift.withParser('tsx');
 
 /**
  * Extensions a theme module can resolve to, source before artifact.
@@ -58,139 +62,71 @@ const EXTENSIONS = [
 const MAX_INPUTS = 200;
 
 /**
- * Blank the TEXT of template literals while KEEPING `${...}` interpolations,
- * preserving offsets, so prose about importing is not read as an import but
- * real code inside an interpolation still is.
- *
- * Found by building a real app: core's `<Theme>` prints a perf hint whose text
- * contains an example `import '@astryxdesign/theme-<name>/theme.css'`. The walk
- * read that as two unresolvable specifiers, declared the graph incomplete, and
- * every build then recorded `Inputs: unverifiable` — freshness could not verify
- * anything, in any real project, while every unit test passed.
- *
- * The first fix over-corrected and blanked interpolations too. That is the
- * opposite failure and worse: `${require('./tokens')}` is a REAL dependency, and
- * swallowing it left the digest unchanged when tokens changed — a stale theme
- * reported as current. Text is prose; an interpolation is code. Keep the code.
- *
- * Plain '' and "" strings are left alone: a real specifier lives in one, and the
- * surrounding grammar (`from`, `import(`, `require(`) is what makes it an
- * import. Template TEXT can never be a static specifier.
- *
- * @param {string} code
- * @returns {string}
- */
-function blankLiterals(code) {
-  let out = '';
-  let i = 0;
-  while (i < code.length) {
-    if (code[i] !== '`') {
-      out += code[i];
-      i += 1;
-      continue;
-    }
-    // Scan the template into a buffer. If no closing backtick turns up, this
-    // was not a template at all — most often a backtick inside a regex or a
-    // quoted string — and swallowing the rest of the file would hide every
-    // real import after it. Fall back to copying the character through.
-    let buf = ' ';
-    let j = i + 1;
-    let closed = false;
-    while (j < code.length) {
-      const c = code[j];
-      if (c === '\\') {
-        buf += '  ';
-        j += 2;
-        continue;
-      }
-      if (c === '`') {
-        buf += ' ';
-        j += 1;
-        closed = true;
-        break;
-      }
-      if (c === '$' && code[j + 1] === '{') {
-        // An interpolation is executable code — copy it through verbatim,
-        // tracking brace depth so a nested object or template inside it does
-        // not end the interpolation early.
-        buf += '  ';
-        j += 2;
-        let depth = 1;
-        while (j < code.length && depth > 0) {
-          const k = code[j];
-          if (k === '{') depth += 1;
-          else if (k === '}') depth -= 1;
-          if (depth === 0) {
-            buf += ' ';
-            j += 1;
-            break;
-          }
-          buf += k;
-          j += 1;
-        }
-        continue;
-      }
-      // Keep newlines so line offsets, and the `^`-anchored alternatives in
-      // the specifier patterns, still behave.
-      buf += c === '\n' ? '\n' : ' ';
-      j += 1;
-    }
-    if (closed) {
-      out += buf;
-      i = j;
-    } else {
-      out += code[i];
-      i += 1;
-    }
-  }
-  return out;
-}
-
-/**
  * Every static specifier in a module, plus whether anything was unfollowable.
  *
- * Comments are blanked rather than removed so a commented-out import cannot
- * contribute a phantom input, and template-literal CONTENTS are blanked too:
- * over-collecting is NOT the safe direction it looks like. An import-shaped
- * line inside a warning string resolves to nothing, which marks the graph
- * incomplete, which suppresses the digest entirely — one line of prose in a
- * dependency silently disabled freshness checking for every project. What
- * cannot be a specifier must not be read as one.
+ * PARSED, not pattern-matched. Nine review rounds of regex heuristics here
+ * produced a silent false green every single time, in both directions:
+ *
+ *   - An example `import '@astryxdesign/theme-x'` inside a warning STRING was
+ *     read as a real import, could not resolve, marked the graph incomplete,
+ *     and suppressed the digest — freshness verified nothing, in any project.
+ *   - Blanking template contents to fix that swallowed
+ *     `${require('./tokens')}`, a REAL dependency, so the digest stopped moving
+ *     when tokens changed — a stale theme reported as current.
+ *   - A backtick inside a regex (`/`/`) opened a template that ran to end of
+ *     file, hiding every import below it.
+ *
+ * Each fix was correct about its own case and wrong about the next one,
+ * because text cannot distinguish code from prose about code. A parser can.
+ * `jscodeshift` is already a direct dependency, and its tsx parser handles the
+ * TypeScript these files are written in.
+ *
+ * A file that does not parse yields `dynamic: true` — unfollowable, so the
+ * caller reports the graph unverifiable rather than assuming it saw everything.
  *
  * @param {string} src
  * @returns {{specifiers: string[], dynamic: boolean}}
  */
 export function readSpecifiers(src) {
-  const code = blankLiterals(
-    src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1'),
-  );
-
   /** @type {string[]} */
   const specifiers = [];
-  // `import x from 's'`, `import 's'`, `export {x} from 's'`.
-  for (const m of code.matchAll(/(?:^|[\s;}])(?:import|export)\b[^'"()]*?from\s*['"]([^'"]+)['"]/g)) {
-    specifiers.push(m[1]);
-  }
-  for (const m of code.matchAll(/(?:^|[\s;}])import\s*['"]([^'"]+)['"]/g)) {
-    specifiers.push(m[1]);
-  }
-  for (const m of code.matchAll(/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) {
-    specifiers.push(m[1]);
-  }
-  // Dynamic import or require with a literal is followable; with anything else
-  // it is not. Both forms count: a computed `require(name)` hides an input just
-  // as effectively as a computed `import(name)`.
   let dynamic = false;
-  for (const m of code.matchAll(/\bimport\s*\(\s*([^)]*)\)/g)) {
-    const arg = m[1].trim();
-    const literal = /^['"]([^'"]+)['"]$/.exec(arg);
-    if (literal) specifiers.push(literal[1]);
-    else if (arg.length > 0) dynamic = true;
+
+  let root;
+  try {
+    root = tsx(src);
+  } catch {
+    // Unparseable input is not empty input. Say so.
+    return {specifiers: [], dynamic: true};
   }
-  for (const m of code.matchAll(/\brequire\s*\(\s*([^)]*)\)/g)) {
-    const arg = m[1].trim();
-    if (arg.length > 0 && !/^['"][^'"]+['"]$/.test(arg)) dynamic = true;
+
+  // `import x from 's'`, `import 's'`, `export {x} from 's'`, `export * from 's'`.
+  for (const kind of [
+    jscodeshift.ImportDeclaration,
+    jscodeshift.ExportNamedDeclaration,
+    jscodeshift.ExportAllDeclaration,
+  ]) {
+    root.find(kind).forEach(path => {
+      const source = path.value.source;
+      if (source && typeof source.value === 'string') specifiers.push(source.value);
+    });
   }
+
+  // `require('s')` and `import('s')`. A non-literal argument hides an input
+  // just as effectively either way, so both mark the graph unfollowable.
+  root.find(jscodeshift.CallExpression).forEach(path => {
+    const callee = path.value.callee;
+    const isRequire = callee.type === 'Identifier' && callee.name === 'require';
+    const isImport = callee.type === 'Import';
+    if (!isRequire && !isImport) return;
+    const arg = path.value.arguments[0];
+    if (arg && (arg.type === 'StringLiteral' || arg.type === 'Literal') && typeof arg.value === 'string') {
+      specifiers.push(arg.value);
+    } else if (arg) {
+      dynamic = true;
+    }
+  });
+
   return {specifiers, dynamic};
 }
 

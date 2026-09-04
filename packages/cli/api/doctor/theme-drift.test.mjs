@@ -492,3 +492,41 @@ describe('a quoted string is not a plugin list', () => {
     expect(findSwizzled(dir).hasCompiler).toBeNull();
   });
 });
+
+describe('only the EXPORTED config wires a compiler', () => {
+  const app = cfg => ({
+    'package.json': JSON.stringify({devDependencies: {'vite-plugin-stylex': '^0.6.0'}}),
+    'vite.config.js': cfg,
+    'src/components/astryx/Z/Z.tsx':
+      "import * as stylex from '@stylexjs/stylex';\nexport function Z() {}",
+  });
+
+  it('ignores plugins on an object the config never exports', () => {
+    // Only the exported object reaches the bundler, so only it can answer.
+    const dir = mkProject(
+      app(
+        "import s from 'vite-plugin-stylex';\n" +
+          'const unused = {plugins: [s()]};\n' +
+          'export default {plugins: []};',
+      ),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBeNull();
+  });
+
+  it('follows an export through an identifier', () => {
+    const dir = mkProject(
+      app("import s from 'vite-plugin-stylex';\nconst cfg = {plugins: [s()]};\nexport default cfg;"),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBe(true);
+  });
+
+  it('follows an export through defineConfig()', () => {
+    const dir = mkProject(
+      app(
+        "import {defineConfig} from 'vite';\nimport s from 'vite-plugin-stylex';\n" +
+          'export default defineConfig({plugins: [s()]});',
+      ),
+    );
+    expect(findSwizzled(dir).hasCompiler).toBe(true);
+  });
+});

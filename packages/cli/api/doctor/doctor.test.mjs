@@ -548,6 +548,39 @@ describe('isThemeBuildWired — matched per source, not per package', () => {
     });
     expect(isThemeBuildWired(dir, 'src/themes/anything.ts')).toBe(false);
   });
+
+  it('does not accept a rebuild gated behind a shell condition', () => {
+    // `false && pnpm build:theme` never runs, so the artifact is never
+    // regenerated — treating it as wiring made stale output look self-healing.
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        scripts: {predev: 'false && astryx theme build src/themes/one.ts', dev: 'vite'},
+      }),
+    });
+    expect(isThemeBuildWired(dir, 'src/themes/one.ts')).toBe(false);
+  });
+
+  it('does not accept a rebuild inside an if/then block', () => {
+    // Whether that branch is taken cannot be established by reading.
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        scripts: {
+          predev: 'if [ -f x ]; then astryx theme build src/themes/one.ts; fi',
+          dev: 'vite',
+        },
+      }),
+    });
+    expect(isThemeBuildWired(dir, 'src/themes/one.ts')).toBe(false);
+  });
+
+  it('still accepts an ungated build that leads an && chain', () => {
+    const dir = mkProject({
+      'package.json': JSON.stringify({
+        scripts: {predev: 'astryx theme build src/themes/one.ts && vite build', dev: 'vite'},
+      }),
+    });
+    expect(isThemeBuildWired(dir, 'src/themes/one.ts')).toBe(true);
+  });
 });
 
 describe('findBuiltThemes — looks where the CLI writes', () => {

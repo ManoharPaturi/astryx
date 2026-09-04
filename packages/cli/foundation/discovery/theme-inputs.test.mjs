@@ -355,3 +355,38 @@ describe('a stray backtick must not swallow the rest of the file', () => {
     ).toEqual(['./real']);
   });
 });
+
+describe('specifier discovery is parsed, not pattern-matched', () => {
+  // Nine rounds of regex heuristics here produced a silent false green every
+  // time, in both directions: prose read as an import (digest suppressed
+  // everywhere), then interpolations blanked as prose (a real dependency
+  // dropped), then a regex backtick swallowing the rest of a file. Each fix
+  // was right about its own case and wrong about the next, because text cannot
+  // distinguish code from prose about code. These are the cases that broke.
+  it('sees an import after a backtick inside a regex literal', () => {
+    expect(readSpecifiers('const r = /`/;\nimport {a} from "./real";').specifiers).toEqual([
+      './real',
+    ]);
+  });
+
+  it('ignores an import written in template TEXT', () => {
+    expect(readSpecifiers("const m = `  import '@a/b';`;").specifiers).toEqual([]);
+  });
+
+  it('keeps a require() inside a template INTERPOLATION', () => {
+    expect(readSpecifiers('export const x = `${require("./tokens")}`;').specifiers).toEqual([
+      './tokens',
+    ]);
+  });
+
+  it('reads TypeScript, including type-only imports', () => {
+    expect(
+      readSpecifiers('import type {T} from "./t";\nimport {a} from "./real";').specifiers,
+    ).toEqual(['./t', './real']);
+  });
+
+  it('treats an unparseable file as unfollowable, not as empty', () => {
+    // Returning no specifiers would silently claim the file has no inputs.
+    expect(readSpecifiers('this is ((( not javascript').dynamic).toBe(true);
+  });
+});

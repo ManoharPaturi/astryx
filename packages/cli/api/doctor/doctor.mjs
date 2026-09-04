@@ -740,19 +740,57 @@ export function isThemeBuildWired(pkgDir, source) {
   const scripts = pkg?.scripts ?? {};
   const names = Object.keys(scripts);
   const want = source ? path.normalize(source) : null;
-  /** @type {(body: string) => boolean} */
+  /**
+   * Does this script body UNCONDITIONALLY run the build for this theme?
+   *
+   * Shell is not JavaScript and cannot be parsed here, so the rule is
+   * conservative: the command must not sit behind a gate. `false && pnpm
+   * build:theme` never runs, and treating it as wiring made stale output look
+   * self-healing — the artifact is never regenerated and nothing says so.
+   * Anything downstream of `&&`, `||` or a pipe, or inside an `if`/`test`
+   * construct, cannot be proved to execute, so it does not count.
+   *
+   * @param {string} body
+   * @returns {boolean}
+   */
   const buildsThisTheme = body => {
-    const calls = [...body.matchAll(/theme\s+build\s*([^&|;]*)/g)];
-    if (calls.length === 0) return false;
-    if (!want) return true;
-    return calls.some(m => {
-      const target = m[1]
-        .trim()
-        .split(/\s+/)
-        .find(a => a && !a.startsWith('-'));
-      // No path: the command exits 1 without one, so it rebuilds nothing.
-      if (!target) return false;
-      return path.normalize(target) === want;
+    // A script with any control flow in it is beyond what can be established
+    // by reading: `if [ -f x ]; then astryx theme build …; fi` may or may not
+    // take that branch. Refuse the whole body rather than guess at it.
+    if (/(^|\s|;)(if|elif|then|else|fi|case|esac|while|until|for|do|done)(\s|;|$)/.test(body)) {
+      return false;
+    }
+    // Split into segments, remembering the operator that introduces each one.
+    /** @type {Array<{op: string, text: string}>} */
+    const segments = [];
+    let op = '';
+    let rest = body;
+    while (rest.length > 0) {
+      const m = /(\|\||&&|;|\||&)/.exec(rest);
+      if (!m) {
+        segments.push({op, text: rest});
+        break;
+      }
+      segments.push({op, text: rest.slice(0, m.index)});
+      op = m[1];
+      rest = rest.slice(m.index + m[1].length);
+    }
+
+    return segments.some(seg => {
+      if (!/theme\s+build/.test(seg.text)) return false;
+      // Gated on the success or failure of whatever came before it.
+      if (seg.op === '&&' || seg.op === '||' || seg.op === '|') return false;
+      const calls = [...seg.text.matchAll(/theme\s+build\s*([^&|;]*)/g)];
+      if (!want) return calls.length > 0;
+      return calls.some(m => {
+        const target = m[1]
+          .trim()
+          .split(/\s+/)
+          .find(a => a && !a.startsWith('-'));
+        // No path: the command exits 1 without one, so it rebuilds nothing.
+        if (!target) return false;
+        return path.normalize(target) === want;
+      });
     });
   };
   /** @type {(name: string, depth: number) => boolean} */
