@@ -21,6 +21,7 @@ import {useId, useState, type ReactNode} from 'react';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -84,7 +85,7 @@ export interface ChatComposerDrawerProps extends BaseProps<HTMLDivElement> {
 const styles = stylex.create({
   root: {
     position: 'relative',
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
     display: 'flex',
     flexDirection: 'column',
     overflow: 'hidden',

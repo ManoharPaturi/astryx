@@ -38,7 +38,12 @@ import {
 import * as stylex from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import type {DialogPurpose} from '../Dialog';
-import {colorVars, durationVars, easeVars} from '../theme/tokens.stylex';
+import {
+  appearanceVars,
+  colorVars,
+  durationVars,
+  easeVars,
+} from '../theme/tokens.stylex';
 import {isImeKeyEvent, useDevWarning, useScrollLock} from '../hooks';
 import {
   BottomSheetPanel,
@@ -76,7 +81,7 @@ const styles = stylex.create({
   },
   dialogNonModal: {
     pointerEvents: 'none',
-    zIndex: 1000,
+    zIndex: appearanceVars['--appearance-layer-nesting'],
     width: '100%',
     height: '100%',
   },
@@ -122,7 +127,7 @@ const styles = stylex.create({
     display: 'none',
   },
   positionerTop: {
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
   },
 });
 

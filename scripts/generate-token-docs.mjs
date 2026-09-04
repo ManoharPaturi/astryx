@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // Copyright (c) Meta Platforms, Inc. and affiliates.
 
-
 /**
  * @file generate-token-docs.mjs
  * @description Generates packages/cli/assets/docs/tokens.doc.mjs from the source of
@@ -20,10 +19,7 @@ import {fileURLToPath} from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const TOKENS_SRC = resolve(
-  ROOT,
-  'packages/core/src/theme/tokens.stylex.ts',
-);
+const TOKENS_SRC = resolve(ROOT, 'packages/core/src/theme/tokens.stylex.ts');
 const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 
 // ---------------------------------------------------------------------------
@@ -31,6 +27,13 @@ const TOKENS_DOC = resolve(ROOT, 'packages/cli/assets/docs/tokens.doc.mjs');
 // ---------------------------------------------------------------------------
 
 const src = readFileSync(TOKENS_SRC, 'utf-8');
+
+const numericConstants = new Map(
+  Array.from(src.matchAll(/^const ([A-Z][A-Z0-9_]*) = (-?\d+);$/gm), match => [
+    match[1],
+    match[2],
+  ]),
+);
 
 /**
  * Extract key-value pairs from a `const xxxDefaults = { ... } as const;` block.
@@ -47,14 +50,19 @@ function extractDefaults(name) {
 
   const body = m[1];
   const pairs = [];
-  // Match lines like: '--token-name': 'value',  or  '--token-name': '...',
-  // Also handles multi-line values (e.g. shadow tokens with commas inside)
-  const lineRe = /^\s*'(--[^']+)':\s*'([^']*(?:'[^']*'[^']*)*)',?\s*$/;
-  // Simpler: match  '--key': 'value'  or  '--key': "value"  on each entry
-  const entryRe = /'(--[^']+)':\s*'([^']*)'/g;
+  // Match quoted values and numeric constants interpolated into template strings.
+  // The latter lets typed StyleX variables and plain theme defaults share one
+  // numeric source of truth (for example, z-index integer tokens).
+  const entryRe = /'(--[^']+)':\s*(?:'([^']*)'|`\$\{([A-Z][A-Z0-9_]*)\}`)/g;
   let em;
   while ((em = entryRe.exec(body)) !== null) {
-    pairs.push([em[1], em[2]]);
+    const value = em[2] ?? numericConstants.get(em[3]);
+    if (value == null) {
+      throw new Error(
+        `Could not resolve ${em[3]} while reading ${name}.${em[1]}`,
+      );
+    }
+    pairs.push([em[1], value]);
   }
   return pairs;
 }
@@ -70,9 +78,7 @@ const groups = [
       'Semantic colors for consistent theming. All colors use light-dark() for automatic mode switching.',
     headers: ['Token', 'Light', 'Dark'],
     formatRow(name, value) {
-      const ldMatch = value.match(
-        /^light-dark\(([^,]+),\s*([^)]+)\)$/,
-      );
+      const ldMatch = value.match(/^light-dark\(([^,]+),\s*([^)]+)\)$/);
       if (ldMatch) return [name, ldMatch[1].trim(), ldMatch[2].trim()];
       return [name, value, value];
     },
@@ -132,6 +138,15 @@ const groups = [
     title: 'Shadow Tokens',
     description:
       'Elevation shadows (low to med to high) and inset shadows for input state rings.',
+    headers: ['Token', 'Value'],
+    formatRow: (name, value) => [name, value],
+  },
+  {
+    key: 'appearance',
+    exportName: 'appearanceDefaults',
+    title: 'Appearance Tokens',
+    description:
+      'Relative stacking steps for ordinary nested containers and floating layers. Native popovers and modal dialogs use the browser top layer instead.',
     headers: ['Token', 'Value'],
     formatRow: (name, value) => [name, value],
   },
@@ -241,7 +256,7 @@ const styles = stylex.create({
     },
     {
       type: 'prose',
-      text: "See `astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `astryx docs theme` for overriding tokens with defineTheme.",
+      text: 'See `astryx docs styling` for how to apply tokens via xstyle, className, and compound component patterns. See `astryx docs theme` for overriding tokens with defineTheme.',
     },
   ],
 });
@@ -288,11 +303,15 @@ if (isCheck) {
   try {
     existing = readFileSync(TOKENS_DOC, 'utf-8');
   } catch {
-    console.error('✗ tokens.doc.mjs does not exist. Run: node scripts/generate-token-docs.mjs');
+    console.error(
+      '✗ tokens.doc.mjs does not exist. Run: node scripts/generate-token-docs.mjs',
+    );
     process.exit(1);
   }
   if (existing !== output) {
-    console.error('✗ tokens.doc.mjs is out of date. Run: node scripts/generate-token-docs.mjs');
+    console.error(
+      '✗ tokens.doc.mjs is out of date. Run: node scripts/generate-token-docs.mjs',
+    );
     process.exit(1);
   }
   console.log(`✓ tokens.doc.mjs is up to date (${totalTokens} tokens)`);

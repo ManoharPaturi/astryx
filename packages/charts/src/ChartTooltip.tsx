@@ -4,7 +4,8 @@
  * @file ChartTooltip.tsx
  * @output Grouped chart tooltip — shows all series values at the hovered x-position.
  *         Composable: drop into `<Chart tooltip>` or render directly inside a chart
- *         to take full control of props.
+ *         to take full control of props. The card stays beside its owning chart
+ *         and uses a manual popover to escape clipping and nested layer stacks.
  * @position Reads from ChartContext — must render inside an <Chart>.
  *
  * @example
@@ -36,6 +37,7 @@ import {
 import {createPortal} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   radiusVars,
   shadowVars,
@@ -92,8 +94,13 @@ export interface ChartTooltipProps {
 const styles = stylex.create({
   // Card chrome — static visual styles. Position (left/top/display) is updated
   // imperatively via ref to keep pointer-move cost free of React renders.
+  // The layer token is the reduced-browser fallback; supported browsers promote
+  // the owner-local manual popover into the native top layer.
   card: {
     position: 'fixed',
+    inset: 'auto',
+    marginBlock: 0,
+    marginInline: 0,
     backgroundColor: colorVars['--color-background-popover'],
     border: `1px solid ${colorVars['--color-border']}`,
     borderRadius: radiusVars['--radius-container'],
@@ -102,7 +109,7 @@ const styles = stylex.create({
     boxShadow: shadowVars['--shadow-med'],
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
-    zIndex: 9999,
+    zIndex: appearanceVars['--appearance-layer-nesting'],
     display: 'none',
   },
   crosshair: {
@@ -110,6 +117,34 @@ const styles = stylex.create({
     strokeWidth: 1,
   },
 });
+
+function showCard(card: HTMLDivElement): void {
+  // The fallback display must be applied first: showPopover() rejects elements
+  // that are still display:none.
+  card.style.display = 'block';
+  if (typeof card.showPopover === 'function') {
+    try {
+      if (!card.matches(':popover-open')) {
+        card.showPopover();
+      }
+    } catch {
+      // The reduced browser path below still makes the card visible.
+    }
+  }
+}
+
+function hideCard(card: HTMLDivElement): void {
+  if (typeof card.hidePopover === 'function') {
+    try {
+      if (card.matches(':popover-open')) {
+        card.hidePopover();
+      }
+    } catch {
+      // The reduced browser path below still hides the card.
+    }
+  }
+  card.style.display = 'none';
+}
 
 /** Default tooltip body — used when `render` is not provided. */
 const DefaultTooltipContent = memo(function DefaultTooltipContent({
@@ -172,6 +207,7 @@ export function ChartTooltip({
     height,
   } = useChart();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   // Whether the card is currently suppressed (no content, or a custom `render`
   // opted out by returning null). positionCard reads this so a same-index
@@ -182,6 +218,13 @@ export function ChartTooltip({
   // Stable Set of resolved series keys — used by deriveTooltipSeriesValues.
   // Recomputed only when the resolved map identity changes (per layout pass).
   const resolvedKeys = useMemo(() => new Set(resolved.keys()), [resolved]);
+
+  // Host the manual popover beside the chart rather than at document.body.
+  // Native top-layer promotion still escapes chart clipping, while the DOM
+  // position keeps nested theme variables and the owning Drawer relationship.
+  useEffect(() => {
+    setPortalTarget(svgRef.current?.parentElement ?? null);
+  }, [svgRef]);
 
   // ─── Card positioning ──────────────────────────────────────────────────
   // Imperative — the card is portaled, and we don't want pointer-move to
@@ -194,9 +237,10 @@ export function ChartTooltip({
         return;
       }
       if (!svg || !e.nearest || cardHiddenRef.current) {
-        card.style.display = 'none';
+        hideCard(card);
         return;
       }
+      showCard(card);
       const svgRect = svg.getBoundingClientRect();
       const screenX = svgRect.left + margin.left + e.nearest.px;
       const screenY = svgRect.top + margin.top;
@@ -237,7 +281,6 @@ export function ChartTooltip({
 
       card.style.left = `${x}px`;
       card.style.top = `${y}px`;
-      card.style.display = 'block';
     },
     [svgRef, margin, placement],
   );
@@ -389,7 +432,7 @@ export function ChartTooltip({
     if (hidden) {
       const card = cardRef.current;
       if (card) {
-        card.style.display = 'none';
+        hideCard(card);
       }
     }
   }, [render, hoveredIndex, datum, xValue, seriesValues]);
@@ -419,12 +462,17 @@ export function ChartTooltip({
     <>
       {hoverIndicatorElement}
       {dots}
-      {createPortal(
-        <div ref={cardRef} role="tooltip" {...stylex.props(styles.card)}>
-          {cardContent}
-        </div>,
-        document.body,
-      )}
+      {portalTarget != null &&
+        createPortal(
+          <div
+            ref={cardRef}
+            role="tooltip"
+            popover="manual"
+            {...stylex.props(styles.card)}>
+            {cardContent}
+          </div>,
+          portalTarget,
+        )}
     </>
   );
 }

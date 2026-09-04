@@ -34,7 +34,7 @@
  */
 
 import * as stylex from '@stylexjs/stylex';
-import {colorVars} from '../theme/tokens.stylex';
+import {appearanceVars, colorVars} from '../theme/tokens.stylex';
 
 /**
  * WebKit ignores the declared `background-color` of a sampled box thinner than
@@ -53,7 +53,8 @@ const styles = stylex.create({
     backgroundColor: colorVars['--color-background-surface'],
     // Above the panel so the edge hit test lands here, and never in the way of
     // a touch that was meant for the sheet.
-    zIndex: 2,
+    zIndex:
+      `calc(${appearanceVars['--appearance-container-nesting']} + 1)` as unknown as number,
     pointerEvents: 'none',
     // Invisible to the user. WebKit's sampler checks `visibility` and
     // `opacity` — either would disqualify the element — but not `mask`, so

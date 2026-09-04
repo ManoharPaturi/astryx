@@ -20,6 +20,7 @@
 
 import React, {use, useId, useRef, type ReactNode} from 'react';
 import * as stylex from '@stylexjs/stylex';
+import {appearanceVars} from '../theme/tokens.stylex';
 import type {StyleXStyles} from '@stylexjs/stylex';
 import type {BaseProps} from '../BaseProps';
 import {RadioListContext} from './RadioList';
@@ -49,7 +50,7 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
   },
   inputCoarse: {
     '@media (pointer: coarse)': {

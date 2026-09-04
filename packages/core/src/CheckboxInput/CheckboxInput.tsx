@@ -29,6 +29,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -86,7 +87,7 @@ const styles = stylex.create({
       default: 'pointer',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
   },
   inputCoarse: {
     '@media (pointer: coarse)': {

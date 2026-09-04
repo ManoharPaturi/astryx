@@ -15,6 +15,7 @@
 
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -33,7 +34,7 @@ export const inputWrapperStyles = stylex.create({
   base: {
     boxSizing: 'border-box',
     position: 'relative',
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
     display: 'flex',
     alignItems: 'center',
     gap: spacingVars['--spacing-2'],

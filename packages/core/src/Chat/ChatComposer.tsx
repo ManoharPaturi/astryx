@@ -35,6 +35,7 @@ import React, {
 import type {BaseProps} from '../BaseProps';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   spacingVars,
   radiusVars,
@@ -151,7 +152,8 @@ const styles = stylex.create({
   },
   body: {
     position: 'relative',
-    zIndex: 2,
+    zIndex:
+      `calc(${appearanceVars['--appearance-container-nesting']} + 1)` as unknown as number,
     display: 'flex',
     flexDirection: 'column',
     padding: 'var(--_chat-composer-padding)',

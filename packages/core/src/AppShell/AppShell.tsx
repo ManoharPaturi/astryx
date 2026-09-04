@@ -32,6 +32,7 @@ import {
 } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import {
+  appearanceVars,
   colorVars,
   fontWeightVars,
   radiusVars,
@@ -339,7 +340,7 @@ const styles = stylex.create({
     },
     backgroundColor: colorVars['--color-background-surface'],
     color: colorVars['--color-text-accent'],
-    zIndex: 9999,
+    zIndex: appearanceVars['--appearance-layer-nesting'],
     textDecoration: 'none',
     fontWeight: fontWeightVars['--font-weight-semibold'],
     fontSize: typeScaleVars['--text-body-size'],
@@ -400,7 +401,7 @@ const styles = stylex.create({
   headerSticky: {
     position: 'sticky',
     top: 0,
-    zIndex: 1,
+    zIndex: appearanceVars['--appearance-container-nesting'],
   },
   // Sticky sideNav for auto height mode — sticks within the wrapper.
   // This div replaces the panel as the direct flex child of the middle
