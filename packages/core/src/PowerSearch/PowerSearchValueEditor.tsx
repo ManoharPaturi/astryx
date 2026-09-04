@@ -24,6 +24,7 @@ import type {
   FilterValue,
   EnumItem,
   PowerSearchEntity,
+  DateTimeRangePart,
 } from './types';
 import type {InternalConfig} from './useInternalConfig';
 import type {SearchableItem, SearchSource} from '../Typeahead/types';
@@ -38,6 +39,7 @@ import {
   type NumberInputCommitDecision,
 } from '../NumberInput/numberInputCommit';
 import {DateInput} from '../DateInput';
+import {DateRangeInput, type DateRange} from '../DateRangeInput';
 import {TimeInput} from '../TimeInput';
 import {Selector} from '../Selector';
 import {Tokenizer} from '../Tokenizer';
@@ -81,6 +83,37 @@ function enumItemsToSearchableItems(
     id: item.value,
     label: item.label,
   }));
+}
+
+function resolveDateRangePart(
+  part: DateTimeRangePart,
+  nowSeconds: number,
+): number {
+  if (part.type === 'NOW') {
+    return nowSeconds;
+  }
+  if (part.type === 'ABSOLUTE') {
+    return part.unixSeconds;
+  }
+  const secondsByUnit = {
+    second: 1,
+    minute: 60,
+    hour: 3600,
+    day: 86400,
+    week: 604800,
+    month: 2592000,
+    year: 31536000,
+  } as const;
+  return nowSeconds - part.backValue * secondsByUnit[part.unit];
+}
+
+function dateRangePartToISO(
+  part: DateTimeRangePart,
+  nowSeconds: number,
+): ISODateString {
+  return new Date(resolveDateRangePart(part, nowSeconds) * 1000)
+    .toISOString()
+    .split('T')[0] as ISODateString;
 }
 
 // =============================================================================
@@ -475,85 +508,48 @@ function DateRangeEditor({
   onChange: (value: FilterValue) => void;
 }) {
   const t = useTranslator();
-  const startValue = useMemo(() => {
+  const currentValue = useMemo<DateRange | null>(() => {
     if (filterValue?.type !== 'date_range') {
-      return undefined;
+      return null;
     }
-    const part = filterValue.value.start;
-    if (part.type === 'ABSOLUTE') {
-      return new Date(part.unixSeconds * 1000)
-        .toISOString()
-        .split('T')[0] as ISODateString;
-    }
-    return undefined;
+    const {start, end} = filterValue.value;
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    return {
+      start: dateRangePartToISO(start, nowSeconds),
+      end: dateRangePartToISO(end, nowSeconds),
+    };
   }, [filterValue]);
 
-  const endValue = useMemo(() => {
-    if (filterValue?.type !== 'date_range') {
-      return undefined;
-    }
-    const part = filterValue.value.end;
-    if (part.type === 'ABSOLUTE') {
-      return new Date(part.unixSeconds * 1000)
-        .toISOString()
-        .split('T')[0] as ISODateString;
-    }
-    return undefined;
-  }, [filterValue]);
-
-  const handleStartChange = useCallback(
-    (value: string | undefined) => {
-      const startUnix = value
-        ? Math.floor(new Date(value).getTime() / 1000)
-        : 0;
-      const existingEnd =
-        filterValue?.type === 'date_range'
-          ? filterValue.value.end
-          : {type: 'NOW' as const};
+  const handleChange = useCallback(
+    (range: DateRange | null) => {
+      if (range == null) {
+        return;
+      }
       onChange({
         type: 'date_range',
         value: {
-          start: {type: 'ABSOLUTE', unixSeconds: startUnix},
-          end: existingEnd,
+          start: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse(`${range.start}T00:00:00Z`) / 1000,
+          },
+          end: {
+            type: 'ABSOLUTE',
+            unixSeconds: Date.parse(`${range.end}T00:00:00Z`) / 1000,
+          },
         },
       });
     },
-    [filterValue, onChange],
-  );
-
-  const handleEndChange = useCallback(
-    (value: string | undefined) => {
-      const endUnix = value ? Math.floor(new Date(value).getTime() / 1000) : 0;
-      const existingStart =
-        filterValue?.type === 'date_range'
-          ? filterValue.value.start
-          : {type: 'NOW' as const};
-      onChange({
-        type: 'date_range',
-        value: {
-          start: existingStart,
-          end: {type: 'ABSOLUTE', unixSeconds: endUnix},
-        },
-      });
-    },
-    [filterValue, onChange],
+    [onChange],
   );
 
   return (
-    <>
-      <DateInput
-        label={t('@astryx.powersearch.valueEditor.startDate')}
-        isLabelHidden
-        value={startValue}
-        onChange={handleStartChange}
-      />
-      <DateInput
-        label={t('@astryx.powersearch.valueEditor.endDate')}
-        isLabelHidden
-        value={endValue}
-        onChange={handleEndChange}
-      />
-    </>
+    <DateRangeInput
+      label={t('@astryx.powersearch.valueEditor.dateRange')}
+      isLabelHidden
+      value={currentValue}
+      onChange={handleChange}
+      hasClear={false}
+    />
   );
 }
 
