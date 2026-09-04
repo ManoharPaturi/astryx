@@ -40,8 +40,10 @@ theme. Structural validation does not grant design approval or certify contrast.
 - A theme may own one **palette map**.
 - The map contains named **families**, such as `neutral`, `red`, or `blue`.
 - A family contains at least one mode-specific **ramp**: light, dark, or both.
-- A ramp contains one or more author-defined numeric **stops**. Different
-  palettes may use different stop layouts to suit UI, iconography,
+- A ramp contains one or more author-defined numeric **stops**. Stop labels are
+  finite JSON numbers in the inclusive range `0` through `100`; integer and
+  decimal labels are valid, and equivalent spellings such as `5` and `5.0`
+  identify the same stop. Different palettes may use different stop layouts to suit UI, iconography,
   illustration, data-visualization, or brand work.
 - An **explicit theme color** is either a literal CSS color or an intentional
   reference to one exact value in the theme's committed palette file. In both
@@ -120,16 +122,20 @@ reviewable theme change.
   light ramp, a non-empty dark ramp, or both. Missing modes MUST NOT be inferred.
   A theme such as Gothic MAY declare only dark ramps, while a theme such as Stone
   MAY maintain only one family. A shared ramp MUST be assigned to both modes
-  explicitly. Each ramp defines its own ordered numeric stop labels and opaque
-  six-digit hex values. This contract MUST NOT require 11, 21, or any other fixed
-  stop count. A generator MAY recommend a default layout without making that
-  layout a validity rule. Optional hue, chroma, purpose, and description fields
-  are metadata only.
+  explicitly. Each ramp defines its own strictly increasing stop labels and
+  opaque six-digit hex values. Labels MUST be finite JSON numbers from `0`
+  through `100`, unique after numeric normalization, and strictly increasing.
+  Endpoints `0` and `100` are optional, and a one-stop ramp is valid. This
+  contract MUST NOT require 11, 21, or any other fixed stop count. A generator
+  MAY recommend a default layout without making that layout a validity rule.
+  Optional hue, chroma, purpose, and description fields are metadata only.
 - **FR4 — Validation is explicit and non-mutating.** A palette checker MUST
   inspect declared data without defining, normalizing, generating, or returning
   a replacement palette. It MUST report all structural problems with stable
   paths and messages. Structural errors include an empty palette, an empty ramp,
-  duplicate or invalid stop labels, malformed colors, and invalid mode shapes.
+  duplicate or invalid stop labels (including non-finite values, values outside
+  `0..100`, non-unique numeric values such as `5` and `5.0`, or labels that are
+  not strictly increasing), malformed colors, and invalid mode shapes.
   A checker MUST validate the stop layout the author declared rather than require
   a universal stop inventory. It MUST NOT run from `defineTheme()`, a runtime
   provider, or the generic theme build. A public checker or CLI requires its own
@@ -310,14 +316,16 @@ not runtime dependencies or accepted APIs in this contract.
 
 **Decider:** `rubyycheung`, `2026-09-03`
 
-The contract accepts any non-empty author-defined numeric stop layout. A future
+The contract accepts any non-empty author-defined stop layout whose finite
+numeric labels are unique, strictly increasing, and within `0..100`. A future
 Astryx generator may default to 21 stops for finer authoring choices, but an
-11-stop or specialized palette for icons, illustrations, visualization, or
-brand work is equally valid. Tools with narrower input requirements must state
-and validate those requirements locally rather than redefining palette validity.
+11-stop, one-stop, or specialized palette for icons, illustrations,
+visualization, or brand work is equally valid. Tools with narrower input
+requirements must state and validate those requirements locally rather than
+redefining palette validity.
 
-Rejected: requiring every palette to contain stops from 0 through 100 in
-increments of five. That would turn one generator default into an unnecessary
+Rejected: requiring every palette to contain both endpoints or a fixed increment
+such as five. That would turn one generator default into an unnecessary
 restriction on unrelated authoring needs.
 
 ## Open questions
