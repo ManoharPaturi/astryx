@@ -59,7 +59,7 @@ describe('ToggleButton', () => {
       );
     });
 
-    it('is ignored inside a ToggleButtonGroup, where the surface lifts as one unit', () => {
+    it('is retained inside a ToggleButtonGroup — grouped children keep their own elevation', () => {
       const {container} = render(
         <ToggleButtonGroup label="View" value={null} onChange={() => {}}>
           <ToggleButton label="Card" value="card" elevation="high" />
@@ -67,7 +67,7 @@ describe('ToggleButton', () => {
       );
       expect(container.querySelector('button')).toHaveAttribute(
         'data-elevation',
-        'none',
+        'high',
       );
     });
   });

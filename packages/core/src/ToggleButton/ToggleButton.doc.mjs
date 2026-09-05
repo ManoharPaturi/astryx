@@ -53,7 +53,7 @@ export const docs = {
       name: 'elevation',
       type: "'none' | 'low' | 'med' | 'high'",
       description:
-        'Resting shadow depth for floating (FAB-style) toggle buttons, mirroring Button. `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Ignored inside a ToggleButtonGroup, where the surface elevation is owned by the group.',
+        'Resting shadow depth for floating (FAB-style) toggle buttons, mirroring Button. `none` is the default flat button; `low`/`med`/`high` map to the shadow token scale. Applies inside a ToggleButtonGroup as well — grouped children retain their own elevation.',
       default: "'none'",
     },
     {

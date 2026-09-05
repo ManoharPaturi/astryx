@@ -145,9 +145,9 @@ export interface ToggleButtonProps extends BaseProps<HTMLButtonElement> {
   /**
    * Resting elevation — the shadow depth the button sits at, mirroring
    * Button's `elevation` for floating (FAB-style) toggle buttons.
-   * `none` is the default flat button. When used inside
-   * ToggleButtonGroup, this is ignored — the group's surface lifts as
-   * one unit.
+   * `none` is the default flat button. Applies inside a
+   * ToggleButtonGroup as well — grouped children retain their own
+   * elevation.
    * @default 'none'
    */
   elevation?: Elevation;
@@ -342,10 +342,7 @@ export function ToggleButton({
       label={label}
       variant="ghost"
       size={size}
-      // Inside a group the group owns the surface's elevation (the same
-      // contract Button applies within a ButtonGroup), so a grouped toggle
-      // reflects the tier it actually paints rather than a per-button prop.
-      elevation={group ? 'none' : elevation}
+      elevation={elevation}
       isDisabled={isDisabled}
       isLoading={isLoading}
       isInterruptible
@@ -355,6 +352,7 @@ export function ToggleButton({
       tooltip={tooltip}
       {...themeProps('toggle-button', {
         isPressed: isPressed ? 'true' : 'false',
+        elevation,
       })}
       xstyle={[isPressed ? pressedStyles.background : undefined, xstyle]}
       style={style}
