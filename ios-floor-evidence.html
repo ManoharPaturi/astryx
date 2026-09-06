@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iOS input-floor evidence — astryx #6085 @ d2b04b4</title>
+<style>
+  :root {
+    /* mirrors @astryxdesign/theme-neutral's --text-body-size (14px, sub-16px) */
+    --text-body-size: 14px;
+    --text-body-leading: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: #0b0d10;
+    color: #e8eaed;
+  }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  .head { font-family: ui-monospace, monospace; color: #8ab4f8; font-size: 13px; margin-bottom: 14px; }
+  .card {
+    border: 1px solid #2a2f36;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 12px;
+    background: #14171c;
+  }
+  .label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #9aa4b2; margin-bottom: 6px; }
+  input.gated {
+    /* THE FIX under test — copied verbatim from TextInput at PR head d2b04b4:
+       unconditional token size, with the iOS-only 16px floor nested as
+       @supports inside the coarse-pointer media query. */
+    font-size: var(--text-body-size);
+    line-height: var(--text-body-leading);
+  }
+  @media (pointer: coarse) {
+    @supports (-webkit-touch-callout: none) {
+      input.gated {
+        font-size: max(1rem, var(--text-body-size));
+        line-height: var(--text-body-leading);
+      }
+    }
+  }
+  input.control {
+    /* Negative control: plain sub-16px input, no gate. On iOS Safari this
+       MUST zoom on focus (scale > 1) — proving the harness detects zoom. */
+    font-size: 14px;
+    line-height: 20px;
+  }
+  input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #3c434d; background: #0e1116; color: #e8eaed; margin-top: 4px; }
+  .row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; padding: 3px 0; font-family: ui-monospace, monospace; }
+  .row b { font-weight: 600; }
+  .pass { color: #5bd88b; }
+  .fail { color: #ff6b6b; }
+  .pending { color: #ffd479; }
+  .status { font-size: 22px; font-weight: 700; margin: 6px 0 2px; }
+  #log { font-size: 11px; color: #9aa4b2; font-family: ui-monospace, monospace; white-space: pre-wrap; }
+  .note { font-size: 12px; color: #9aa4b2; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <h1>iOS input-floor evidence</h1>
+  <div class="head">astryx PR #6085 · head <span id="head">d2b04b4</span> · fix/input-floor-ios-only</div>
+
+  <div class="card">
+    <div class="label">Environment</div>
+    <div class="row"><span>userAgent</span><b id="ua" style="text-align:right"></b></div>
+    <div class="row"><span>maxTouchPoints</span><b id="mtp"></b></div>
+    <div class="row"><span>pointer: coarse</span><b id="coarse"></b></div>
+    <div class="row"><span>@supports touch-callout</span><b id="sup"></b></div>
+    <div class="row"><span>visualViewport initial scale</span><b id="initScale"></b></div>
+  </div>
+
+  <div class="card">
+    <div class="label">Field A — gated by the fix (expected: 16px, no zoom)</div>
+    <input class="gated" id="gated" placeholder="Tap this gated field" autocomplete="off" inputmode="text">
+    <div class="row"><span>computed font-size</span><b id="gatedPx"></b></div>
+    <div class="row"><span>min scale while focused</span><b id="gatedScale"></b></div>
+    <div class="status" id="gatedStatus">⏳ tap the field above</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Field B — negative control, raw 14px (expected: zooms to &gt;1)</div>
+    <input class="control" id="control" placeholder="Tap this control field" autocomplete="off" inputmode="text">
+    <div class="row"><span>computed font-size</span><b id="controlPx"></b></div>
+    <div class="row"><span>min scale while focused</span><b id="controlScale"></b></div>
+    <div class="status" id="controlStatus">⏳ tap the field above</div>
+  </div>
+
+  <div class="card">
+    <div class="label">Steps</div>
+    <div class="note">1. Tap field A, type nothing, tap done. 2. Tap field B, tap done. 3. Screenshot this whole page.</div>
+    <div id="log"></div>
+  </div>
+
+<script>
+  var minScaleDuringFocus = null, focusedId = null;
+  function vvScale() { return window.visualViewport ? +(window.visualViewport.scale.toFixed(3)) : null; }
+  function recordScale() {
+    if (focusedId && vvScale() != null) {
+      minScaleDuringFocus = Math.min(minScaleDuringFocus == null ? Infinity : minScaleDuringFocus, vvScale());
+    }
+    var el = document.getElementById(focusedId == 'gated' ? 'gatedScale' : 'controlScale');
+    if (el && focusedId) el.textContent = String(minScaleDuringFocus) + '×';
+    evaluate();
+  }
+  function computedPx(id) { return getComputedStyle(document.getElementById(id)).fontSize; }
+  function evaluate() {
+    var gPx = computedPx('gated');
+    document.getElementById('gatedPx').textContent = gPx;
+    document.getElementById('controlPx').textContent = computedPx('control');
+    var gs = document.getElementById('gatedScale').textContent;
+    var gS = document.getElementById('gatedStatus');
+    if (gs !== '' && gs !== 'measuring…') {
+      var min = parseFloat(gs);
+      gS.textContent = (parseFloat(gPx) >= 16 && min === 1) ? '✅ PASS — floor applied, no zoom' : '❌ FAIL';
+      gS.className = 'status ' + (gS.textContent.indexOf('PASS') >= 0 ? 'pass' : 'fail');
+    }
+    var cs = document.getElementById('controlScale').textContent;
+    var cS = document.getElementById('controlStatus');
+    if (cs !== '' && cs !== 'measuring…') {
+      var cmin = parseFloat(cs);
+      cS.textContent = cmin > 1 ? '✅ control zoomed (harness can detect zoom)' : '⚠️ control did not zoom';
+      cS.className = 'status ' + (cmin > 1 ? 'pass' : 'pending');
+    }
+  }
+  ['gated','control'].forEach(function(id) {
+    var el = document.getElementById(id);
+    el.addEventListener('focus', function() {
+      focusedId = id; minScaleDuringFocus = null;
+      var s = document.getElementById(id + 'Scale'); s.textContent = 'measuring…';
+      document.getElementById(id + 'Status').textContent = '⏳ measuring…';
+      setTimeout(recordScale, 350); setTimeout(recordScale, 900); setTimeout(recordScale, 1600);
+    });
+    el.addEventListener('blur', function() { setTimeout(recordScale, 300); setTimeout(function(){ focusedId = null; evaluate(); }, 700); });
+  });
+  if (window.visualViewport) { visualViewport.addEventListener('resize', recordScale); }
+
+  document.getElementById('ua').textContent = (navigator.userAgent.match(/OS \d+_\d+[^;)]*|Safari\/[\d.]+|Version\/[\d.]+/g) || [navigator.userAgent]).join(' · ');
+  document.getElementById('mtp').textContent = String(navigator.maxTouchPoints);
+  document.getElementById('coarse').textContent = matchMedia('(pointer: coarse)').matches ? 'yes' : 'no';
+  document.getElementById('sup').textContent = CSS.supports('-webkit-touch-callout', 'none') ? 'yes (iOS WebKit)' : 'no';
+  document.getElementById('initScale').textContent = String(vvScale());
+  document.getElementById('log').textContent = 'full UA: ' + navigator.userAgent;
+  evaluate();
+</script>
+</body>
+</html>
