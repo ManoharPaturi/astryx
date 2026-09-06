@@ -47,7 +47,7 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {Spinner} from '../Spinner';
 import {useTooltip} from '../Tooltip';
 import {VisuallyHidden} from '../VisuallyHidden';
-import {getInputARIA} from '../utils';
+import {getInputARIA, isImeKeyEvent} from '../utils';
 
 const styles = stylex.create({
   input: {
@@ -431,7 +431,12 @@ export function TextInput({
         onKeyDown={
           onEnter || onKeyDown
             ? e => {
-                if (e.key === 'Enter') {
+                // The composing keydown fires before compositionend, so without
+                // this guard pressing Enter to commit a Japanese/Chinese/Korean
+                // IME conversion would trigger onEnter (submit/save actions)
+                // before the user intends to submit. onKeyDown still receives
+                // the raw event. See utils/ime.ts (#6082).
+                if (e.key === 'Enter' && !isImeKeyEvent(e.nativeEvent)) {
                   onEnter?.();
                 }
                 onKeyDown?.(e);
