@@ -14,6 +14,9 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {Link} from './Link';
 import {LinkProvider} from './LinkProvider';
+import {HStack} from '../HStack';
+import {Icon} from '../Icon';
+import {Text} from '../Text';
 
 function CustomLink({
   children,
@@ -537,5 +540,27 @@ describe('Link display', () => {
     );
     const button = container.querySelector('button')!;
     expect(displayDeclarationsFor(button)).toContain('inline-flex');
+  });
+
+  it('keeps the flex root (visible focus box) when hasBlockChild flags a composed child like HStack + Icon', () => {
+    const {container} = render(
+      <Link href="/docs" hasBlockChild>
+        <HStack gap={1}>
+          <Icon icon="externalLink" size="xsm" />
+          <Text>Documentation</Text>
+        </HStack>
+      </Link>,
+    );
+    const anchor = container.querySelector('a')!;
+    expect(displayDeclarationsFor(anchor)).toContain('inline-flex');
+  });
+
+  it('stays inline for a plain-text Link so an ancestor clamp still reaches it', () => {
+    const {container} = render(
+      <Link href="/docs">Plain text, no composed children</Link>,
+    );
+    const anchor = container.querySelector('a')!;
+    expect(displayDeclarationsFor(anchor)).toContain('inline');
+    expect(displayDeclarationsFor(anchor)).not.toContain('inline-flex');
   });
 });
