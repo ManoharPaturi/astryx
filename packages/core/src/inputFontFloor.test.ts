@@ -42,6 +42,9 @@ const FLOORED_CONTROLS = [
   'TextInput/TextInput.tsx',
   'TimeInput/TimeInput.tsx',
   'Typeahead/BaseTypeahead.tsx',
+  // The rich-text package carries the same floor; its path is relative to
+  // packages/core/src.
+  '../../richtext/src/RichTextEditor.tsx',
 ];
 
 /** A font floor applied to every coarse pointer, iOS or not. */
@@ -82,10 +85,16 @@ describe('the 16px input floor', () => {
     }
   });
 
-  it('leaves no bare coarse-pointer font floor anywhere in core', () => {
+  it('leaves no bare coarse-pointer font floor anywhere in core or richtext', () => {
     // Catches a new (or renamed) control reintroducing the ungated floor,
-    // wherever it lands — the list above only knows the current family.
-    const offenders = componentSources(__dirname)
+    // wherever it lands — the list above only knows the current family. The
+    // rich-text package carries the same floor, so it is scanned too.
+    const scanRoots = [
+      __dirname,
+      path.resolve(__dirname, '../../richtext/src'),
+    ];
+    const offenders = scanRoots
+      .flatMap(root => componentSources(root))
       .map(file => ({
         file,
         source: readFileSync(file, 'utf8'),
