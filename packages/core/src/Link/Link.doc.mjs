@@ -134,6 +134,13 @@ export const docs = {
           default: '0',
         },
         {
+          name: 'hasBlockChild',
+          type: 'boolean',
+          description:
+            'Set when children render a block-level element (e.g. an HStack composing an icon with the label), so the Link keeps its inline-flex root and stays visibly focused. Trade-off: an ancestor <Text maxLines> can no longer truncate it — pass `maxLines` to the Link itself instead.',
+          default: 'false',
+        },
+        {
           name: 'children',
           type: 'ReactNode',
           description: 'Link content',
@@ -174,7 +181,9 @@ export const docs = {
       { guidance: false, description: 'Use Link for actions that do not navigate; use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more"; describe the destination.' },
       { guidance: false, description: 'Set `label` on text links; `aria-label` prevents assistive technology from reading the actual link content.' },
+      { guidance: true, description: 'Set `hasBlockChild` when Link children render a block-level element (e.g. an HStack composing an icon with the label), so keyboard focus stays visible.' },
       { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate an external Link. Its external-link icon uses an inline-flex layout, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
+      { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate a Link with `hasBlockChild` set. Its block-level content needs the inline-flex root, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -308,7 +317,9 @@ export const docsZh = {
       { guidance: false, description: 'Use Link for actions that do not navigate; use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more"; describe the destination.' },
       { guidance: false, description: 'Set `label` on text links; `aria-label` prevents assistive technology from reading the actual link content.' },
+      { guidance: true, description: 'Set `hasBlockChild` when Link children render a block-level element (e.g. an HStack composing an icon with the label), so keyboard focus stays visible.' },
       { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate an external Link. Its external-link icon uses an inline-flex layout, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
+      { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate a Link with `hasBlockChild` set. Its block-level content needs the inline-flex root, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -333,7 +344,9 @@ export const docsDense = {
       { guidance: false, description: 'Use Link for actions that do not navigate; use a Button instead.' },
       { guidance: false, description: 'Use generic text like "click here" or "read more"; describe the destination.' },
       { guidance: false, description: 'Set `label` on text links; `aria-label` prevents assistive technology from reading the actual link content.' },
+      { guidance: true, description: 'Set `hasBlockChild` when Link children render a block-level element (e.g. an HStack composing an icon with the label), so keyboard focus stays visible.' },
       { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate an external Link. Its external-link icon uses an inline-flex layout, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
+      { guidance: false, description: 'Expect an ancestor <Text maxLines> to truncate a Link with `hasBlockChild` set. Its block-level content needs the inline-flex root, which an ancestor clamp cannot reach — pass `maxLines` to the Link itself.' },
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'The visible text of the link.'},
@@ -361,6 +374,8 @@ export const docsDense = {
         onClick: 'Click event handler',
         tooltip: 'Tooltip text on hover',
         isStandalone: 'Applies base font sizing',
+        hasBlockChild:
+          'Set when children render a block-level element (e.g. HStack + icon), so the Link keeps its inline-flex root and stays visibly focused. Trade-off: an ancestor maxLines clamp can no longer reach it.',
         children: 'Link content',
       },
     },
