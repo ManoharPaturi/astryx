@@ -629,8 +629,13 @@ describe('FileInput', () => {
 
     it('calls onChange and changeAction with null when clear is clicked', async () => {
       const user = userEvent.setup();
-      const handleChange = vi.fn();
-      const changeAction = vi.fn();
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
       const file = createFile('test.txt', 100);
       render(
         <FileInput
@@ -643,6 +648,7 @@ describe('FileInput', () => {
       await user.click(screen.getByRole('button', {name: 'Clear Upload'}));
       expect(handleChange).toHaveBeenCalledWith(null);
       expect(changeAction).toHaveBeenCalledWith(null);
+      expect(order).toEqual(['onChange', 'changeAction']);
     });
 
     it('presents optimistic cleared state and busy indicator while clear changeAction is pending', async () => {
@@ -696,8 +702,13 @@ describe('FileInput', () => {
 
   describe('changeAction and optimistic updates', () => {
     it('calls changeAction with selected file in a transition', async () => {
-      const handleChange = vi.fn();
-      const changeAction = vi.fn();
+      const order: string[] = [];
+      const handleChange = vi.fn(() => {
+        order.push('onChange');
+      });
+      const changeAction = vi.fn(async () => {
+        order.push('changeAction');
+      });
       render(
         <FileInput
           label="Upload"
@@ -714,6 +725,7 @@ describe('FileInput', () => {
 
       expect(handleChange).toHaveBeenCalledWith(file);
       expect(changeAction).toHaveBeenCalledWith(file);
+      expect(order).toEqual(['onChange', 'changeAction']);
     });
 
     it('presents optimistic file name and aria-busy while changeAction is pending', async () => {
