@@ -1,5 +1,5 @@
 ---
-schema_version: 1
+schema_version: 4
 template_version: 1
 kind: system-spec
 id: spec:AST-025
@@ -19,6 +19,17 @@ affects_consumer_docs:
 ---
 
 # Scrollable container behavior system spec
+
+<!-- review-applicability:v1 -->
+
+```json
+{
+  "scope": "global",
+  "triggers": {
+    "scrolling": ["FR1", "FR12", "FR13", "FR14", "FR15", "FR16", "FR18"]
+  }
+}
+```
 
 ## Intent
 
