@@ -474,8 +474,8 @@ export function Dialog({
   const titleId = useId();
 
   const dialogContextValue = useMemo(
-    () => ({isInline, titleId, isOpen}),
-    [isInline, titleId, isOpen],
+    () => ({isInline, titleId}),
+    [isInline, titleId],
   );
 
   // Consumer-provided labels always win over the DialogHeader default.

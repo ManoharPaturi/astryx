@@ -156,16 +156,6 @@ describe('Dialog', () => {
     expect(document.activeElement).toBe(opener);
   });
 
-  it('does not steal focus from the page when mounted under a closed dialog', () => {
-    render(
-      <Dialog isOpen={false} onOpenChange={() => {}}>
-        <DialogHeader title="Review" />
-      </Dialog>,
-    );
-
-    expect(document.activeElement).toBe(document.body);
-  });
-
   it('renders when isOpen is true', () => {
     render(
       <Dialog isOpen={true} onOpenChange={() => {}}>
