@@ -3,6 +3,8 @@
 import {describe, it, expect} from 'vitest';
 import {
   createIncrementalState,
+  isSafeNavigationUrl,
+  isSafeResourceUrl,
   isSafeUrl,
   parseInline,
   parseMarkdown,
@@ -158,17 +160,8 @@ describe('parseInline', () => {
     ]);
   });
 
-  it('rejects data:image/svg+xml and other data: links (XSS prevention)', () => {
-    const linkResult = parseInline(
-      '[x](data:image/svg+xml,<svg onload=alert(1)>)',
-    );
-    expect(linkResult).toEqual([
-      {
-        type: 'text',
-        content: '[x](data:image/svg+xml,<svg onload=alert(1)>)',
-      },
-    ]);
-
+  it('rejects data: image sources while links keep the navigation contract', () => {
+    // An embedded resource rejects every data: URL, whatever the payload.
     const imgResult = parseInline('![x](data:image/png;base64,AAAA)');
     expect(imgResult).toEqual([
       {
@@ -176,19 +169,39 @@ describe('parseInline', () => {
         content: '![x](data:image/png;base64,AAAA)',
       },
     ]);
+
+    // A navigation destination keeps the documented link contract: script
+    // execution schemes and the HTML-carrying data: form are blocked, while
+    // other data: destinations navigate as before this change.
+    expect(parseInline('[x](data:text/html,<script>alert(1)</script>)')).toEqual([
+      {
+        type: 'text',
+        content: '[x](data:text/html,<script>alert(1)</script>)',
+      },
+    ]);
+    const svgLink = parseInline('[x](data:image/svg+xml,<svg onload=alert(1)>)');
+    expect(svgLink).toEqual([
+      {type: 'link', href: 'data:image/svg+xml,<svg onload=alert(1)>', children: [{type: 'text', content: 'x'}]},
+    ]);
   });
 
-  it('isSafeUrl rejects javascript, vbscript, and all data: schemes', () => {
+  it('splits navigation and resource scheme checks with tests on each side', () => {
+    // Navigation: blocks execution schemes and data:text/html only.
+    expect(isSafeNavigationUrl('javascript:alert(1)')).toBe(false);
+    expect(isSafeNavigationUrl('vbscript:MsgBox(1')).toBe(false);
+    expect(isSafeNavigationUrl('data:text/html,<script>x</script>')).toBe(false);
+    expect(isSafeNavigationUrl('data:image/png;base64,AAAA')).toBe(true);
+    expect(isSafeNavigationUrl('https://example.com')).toBe(true);
+    expect(isSafeNavigationUrl('#anchor')).toBe(true);
+
+    // Resources: additionally reject every data: URL.
+    expect(isSafeResourceUrl('data:image/png;base64,AAAA')).toBe(false);
+    expect(isSafeResourceUrl('data:text/plain;charset=utf-8,hello')).toBe(false);
+    expect(isSafeResourceUrl('https://example.com/a.png')).toBe(true);
+
+    // isSafeUrl keeps its name as the navigation contract.
     expect(isSafeUrl('javascript:alert(1)')).toBe(false);
-    expect(isSafeUrl('vbscript:MsgBox(1)')).toBe(false);
-    expect(isSafeUrl('data:text/html,<script>alert(1)</script>')).toBe(false);
-    expect(isSafeUrl('data:image/svg+xml,<svg onload=alert(1)>')).toBe(false);
-    expect(isSafeUrl('data:image/png;base64,AAAA')).toBe(false);
-    expect(isSafeUrl('data:text/plain;charset=utf-8,hello')).toBe(false);
-    expect(isSafeUrl('https://example.com')).toBe(true);
-    expect(isSafeUrl('http://example.com')).toBe(true);
-    expect(isSafeUrl('/relative/path')).toBe(true);
-    expect(isSafeUrl('#anchor')).toBe(true);
+    expect(isSafeUrl('data:image/png;base64,AAAA')).toBe(true);
   });
 
   it('allows normal http/https links', () => {

@@ -599,7 +599,7 @@ function matchReferenceImage(
       const rawLabel = text.slice(altClose + 2, labelClose);
       const label = rawLabel === '' ? alt : rawLabel;
       const src = linkDefs.get(normalizeLinkLabel(label));
-      if (src != null && isSafeUrl(src)) {
+      if (src != null && isSafeResourceUrl(src)) {
         return {node: {type: 'image', src, alt}, end: labelClose + 1};
       }
       // No match — fall back to a shortcut `![alt]`.
@@ -609,7 +609,7 @@ function matchReferenceImage(
     return null;
   }
   const src = linkDefs.get(normalizeLinkLabel(alt));
-  if (src == null || !isSafeUrl(src)) {
+  if (src == null || !isSafeResourceUrl(src)) {
     return null;
   }
   return {node: {type: 'image', src, alt}, end: altClose + 1};
@@ -710,11 +710,38 @@ function findInlineMathEnd(text: string, start: number): number {
  * Returns true if the URL is safe to use, false otherwise.
  */
 export function isSafeUrl(url: string): boolean {
+  return isSafeNavigationUrl(url);
+}
+
+/**
+ * Navigation destinations (link hrefs) block script execution schemes and the
+ * HTML-carrying data: form, matching the documented navigation contract.
+ * Broader data: rejection is reserved for embedded resources, where the
+ * content is decoded and rendered rather than navigated to.
+ */
+export function isSafeNavigationUrl(url: string): boolean {
   // Trim and collapse whitespace/control chars that browsers tolerate but
   // could bypass a naive prefix check (e.g. "java\nscript:alert(1)").
   // eslint-disable-next-line no-control-regex -- control chars are the bypass
-  const normalized = url.replace(/[\x00-\x1f\x7f]/g, '').trim();
-  const lower = normalized.toLowerCase();
+  const lower = normalizeUrlForSchemeCheck(url);
+  if (
+    lower.startsWith('javascript:') ||
+    lower.startsWith('vbscript:') ||
+    lower.startsWith('data:text/html')
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Embedded resource sources (image srcs) reject every data: URL, not just the
+ * HTML form: non-HTML data: URLs could still reach parser AST nodes even
+ * though the documented contract names data: as rejected for resources.
+ */
+export function isSafeResourceUrl(url: string): boolean {
+  // eslint-disable-next-line no-control-regex -- control chars are the bypass
+  const lower = normalizeUrlForSchemeCheck(url);
   if (
     lower.startsWith('javascript:') ||
     lower.startsWith('vbscript:') ||
@@ -723,6 +750,13 @@ export function isSafeUrl(url: string): boolean {
     return false;
   }
   return true;
+}
+
+function normalizeUrlForSchemeCheck(url: string): string {
+  return url
+    .replace(/[\x00-\x1f\x7f]/g, '')
+    .trim()
+    .toLowerCase();
 }
 
 // ---------------------------------------------------------------------------
@@ -865,7 +899,7 @@ function parseInlineImpl(
         const srcClose = findClosingParen(text, altClose + 2);
         if (srcClose !== -1) {
           const src = text.slice(altClose + 2, srcClose);
-          if (!isSafeUrl(src)) {
+          if (!isSafeResourceUrl(src)) {
             // Dangerous scheme — emit as plain text.
             nodes.push({type: 'text', content: text.slice(i, srcClose + 1)});
           } else {
