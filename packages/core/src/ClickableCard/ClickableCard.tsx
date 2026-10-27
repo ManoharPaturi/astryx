@@ -47,11 +47,24 @@ import type {BaseProps} from '../BaseProps';
 import {useLinkComponent} from '../Link/useLinkComponent';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
+import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 // =============================================================================
 // Styles — only the interactive layer, Card handles everything else
 // =============================================================================
+
+// The touch press's paint, declared by the shared overlay styles on the
+// element the controller writes to (`pressedAlpha`) at the press's strength,
+// 1 while on and 1 → 0 over the release, and inherited resolved by the
+// `::after` that paints it. See interactionOverlay.stylex.ts.
+const pressedOverlayImage = 'var(--_press-paint-image)';
+/** Written by the press controller while it paints a press. */
+const PRESSED_ON = '[data-astryx-press="on"]';
+/** Written by the press controller for the press's release. */
+const PRESSED_FADING = '[data-astryx-press="fading"]';
 
 const styles = stylex.create({
   interactive: {
@@ -63,27 +76,69 @@ const styles = stylex.create({
     textDecoration: 'none',
     color: 'inherit',
   },
-  // Hover overlay — guarded by @media (hover: hover) so touch devices
-  // don't show a stuck hover state. Active/pressed state works everywhere.
+  // Hover and pressed overlay. Hover is guarded by @media (hover: hover) so
+  // touch devices don't show a stuck hover state; the press has two arms,
+  // `:active` for a mouse and `data-astryx-press` for the press controller.
   overlay: {
+    // The `::after` layer paints the hover and mouse states as its colour,
+    // `--_press-overlay`, which their arms set on the element itself (same
+    // enabled guard as the shared overlay utility). The press the controller
+    // paints (a finger's, and on a touch-first device a mouse's or a key's)
+    // is the same layer's image, keyed on the `data-astryx-press` attribute
+    // the controller writes. Every arm of that press is a plain property of
+    // the `::after`, which outranks the layer's own defaults in a layered
+    // stylesheet and a flat one alike. A custom property's attribute arm
+    // does not: a layered build emits the property's default outside the
+    // priority layers its attribute arms land in, and the default wins.
+    '--_press-overlay': {
+      default: 'transparent',
+      ':where(:not(:disabled,[aria-disabled="true"]))': {
+        default: null,
+        ':active': {
+          default: colorVars['--color-overlay-pressed'],
+          '@media (pointer: coarse)': 'transparent',
+        },
+        '@media (hover: hover)': {
+          default: null,
+          ':hover:where(:not(:disabled,[aria-disabled="true"]))':
+            colorVars['--color-overlay-hover'],
+          ':active': colorVars['--color-overlay-pressed'],
+        },
+      },
+    },
     '::after': {
       content: '""',
       position: 'absolute',
       inset: 0,
       pointerEvents: 'none',
-      transitionProperty: 'background-color',
+      // A press the controller paints shows on its first frame and fades on
+      // its strength's own animation, so the colour it replaces drops out at
+      // once rather than crossfading: no transition while it paints. The
+      // mouse states keep the fast fade.
+      transitionProperty: {
+        default: 'background-color',
+        [PRESSED_ON]: 'none',
+        [PRESSED_FADING]: 'none',
+      },
       transitionDuration: durationVars['--duration-fast'],
       transitionTimingFunction: easeVars['--ease-standard'],
-      backgroundColor: 'transparent',
-    },
-    ':active::after': {
-      backgroundColor: colorVars['--color-overlay-pressed'],
-    },
-  },
-  hoverOnPointer: {
-    '@media (hover: hover)': {
-      ':hover:where(:not(:disabled,[aria-disabled="true"]))::after': {
-        backgroundColor: colorVars['--color-overlay-hover'],
+      // While the controller paints, the colour yields to the image: a
+      // touchscreen beside a fine pointer still matches `:active` under a
+      // finger, and the press would otherwise paint twice.
+      backgroundColor: {
+        default: 'var(--_press-overlay)',
+        [PRESSED_ON]: 'transparent',
+        [PRESSED_FADING]: 'transparent',
+      },
+      // The press at its strength, which the card's `pressedAlpha` arms own:
+      // 1 on the first frame of a believed press, then 1 → 0 over the
+      // release. The `::after` inherits the resolved paint and repaints with
+      // it on every frame of the fade. Read only inside this element's own
+      // arms, so a pressed ancestor's strength never paints here.
+      backgroundImage: {
+        default: null,
+        [PRESSED_ON]: pressedOverlayImage,
+        [PRESSED_FADING]: pressedOverlayImage,
       },
     },
   },
@@ -172,8 +227,8 @@ export interface ClickableCardProps extends BaseProps {
 
   /**
    * Set to true to disable the card.
-   * Disabled cards remain focusable (tabIndex 0) with aria-disabled
-   * so screen reader users can discover them.
+   * Disabled cards keep their tab stop and expose aria-disabled; activation is
+   * blocked, and disabled link cards render no live destination.
    */
   isDisabled?: boolean;
 
@@ -269,6 +324,7 @@ export function ClickableCard({
   style,
   ...props
 }: ClickableCardProps) {
+  const pressable = usePressFeedback();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const interactiveRef = useRef<HTMLElement | null>(null);
   const LinkComponent = useLinkComponent();
@@ -299,6 +355,7 @@ export function ClickableCard({
   return (
     <Card
       ref={useMergedRefs(ref, containerRef)}
+      {...(isDisabled ? undefined : pressable)}
       width={width}
       height={height}
       maxWidth={maxWidth}
@@ -316,7 +373,9 @@ export function ClickableCard({
           styles.interactive,
           hasBorder ? styles.bordered : styles.borderless,
           !isDisabled && styles.overlay,
-          !isDisabled && styles.hoverOnPointer,
+          // The touch press's strength and release, on the element the
+          // controller writes to; the `::after` above paints off it.
+          !isDisabled && interactionOverlayStyles.pressedAlpha,
           !isDisabled && hasBorder && styles.borderedHoverOnPointer,
           isDisabled && styles.disabled,
           xstyleProp,
@@ -328,11 +387,14 @@ export function ClickableCard({
       {isLink ? (
         <LinkComponent
           ref={interactiveRef as React.Ref<HTMLAnchorElement>}
-          href={href}
-          target={target}
+          href={isDisabled ? undefined : href}
+          target={isDisabled ? undefined : target}
+          role={isDisabled ? 'link' : undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           aria-label={label}
           aria-disabled={isDisabled || undefined}
-          tabIndex={isDisabled ? -1 : 0}
+          // A disabled card keeps its Tab stop (spec:AST-085 FR1).
+          tabIndex={0}
           {...stylex.props(styles.srOnly)}
         />
       ) : (
@@ -340,8 +402,10 @@ export function ClickableCard({
           ref={interactiveRef as React.Ref<HTMLButtonElement>}
           type="button"
           aria-label={label}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
           onClick={onClickProp}
+          // Focusable while disabled (FR1), but inert (FR2).
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.srOnly)}
         />
       )}

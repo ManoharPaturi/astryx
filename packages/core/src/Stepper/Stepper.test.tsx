@@ -7,8 +7,10 @@ import userEvent from '@testing-library/user-event';
 import {Stepper} from './Stepper';
 import {Step} from './Step';
 import {useStepperContext} from './StepperContext';
+import {useLayer} from '../Layer/useLayer';
 import {defineTheme} from '../theme/defineTheme';
 import {generateThemeCSS} from '../theme/generateThemeRules';
+import {getForcedColorsRules} from '../__tests__/forcedColors';
 
 describe('Stepper', () => {
   it('renders an ordered list of steps (not a nav landmark)', () => {
@@ -1831,6 +1833,59 @@ describe('Stepper', () => {
       );
     });
 
+    it('stops an outer gap at a layer opened from a step', async () => {
+      // An outer Stepper's gap is scoped to its own track. A layer opened from
+      // one of its steps is new content, so an inner Stepper there starts from
+      // the connector's own 0px fallback (AST-038 FR7) instead of inheriting
+      // the outer value through the DOM.
+      function StepLayer() {
+        const layer = useLayer({mode: 'context'});
+        return (
+          <>
+            <button type="button" ref={layer.ref} onClick={layer.show}>
+              Details
+            </button>
+            {layer.render(
+              <Stepper activeStep={0} indicatorPosition="on-track">
+                <Step step={0} label="Inner one" />
+                <Step step={1} label="Inner two" />
+              </Stepper>,
+            )}
+          </>
+        );
+      }
+      const user = userEvent.setup();
+      const {container} = render(
+        <div style={{'--step-connector-gap': '6px'} as React.CSSProperties}>
+          <Stepper activeStep={0} indicatorPosition="on-track">
+            <Step step={0} label="Outer one">
+              <StepLayer />
+            </Step>
+            <Step step={1} label="Outer two" />
+          </Stepper>
+        </div>,
+      );
+      await user.click(screen.getByRole('button', {name: 'Details'}));
+
+      const layerRoot = container.querySelector('[popover]') as HTMLElement;
+      expect(layerRoot).not.toBeNull();
+      expect(declarationsFor(layerRoot)).toContain(
+        '--step-connector-gap:initial',
+      );
+
+      // Ancestor inheritance still works outside the layer, and the inner
+      // Stepper keeps the same inheriting root, so a value set on it or through
+      // the `stepper` target still reaches its connectors.
+      const [outerRoot, innerRoot] = [
+        ...container.querySelectorAll<HTMLElement>('.astryx-stepper'),
+      ];
+      expect(layerRoot.contains(outerRoot)).toBe(false);
+      expect(layerRoot.contains(innerRoot)).toBe(true);
+      expect(declarationsFor(innerRoot)).toContain(
+        '--step-connector-gap:inherit',
+      );
+    });
+
     it('leaves the connector target itself free of a segment vocabulary', () => {
       // The pieces are an implementation of the on-track layout, not API: no
       // `data-segment`, and no bare `lead`/`rail`/`content` class that could
@@ -1960,5 +2015,54 @@ describe('step-label and step-description theme targets', () => {
     expect(container.querySelectorAll('.astryx-step-description')).toHaveLength(
       2,
     );
+  });
+});
+
+describe('clickable step text reading', () => {
+  // axe-core's Label in Name rule joins a button's text nodes with nothing
+  // between them, aria-hidden ones included, so a number badge next to a label
+  // reads as one word ("1Account") that the step's name does not contain.
+  // Whitespace between them changes nothing on screen (the rows are flex
+  // containers) and keeps the two words apart.
+  it.each([
+    ['vertical', 'separated'],
+    ['horizontal', 'separated'],
+    ['vertical', 'on-track'],
+    ['horizontal', 'on-track'],
+  ] as const)(
+    'keeps the number and label apart in a %s %s step',
+    (orientation, indicatorPosition) => {
+      render(
+        <Stepper
+          orientation={orientation}
+          indicatorPosition={indicatorPosition}
+          activeStep={0}
+          label="Steps"
+          onStepClick={() => {}}>
+          <Step step={0} label="Account" indicator="number" />
+          <Step step={1} label="Payment" indicator="number" />
+        </Stepper>,
+      );
+
+      const button = screen.getByRole('button', {name: /Account/});
+      expect(button.textContent).toMatch(/1\s+Account/);
+      expect(button.textContent).not.toMatch(/1Account/);
+    },
+  );
+});
+
+// jsdom cannot emulate forced colors, so this asserts the compiled rule the
+// number badge fill relies on (architecture:theme-tokens INV11).
+describe('Step number badge forced colors', () => {
+  it('keeps a visible boundary on the badge fill', () => {
+    render(
+      <Stepper activeStep={0}>
+        <Step step={0} label="First" indicator="number" />
+        <Step step={1} label="Second" indicator="number" />
+      </Stepper>,
+    );
+    const css = getForcedColorsRules();
+    expect(css).toContain('outline-style: solid;');
+    expect(css).toContain('outline-color: canvastext;');
   });
 });

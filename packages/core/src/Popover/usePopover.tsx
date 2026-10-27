@@ -35,6 +35,8 @@ import {useDevWarning} from '../hooks/useDevWarning';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {mergeProps} from '../utils/mergeProps';
 import {themeProps} from '../utils/themeProps';
+import {paddingStyles} from '../Layout/padding.stylex';
+import type {SpacingStep} from '../utils/types';
 import {stableClassName} from '../naming';
 
 const FALLBACK_CLOSE_SELECTOR = '[data-astryx-popover-fallback-close]';
@@ -45,7 +47,9 @@ function attemptFocus(element: HTMLElement): boolean {
   } catch {
     // Ignore non-focusable elements; the caller will try the next target.
   }
-  return document.activeElement === element;
+  // The element's own document: a popover rendered into a second document
+  // (an iframe, a Picture-in-Picture window) never moves this one's focus.
+  return element.ownerDocument.activeElement === element;
 }
 
 function focusFirstContentControl(container: HTMLElement): boolean {
@@ -230,6 +234,22 @@ export interface UsePopoverOptions {
   hasSurface?: boolean;
 
   /**
+   * Inner padding of the painted surface, using the spacing scale.
+   * Accepts numeric spacing steps: 0, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10.
+   * `0` paints a flush surface for content that owns its own edges (a list of
+   * rows, a header with a rule). Matches the `padding` prop on `Card`,
+   * `Stack` and `Popover`.
+   *
+   * Applied to the surface itself — the box that paints background, radius
+   * and elevation — so a theme's `padding` on the `popover` target replaces
+   * it instead of nesting inside it. `xstyle` merges after it.
+   *
+   * Omit it and the surface paints no padding of its own (the hook's
+   * historical behavior; `Popover` passes its own default).
+   */
+  padding?: SpacingStep;
+
+  /**
    * Theme-target name stamped on the popup SURFACE — the element that paints
    * the background, radius and elevation — without the `astryx-` prefix
    * (e.g. `'complex-selector-popup'`).
@@ -240,9 +260,8 @@ export interface UsePopoverOptions {
    * or radius rule paints the wrong box. Name the surface through this option
    * and document the class in the component's `theming.targets`.
    *
-   * The canonical `astryx-popover` target and deprecated
-   * `astryx-popover-surface` compatibility alias are always present alongside
-   * any component-owned refinement target.
+   * The canonical `astryx-popover` target is always present alongside any
+   * component-owned refinement target.
    */
   surfaceTarget?: string;
 }
@@ -374,6 +393,7 @@ function usePopoverImplementation(
     hasEscapeDismiss = true,
     hasAutoFocus = true,
     hasSurface = true,
+    padding,
     surfaceTarget,
     hasCloseButton = true,
     closeButtonLabel: closeButtonLabelFromProps,
@@ -425,13 +445,17 @@ function usePopoverImplementation(
 
   // Auto-focus first element when popover opens (unless skipped)
   useEffect(() => {
-    if (layer.isOpen && hasAutoFocus && !skipAutoFocusRef.current) {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(focusInitialTarget);
-    }
     // Reset the per-open focus preference after the popover closes.
     if (!layer.isOpen) {
       skipAutoFocusRef.current = false;
+      return;
+    }
+    if (hasAutoFocus && !skipAutoFocusRef.current) {
+      // Wait a frame so the content is mounted. A popover that closes or
+      // unmounts first cancels it: the frame would otherwise move focus into
+      // content that is no longer shown, after the close had left it alone.
+      const frame = requestAnimationFrame(focusInitialTarget);
+      return () => cancelAnimationFrame(frame);
     }
   }, [layer.isOpen, hasAutoFocus, focusInitialTarget]);
 
@@ -486,9 +510,7 @@ function usePopoverImplementation(
       // `mergeProps` is positional — a third OBJECT argument is read as
       // `style`, not as more props — so the surface's classes are composed
       // into one props object before merging with the StyleX result.
-      const surfaceProps = themeProps('popover', undefined, {
-        legacyNames: ['popover-surface'],
-      });
+      const surfaceProps = themeProps('popover');
       const surfaceClassName =
         surfaceTarget != null && surfaceTarget !== 'popover'
           ? `${surfaceProps.className} ${stableClassName(surfaceTarget)}`
@@ -507,6 +529,7 @@ function usePopoverImplementation(
               focusOutlineProps.focusVisible(
                 styles.contentWrapper,
                 hasSurface && styles.surface,
+                padding != null && paddingStyles[padding],
                 xstyle,
               ),
               className,
@@ -536,6 +559,7 @@ function usePopoverImplementation(
       layer,
       hasCloseButton,
       hasSurface,
+      padding,
       surfaceTarget,
       className,
       style,

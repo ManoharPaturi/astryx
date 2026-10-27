@@ -237,6 +237,15 @@ const styles = stylex.create({
   },
   fill: {
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     borderRadius: radiusVars['--radius-full'],
     transitionProperty: 'width',
     transitionDuration: durationVars['--duration-medium'],
@@ -244,6 +253,15 @@ const styles = stylex.create({
   },
   indeterminateFill: {
     height: '100%',
+    // Forced colors replace status fills with Canvas; this boundary keeps the
+    // fill's shape visible (architecture:theme-tokens INV11).
+    outlineWidth: {default: null, '@media (forced-colors: active)': '1px'},
+    outlineStyle: {default: null, '@media (forced-colors: active)': 'solid'},
+    outlineColor: {
+      default: null,
+      '@media (forced-colors: active)': 'CanvasText',
+    },
+    outlineOffset: {default: null, '@media (forced-colors: active)': '-1px'},
     width: '40%',
     borderRadius: radiusVars['--radius-full'],
     animationName: {
@@ -396,7 +414,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * ```
  *
  * A mark's height, width, and color are directly themeable via the
- * `progressbar-mark` target. The target reflects `data-placement`
+ * `progress-bar-mark` target. The target reflects `data-placement`
  * (`"fill"` when the mark sits inside the filled area, `"track"` when it is
  * still out on the bare track) and `data-variant` (the fill's variant), so a
  * theme can style the two cases separately — e.g. a taller "goal flag" tick
@@ -407,7 +425,7 @@ function defaultFormatValueLabel(value: number, max: number): string {
  * defineTheme({
  *   name: 'campaign',
  *   components: {
- *     'progressbar-mark': {base: {height: '16px', backgroundColor: 'red'}},
+ *     'progress-bar-mark': {base: {height: '16px', backgroundColor: 'red'}},
  *   },
  * });
  * ```
@@ -475,13 +493,7 @@ export function ProgressBar({
     <div
       ref={ref}
       {...mergeProps(
-        themeProps(
-          'progress-bar',
-          {variant},
-          // `progressbar` ran the compound name together; keep it emitted so
-          // existing themes continue to work.
-          {legacyNames: ['progressbar']},
-        ),
+        themeProps('progress-bar', {variant}),
         stylex.props(styles.container, xstyle),
         className,
         style,
@@ -523,19 +535,13 @@ export function ProgressBar({
           aria-labelledby={labelId}
           aria-valuetext={isIndeterminate ? undefined : valueText}
           {...mergeProps(
-            themeProps('progress-bar-track', undefined, {
-              legacyNames: ['progressbar-track'],
-            }),
+            themeProps('progress-bar-track'),
             stylex.props(styles.track, isIndeterminate && styles.trackClipped),
           )}>
           {isIndeterminate ? (
             <div
               {...mergeProps(
-                themeProps(
-                  'progress-bar-fill',
-                  {variant: fillVariant},
-                  {legacyNames: ['progressbar-fill']},
-                ),
+                themeProps('progress-bar-fill', {variant: fillVariant}),
                 stylex.props(
                   styles.indeterminateFill,
                   variantStyles[fillVariant],
@@ -545,11 +551,7 @@ export function ProgressBar({
           ) : (
             <div
               {...mergeProps(
-                themeProps(
-                  'progress-bar-fill',
-                  {variant: fillVariant},
-                  {legacyNames: ['progressbar-fill']},
-                ),
+                themeProps('progress-bar-fill', {variant: fillVariant}),
                 stylex.props(styles.fill, variantStyles[fillVariant]),
               )}
               style={{width: `${percentage}%`}}
@@ -566,20 +568,16 @@ export function ProgressBar({
           //
           // `placement` is reflected as `data-placement` (and a class) so a
           // theme can style the two cases separately on the
-          // `progressbar-mark` target; `variant` mirrors the fill's variant
+          // `progress-bar-mark` target; `variant` mirrors the fill's variant
           // for the same reason.
           const markEl = (
             <span
               tabIndex={0}
               {...mergeProps(
-                themeProps(
-                  'progress-bar-mark',
-                  {
-                    variant: fillVariant,
-                    placement: mark.isOnFill ? 'fill' : 'track',
-                  },
-                  {legacyNames: ['progressbar-mark']},
-                ),
+                themeProps('progress-bar-mark', {
+                  variant: fillVariant,
+                  placement: mark.isOnFill ? 'fill' : 'track',
+                }),
                 stylex.props(
                   focusOutlineStyles.focusVisible,
                   styles.mark,

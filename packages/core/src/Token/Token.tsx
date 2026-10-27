@@ -38,8 +38,10 @@ import type {BaseProps} from '../BaseProps';
 import {themeProps} from '../utils/themeProps';
 import {focusOutlineProps} from '../utils/focusOutline.stylex';
 import {interactionOverlayStyles} from '../utils/interactionOverlay.stylex';
+import {usePressFeedback} from '../hooks/usePressFeedback';
 import {useTranslator} from '../i18n';
 import type {TokenColorMap} from './index';
+import {disabledInteractionProps} from '../utils/disabledInteraction';
 
 // =============================================================================
 // Types
@@ -162,19 +164,16 @@ const styles = stylex.create({
     borderWidth: 0,
   },
   invisibleButton: {
-    all: 'unset',
     cursor: {
       default: 'inherit',
       ':is(:disabled,[aria-disabled="true"])': 'default',
     },
-    font: 'inherit',
     color: 'inherit',
     outline: 'none',
     overflow: 'hidden',
     minWidth: 0,
   },
   removeButton: {
-    all: 'unset',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -192,7 +191,7 @@ const styles = stylex.create({
     '::after': {
       content: '""',
       position: 'absolute',
-      inset: '-14px',
+      inset: '-4px',
     },
   },
 });
@@ -303,6 +302,10 @@ export function Token({
   ref,
   ...rest
 }: TokenProps) {
+  // Constant marker props; the hook's only effect is installing the shared
+  // document controller once, so the token's output stays a pure function
+  // of its props.
+  const pressable = usePressFeedback();
   const t = useTranslator();
   const LinkComponent = useLinkComponent();
   const role = useInteractiveRole({href, onClick, isDisabled});
@@ -319,7 +322,9 @@ export function Token({
         e.stopPropagation();
         onRemove(e);
       }}
-      disabled={isDisabled}
+      // Focusable while disabled (spec:AST-085 FR1), but inert (FR2).
+      aria-disabled={isDisabled || undefined}
+      {...(isDisabled ? disabledInteractionProps() : null)}
       {...focusOutlineProps.focusVisible(styles.removeButton)}>
       <Icon icon="close" size="xsm" color="inherit" />
     </button>
@@ -349,6 +354,7 @@ export function Token({
         <LinkComponent
           ref={ref as React.Ref<HTMLAnchorElement>}
           href={href as string}
+          {...pressable}
           {...mergeProps(
             themeProps('token', {color, size}),
             focusOutlineProps.focusVisible(
@@ -388,6 +394,7 @@ export function Token({
         endContent={endContent}
         removeButton={removeButton}
         linkStyleProps={stylex.props(styles.invisibleButton)}
+        {...pressable}
         labelContent={
           <span
             {...stylex.props(
@@ -430,6 +437,7 @@ export function Token({
       <span
         ref={ref}
         onClick={isDisabled ? undefined : handleContainerClick}
+        {...pressable}
         {...mergeProps(
           themeProps('token', {color, size}),
           focusOutlineProps.focusWithin(
@@ -450,7 +458,8 @@ export function Token({
         <button
           type="button"
           onClick={effectiveOnClick}
-          disabled={isDisabled}
+          aria-disabled={isDisabled || undefined}
+          {...(isDisabled ? disabledInteractionProps() : null)}
           {...stylex.props(styles.invisibleButton)}>
           <span
             {...stylex.props(

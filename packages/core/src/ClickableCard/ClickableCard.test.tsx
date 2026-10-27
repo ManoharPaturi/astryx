@@ -4,6 +4,12 @@ import {describe, it, expect, vi} from 'vitest';
 import {render, screen, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ClickableCard} from './ClickableCard';
+import {
+  afterPaintsPress,
+  hasReleaseFade,
+  pressArmsShadowedByDefault,
+  readsPressStrength,
+} from '../__tests__/pressState';
 
 describe('ClickableCard', () => {
   it('renders children', () => {
@@ -128,7 +134,7 @@ describe('ClickableCard', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
-  it('disabled button is disabled and the surface runs nothing', () => {
+  it('disabled button stays focusable and the surface runs nothing', () => {
     const handleClick = vi.fn();
     render(
       <ClickableCard label="Disabled" onClick={handleClick} isDisabled>
@@ -136,18 +142,20 @@ describe('ClickableCard', () => {
       </ClickableCard>,
     );
     const button = screen.getByRole('button', {name: 'Disabled'});
-    expect(button).toBeDisabled();
+    expect(button).not.toHaveAttribute('disabled');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(screen.getByText('Content'));
     fireEvent.click(button);
     expect(handleClick).not.toHaveBeenCalled();
   });
 
-  it('disabled link has aria-disabled, leaves the tab order, and the surface runs nothing', () => {
+  it('disabled link has no live destination, keeps its tab stop, and runs nothing', () => {
     const handleClick = vi.fn();
     render(
       <ClickableCard
         label="Disabled link"
         href="/settings"
+        target="_blank"
         onClick={handleClick}
         isDisabled>
         <span>Content</span>
@@ -155,7 +163,10 @@ describe('ClickableCard', () => {
     );
     const link = screen.getByRole('link', {name: 'Disabled link'});
     expect(link).toHaveAttribute('aria-disabled', 'true');
-    expect(link).toHaveAttribute('tabindex', '-1');
+    expect(link).toHaveAttribute('tabindex', '0');
+    expect(link).not.toHaveAttribute('href');
+    expect(link).not.toHaveAttribute('target');
+    expect(fireEvent.click(link)).toBe(false);
     fireEvent.click(screen.getByText('Content'));
     expect(handleClick).not.toHaveBeenCalled();
   });
@@ -236,5 +247,40 @@ describe('ClickableCard', () => {
         none.firstElementChild!.className,
       );
     });
+  });
+});
+
+describe('ClickableCard pressed state (touch)', () => {
+  it('fades the touch press out on the card, whose overlay layer reads its strength', () => {
+    const {container} = render(
+      <ClickableCard label="Test card" onClick={() => {}}>
+        <span>Content</span>
+      </ClickableCard>,
+    );
+    const card = container.querySelector('[data-astryx-pressable]');
+    if (card == null) {
+      throw new Error('the card carries no pressable marker');
+    }
+    // The controller writes the card; the card owns the strength and its
+    // release, and its `::after` paints the pressed token at that strength
+    // as its image on both arms, its hover and mouse colour yielding.
+    expect(hasReleaseFade(card)).toBe(true);
+    expect(readsPressStrength(card, '[data-astryx-press="on"]')).toBe(true);
+    expect(readsPressStrength(card)).toBe(true);
+    expect(afterPaintsPress(card, '[data-astryx-press="on"]')).toBe(true);
+    expect(afterPaintsPress(card)).toBe(true);
+    // No press arm sits on a custom property the card also declares without
+    // it: in a layered stylesheet that declaration wins and the press never
+    // paints.
+    expect(pressArmsShadowedByDefault(card)).toEqual([]);
+  });
+
+  it('carries none of it when disabled', () => {
+    const {container} = render(
+      <ClickableCard label="Test card" onClick={() => {}} isDisabled>
+        <span>Content</span>
+      </ClickableCard>,
+    );
+    expect(container.querySelector('[data-astryx-pressable]')).toBeNull();
   });
 });

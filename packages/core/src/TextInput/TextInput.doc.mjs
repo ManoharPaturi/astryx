@@ -93,14 +93,14 @@ export const docs = {
       name: 'isReadOnly',
       type: 'boolean',
       description:
-        'Makes the input read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only input is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+        'Makes the input read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only input is not dimmed and keeps its form value. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the input is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the input focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextInput in Tooltip, so the reason is attached to the field itself.',
     },
     {
       name: 'isLoading',
@@ -162,13 +162,45 @@ export const docs = {
       name: 'width',
       type: 'SizeValue',
       description:
-        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned. Without a width the field can shrink with its row, so a filter bar never overflows; use `<HStack wrap="wrap">` when the controls should move to a second line instead.',
     },
     {
       name: 'autoComplete',
       type: 'string',
       description:
         'The native autocomplete attribute, forwarded to the input unchanged. Does not affect the controlled value.',
+    },
+    {
+      name: 'containerXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds icons and end controls. Never the native input.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
     },
   ],
   theming: {
@@ -187,7 +219,7 @@ export const docs = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
-      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -279,14 +311,14 @@ export const docsZh = {
       name: 'isReadOnly',
       type: 'boolean',
       description:
-        '将输入框设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读输入框不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
+        '将输入框设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读输入框不会变暗，并保留其表单值。同时设置时 isDisabled 优先。',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        '说明输入框被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持输入框可聚焦（字段变为只读）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TextInput——已禁用的控件会吞掉外部 Tooltip 所需的悬停事件。',
+        '说明输入框被禁用的原因。与 isDisabled 一起使用时，在悬停/键盘聚焦时显示工具提示，并通过 aria-disabled 保持输入框可聚焦（字段变为只读）。请使用此属性，而不是用 Tooltip 包裹已禁用的 TextInput，以便把原因附加在字段本身上。',
     },
     {
       name: 'isLoading',
@@ -349,6 +381,38 @@ export const docsZh = {
       description:
         '原生 autocomplete 属性，原样转发给输入框。不影响受控的值。',
     },
+    {
+      name: 'containerXstyle',
+      type: 'StyleXStyles',
+      description:
+        '字段容器（标签、控件和状态整体）的 StyleX 样式。在 InputGroup 内（请改为设置 InputGroup 的样式）或 `horizontal-labels` FormLayout 中无效。不接受根级 `xstyle`、`className` 和 `style`。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: '字段容器的类名，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: '字段容器的内联样式，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '可视控件框的 StyleX 样式：绘制边框和背景并包含图标与尾部控件的元素，而非原生输入元素。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可视控件框的类名。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可视控件框的内联样式。',
+    },
   ],
   theming: {
     targets: [
@@ -366,7 +430,7 @@ export const docsZh = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
-      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -394,7 +458,7 @@ export const docsDense = {
       {guidance: false, description: "Don't use placeholder text as a replacement for a label; placeholders disappear on focus and are not reliably read by screen readers."},
       {guidance: false, description: "Don't use TextInput for multi-line content like comments or descriptions; use TextArea instead."},
       {guidance: false, description: "Don't mark every field as required; only flag mandatory fields so users are not overwhelmed by validation errors."},
-      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead."},
+      {guidance: false, description: "Don't wrap a disabled TextInput in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself."},
     ],
     anatomy: [
       {name: 'Label', required: true, description: 'Text that identifies the field. Always rendered for accessibility even when visually hidden.'},
@@ -407,6 +471,12 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
+    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerClassName: 'Class name for the field container.',
+    containerStyle: 'Inline styles for the field container.',
+    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
+    controlClassName: 'Class name for the visual control box.',
+    controlStyle: 'Inline styles for the visual control box.',
     type: 'HTML input type.',
     label: 'Label text for input; always rendered for a11y.',
     value: 'Current input value.',
@@ -419,7 +489,7 @@ export const docsDense = {
     isRequired: 'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables input, prevents interaction, dims element.',
     isReadOnly:
-      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed.',
     disabledMessage:
       'Explains why input is disabled. With isDisabled, shows tooltip on hover/focus + keeps input focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextInput in Tooltip.',
     isLoading: 'Loading state w/ spinner+aria-busy.',

@@ -143,8 +143,9 @@ const styles = stylex.create({
   // Show more/less button
   toggleButton: {
     appearance: 'none',
-    background: 'none',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     padding: `${spacingVars['--spacing-2']} 0`,
     cursor: {
       default: 'pointer',
@@ -199,12 +200,20 @@ export function MetadataList({
   style,
   'data-testid': testId,
   ref,
+  ...restProps
 }: MetadataListProps) {
   const isMultiColumn =
     columns === 'multi' || (typeof columns === 'number' && columns > 1);
   // Default to 'top' for multi-column and horizontal layouts since side labels
   // don't work well when items are in separate grid cells.
-  const labelConfig = label ?? (isMultiColumn ? LABEL_TOP : LABEL_START);
+  const defaultLabelConfig = isMultiColumn ? LABEL_TOP : LABEL_START;
+  const labelConfig = useMemo(
+    () => ({
+      ...label,
+      position: label?.position ?? defaultLabelConfig.position,
+    }),
+    [label, defaultLabelConfig],
+  );
   const [isShowAll, setIsShowAll] = useState(false);
   const contentId = useId();
   const t = useTranslator();
@@ -280,6 +289,7 @@ export function MetadataList({
   return (
     <MetadataListContext value={contextValue}>
       <div
+        {...restProps}
         ref={ref}
         data-testid={testId}
         {...mergeProps(

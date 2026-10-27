@@ -19,13 +19,16 @@
  */
 
 import React, {
+  use,
   useCallback,
   useId,
   useRef,
   useMemo,
   useState,
   type ReactNode,
+  type RefObject,
 } from 'react';
+import {flushSync} from 'react-dom';
 import * as stylex from '@stylexjs/stylex';
 import {
   BusyIndicatorLaneProvider,
@@ -51,16 +54,27 @@ import {renderIconSlot, type IconType} from '../Icon';
 import {VisuallyHidden} from '../VisuallyHidden';
 import {Spinner} from '../Spinner';
 import {spacingVars, sizeVars} from '../theme/tokens.stylex';
-import {groupStyles} from '../InputGroup/groupStyles';
+import {groupStyles, inputGroupItemProps} from '../InputGroup/groupStyles';
 import {useInputGroup} from '../InputGroup/InputGroupContext';
-import {getInputARIA, isImeKeyEvent, mergeProps} from '../utils';
-import type {BaseProps} from '../BaseProps';
+import {InputGroupInternalContext} from '../InputGroup/InputGroupInternalContext';
+import {
+  composeEventHandlers,
+  getInputARIA,
+  isImeKeyEvent,
+  mergeProps,
+} from '../utils';
+import {TrailingKeyDownContext} from './trailingKeyDown';
+import {
+  type FieldInputBaseProps,
+  useFieldInputStyling,
+} from '../Field/fieldParts';
 import type {SizeValue} from '../utils/types';
 import type {SearchableItem, SearchSource} from './types';
 import {themeProps} from '../utils/themeProps';
 import {useTranslator} from '../i18n';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 export type {
   InputStatus as TypeaheadStatus,
   InputStatusType as TypeaheadStatusType,
@@ -69,10 +83,18 @@ export type {
 export type TypeaheadSize = 'sm' | 'md' | 'lg';
 
 export interface TypeaheadProps<T extends SearchableItem> extends Omit<
-  BaseProps<HTMLDivElement>,
-  'onChange'
+  FieldInputBaseProps<HTMLInputElement>,
+  'onChange' | 'onKeyDown'
 > {
-  ref?: React.Ref<HTMLDivElement>;
+  /**
+   * Key handler. Runs after the built-in key handling, so it observes every key
+   * and cannot cancel navigation, selection, or token editing. It receives keys
+   * on the combobox input and on the field's other controls (the clear button
+   * and tokens).
+   */
+  onKeyDown?: React.KeyboardEventHandler<HTMLElement>;
+  /** Ref forwarded to the combobox input. */
+  ref?: React.Ref<HTMLInputElement>;
   /** Accessible label (required). */
   label: string;
   /** Visually hide the label. @default false */
@@ -89,6 +111,7 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * How the status message is placed relative to the input.
    * - 'attached': message overlaps directly below the input (bordered treatment)
    * - 'detached': message floats below as a separate element with spacing
+   * - 'tooltip': no message box; the status icon becomes a focusable info-tip button that reveals the message on hover, keyboard focus, or tap
    * @default 'attached'
    */
   statusVariant?: FieldStatusVariant;
@@ -126,8 +149,21 @@ export interface TypeaheadProps<T extends SearchableItem> extends Omit<
    * @default 1
    */
   minQueryLength?: number;
-  /** Text shown when no results found. @default 'No results found' */
-  emptySearchResultsText?: string;
+  /**
+   * Content shown when the query matched nothing (`spec:AST-056` FR1).
+   * Takes a `ReactNode`, so a dead end can carry a link or a create row.
+   *
+   * The message is announced in a polite live region as the text it renders,
+   * read from the DOM, so an element is announced as written and anything
+   * marked `aria-hidden` is left out of both. Content that renders no text
+   * announces nothing, matching the screen.
+   *
+   * `null` means "not given", exactly as `undefined` does, so it falls
+   * through to the default. Pass an empty string to render nothing.
+   *
+   * @default 'No results found'
+   */
+  emptySearchText?: ReactNode;
   /** Whether the input is disabled. @default false */
   isDisabled?: boolean;
   /**
@@ -318,19 +354,25 @@ const wrapperSizeStyles = stylex.create({
 function EndLane({
   lane,
   loadingLabel,
+  anchorRef,
   clear,
 }: {
   lane: BusyIndicatorLane;
   loadingLabel: string;
+  anchorRef: RefObject<Element | null>;
   clear: ReactNode;
 }) {
   const isBusy = useIsBusy(lane);
+  // The search Spinner stays named (family:input-fields FR7) but is not a
+  // live region; the field announces each search's busy start instead
+  // (spec:AST-086 FR8).
+  useBusyAnnouncement(isBusy, loadingLabel, anchorRef);
   if (!isBusy && clear == null) {
     return null;
   }
   return (
     <div {...stylex.props(styles.endLane)}>
-      {isBusy && <Spinner size="sm" aria-label={loadingLabel} />}
+      {isBusy && <Spinner size="sm" aria-label={loadingLabel} role="img" />}
       {clear}
     </div>
   );
@@ -355,8 +397,8 @@ export function Typeahead<T extends SearchableItem>({
   hasEntriesOnFocus,
   maxMenuItems,
   minQueryLength,
-  emptySearchResultsText,
-  isDisabled = false,
+  emptySearchText,
+  isDisabled: isDisabledProp = false,
   disabledMessage,
   hasClear = true,
   hasAutoFocus,
@@ -364,19 +406,33 @@ export function Typeahead<T extends SearchableItem>({
   debounceMs,
   onChangeQuery,
   onOpenChange,
+  onKeyDown,
   width,
-  xstyle,
-  className,
-  style,
-  'data-testid': testId,
+  containerXstyle,
+  containerClassName,
+  containerStyle,
+  controlXstyle,
+  controlClassName,
+  controlStyle,
+  id: idProp,
+  'aria-describedby': ariaDescribedByProp,
+  ...restProps
 }: TypeaheadProps<T>) {
+  const {rest, container} = useFieldInputStyling('Typeahead', restProps, {
+    containerXstyle,
+    containerClassName,
+    containerStyle,
+  });
   const t = useTranslator();
   const size = useSize(sizeProp, 'md');
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = idProp ?? generatedInputId;
   const inputLabelId = useId();
   const descriptionId = useId();
   const statusMessageId = useId();
   const inputGroup = useInputGroup();
+  const inputGroupState = use(InputGroupInternalContext);
+  const isDisabled = isDisabledProp || inputGroupState.isDisabled;
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -411,7 +467,14 @@ export function Typeahead<T extends SearchableItem>({
   // Show token when value is selected and not in edit mode
   const showToken = value != null && !isEditing;
 
-  // Enter edit mode: remove token visually, populate input with value label
+  // Enter edit mode: remove token visually, populate input with value label.
+  //
+  // Everything happens inside the tap or click that asked for it, never a
+  // frame later: iOS raises the software keyboard only for a focus made while
+  // the browser is still dispatching the person's own tap (or when the
+  // keyboard is already up). Deferred to an animation frame, the focus landed
+  // with no keyboard, so a tap on the selected value showed a caret and
+  // nothing to type with until a second tap.
   const handleEnterEditMode = useCallback(() => {
     if (isDisabled || !value) {
       return;
@@ -420,21 +483,26 @@ export function Typeahead<T extends SearchableItem>({
     setIsEditing(true);
     // The base will receive onChangeQuery with the value's label
     onChangeQuery?.(value.label);
-    requestAnimationFrame(() => {
-      const input = inputRef.current;
-      if (input) {
-        // Set the input value directly since the base manages its own query state
-        // We trigger a synthetic change to sync the base's internal state
-        const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-          window.HTMLInputElement.prototype,
-          'value',
-        )?.set;
+    const input = inputRef.current;
+    if (input) {
+      // Set the input value directly since the base manages its own query
+      // state, and trigger a synthetic change to sync the base's internal
+      // state. flushSync commits that query before the focus, so the base's
+      // focus handler sees the label rather than an empty query: an empty one
+      // would open the hasEntriesOnFocus bootstrap entries, and Enter would
+      // commit the first of them instead of the edited value.
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      // eslint-disable-next-line @eslint-react/dom-no-flush-sync -- the base must hold the label as its query before the in-tap focus
+      flushSync(() => {
         nativeInputValueSetter?.call(input, value.label);
         input.dispatchEvent(new Event('input', {bubbles: true}));
-        input.focus();
-        input.setSelectionRange(0, input.value.length);
-      }
-    });
+      });
+      input.focus();
+      input.setSelectionRange(0, input.value.length);
+    }
   }, [isDisabled, value, onChangeQuery]);
 
   // Handle blur: restore token if editing and no selection was made
@@ -476,12 +544,25 @@ export function Typeahead<T extends SearchableItem>({
     [onChange],
   );
 
-  // Handle clear (explicit X button on token)
+  // Handle clear (explicit X button on token). Edit mode copied the label into
+  // the base's query, and the base only resets that query on a selection, so
+  // clearing the value has to empty it the way entering edit mode filled it
+  // (#7038): a native set plus a synthetic input event, which reaches the
+  // base's own change handler and its onChangeQuery.
   const handleClear = useCallback(() => {
+    const input = inputRef.current;
+    if (input && input.value !== '') {
+      const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set;
+      nativeInputValueSetter?.call(input, '');
+      input.dispatchEvent(new Event('input', {bubbles: true}));
+    }
     setIsEditing(false);
     setEditingValue(null);
     onChange(null);
-    inputRef.current?.focus();
+    input?.focus();
   }, [onChange]);
 
   // Handle Escape during edit mode — restore token
@@ -533,14 +614,18 @@ export function Typeahead<T extends SearchableItem>({
   const typeaheadContent = (
     <>
       <div
-        ref={useMergedRefs(
-          wrapperRef,
-          disabledMessageTooltip.ref,
-          inputGroup ? ref : undefined,
-        )}
-        data-testid={testId}
+        ref={useMergedRefs(wrapperRef, disabledMessageTooltip.ref)}
         onClick={handleWrapperClick}
         onBlur={handleBlur}
+        // Keys on the field's other controls (clear button, tokens) reach a
+        // consumer onKeyDown here; keys on the input reach it through
+        // TrailingKeyDownContext after the built-in handling.
+        onKeyDown={event => {
+          if (event.target !== inputRef.current) {
+            onKeyDown?.(event);
+          }
+        }}
+        {...(inputGroup ? inputGroupItemProps : undefined)}
         {...mergeProps(
           themeProps('typeahead', {size, status: status?.type}),
           stylex.props(
@@ -552,10 +637,10 @@ export function Typeahead<T extends SearchableItem>({
             status && inputStatusFocusWithinStyles[status.type],
             isDisabled && inputWrapperStyles.disabled,
             inputGroup && groupStyles.inGroup,
-            inputGroup && xstyle,
+            controlXstyle,
           ),
-          inputGroup ? className : undefined,
-          inputGroup ? style : undefined,
+          controlClassName,
+          controlStyle,
         )}>
         {startIcon &&
           renderIconSlot(startIcon, {size: 'sm', color: 'secondary'})}
@@ -577,42 +662,50 @@ export function Typeahead<T extends SearchableItem>({
                 xstyle={styles.tokenOverlay}
               />
             )}
-            <BaseTypeahead
-              ref={inputRef}
-              searchSource={searchSource}
-              value={value}
-              onChange={handleChange}
-              renderItem={renderItem}
-              placeholder={showToken ? undefined : placeholder}
-              hasEntriesOnFocus={hasEntriesOnFocus}
-              maxMenuItems={maxMenuItems}
-              minQueryLength={minQueryLength}
-              emptySearchResultsText={emptySearchResultsText}
-              isDisabled={isDisabled}
-              hasAutoFocus={hasAutoFocus}
-              isFocusableDisabled={showsDisabledMessage}
-              inputId={inputId}
-              ariaDescribedBy={ariaDescribedBy}
-              ariaLabelledBy={ariaLabelledBy}
-              onChangeQuery={onChangeQuery}
-              onOpenChange={onOpenChange}
-              debounceMs={debounceMs}
-              anchorRef={wrapperRef}
-              onKeyDown={handleKeyDown}
-              inputXStyle={showToken ? styles.inputHidden : undefined}
-              // While the token is shown the input is invisible and inert behind
-              // it — take it out of the Tab order so keyboard users don't hit a
-              // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
-              // programmatically focusable: entering edit mode and clearing both
-              // refocus it once the token goes away.
-              inputTabIndex={showToken ? -1 : undefined}
-              size={size}
-            />
+            <TrailingKeyDownContext value={onKeyDown}>
+              <BaseTypeahead
+                {...rest}
+                ref={useMergedRefs(inputRef, ref)}
+                searchSource={searchSource}
+                value={value}
+                onChange={handleChange}
+                renderItem={renderItem}
+                placeholder={showToken ? undefined : placeholder}
+                hasEntriesOnFocus={hasEntriesOnFocus}
+                maxMenuItems={maxMenuItems}
+                minQueryLength={minQueryLength}
+                emptySearchText={emptySearchText}
+                isDisabled={isDisabled}
+                hasAutoFocus={hasAutoFocus}
+                isFocusableDisabled={showsDisabledMessage}
+                inputId={inputId}
+                ariaDescribedBy={
+                  [ariaDescribedByProp, ariaDescribedBy]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
+                ariaLabelledBy={ariaLabelledBy}
+                onChangeQuery={onChangeQuery}
+                onOpenChange={onOpenChange}
+                debounceMs={debounceMs}
+                anchorRef={wrapperRef}
+                onKeyDown={handleKeyDown}
+                inputXStyle={showToken ? styles.inputHidden : undefined}
+                // While the token is shown the input is invisible and inert behind
+                // it — take it out of the Tab order so keyboard users don't hit a
+                // stop they cannot see (WCAG 2.4.3 / 2.4.7). It stays
+                // programmatically focusable: entering edit mode and clearing both
+                // refocus it once the token goes away.
+                inputTabIndex={showToken ? -1 : undefined}
+                size={size}
+              />
+            </TrailingKeyDownContext>
           </div>
         </BusyIndicatorLaneProvider>
         <EndLane
           lane={busyLane}
           loadingLabel={t('@astryx.typeahead.loading')}
+          anchorRef={wrapperRef}
           clear={
             hasClear && value && !isDisabled ? (
               <InputClearButton
@@ -637,7 +730,7 @@ export function Typeahead<T extends SearchableItem>({
 
   return (
     <Field
-      ref={ref}
+      {...container}
       label={label}
       isLabelHidden={isLabelHidden}
       description={description}
@@ -657,10 +750,7 @@ export function Typeahead<T extends SearchableItem>({
       }
       statusVariant={statusVariant}
       labelTooltip={labelTooltip}
-      width={width}
-      xstyle={xstyle}
-      className={className}
-      style={style}>
+      width={width}>
       {typeaheadContent}
     </Field>
   );

@@ -7,11 +7,13 @@ import {Breadcrumbs} from './Breadcrumbs';
 import {BreadcrumbItem} from './BreadcrumbItem';
 import {
   BreadcrumbMenuItem,
+  BreadcrumbMenuDivider,
+  BreadcrumbMenuGroup,
   BreadcrumbMenuCheckboxItem,
   BreadcrumbMenuRadioGroup,
   BreadcrumbMenuRadioItem,
 } from './index';
-import type {BreadcrumbMenuOption} from './index';
+import type {BreadcrumbMenuDividerProps, BreadcrumbMenuOption} from './index';
 import {LinkProvider} from '../Link/LinkProvider';
 
 function CustomLink({
@@ -97,18 +99,6 @@ describe('Breadcrumbs', () => {
     // Custom separator content is nested inside the aria-hidden span
     // First item's separator is hidden via CSS, but still in the DOM
     expect(separators[1].textContent).toBe('›');
-  });
-
-  it('separators are aria-hidden', () => {
-    const {container} = render(
-      <Breadcrumbs>
-        <BreadcrumbItem href="/">Home</BreadcrumbItem>
-        <BreadcrumbItem isCurrent>Page</BreadcrumbItem>
-      </Breadcrumbs>,
-    );
-    const separators = container.querySelectorAll('span[aria-hidden="true"]');
-    expect(separators.length).toBeGreaterThan(0);
-    expect(separators[0]).toHaveAttribute('aria-hidden', 'true');
   });
 
   it('forwards ref to the nav element', () => {
@@ -467,6 +457,28 @@ describe('BreadcrumbItem menu', () => {
     ).toBeInTheDocument();
   });
 
+  it('after a pointer open, a row the mouse rests on takes focus without :focus-visible', async () => {
+    // Nothing else in this file activates the shared modality tracking, so
+    // the menu crumb must activate it for its rows to follow the last input
+    // (architecture:interaction-modality INV1).
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem menu={items}>Teams</BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Overview</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Teams'}));
+    const design = screen.getByRole('menuitem', {name: 'Design', hidden: true});
+    const focusSpy = vi.spyOn(design, 'focus');
+    fireEvent.pointerMove(design, {pointerType: 'mouse'});
+    expect(design).toHaveFocus();
+    expect(focusSpy).toHaveBeenCalledWith({
+      preventScroll: true,
+      focusVisible: false,
+    });
+  });
+
   it('fires the item onClick and closes the menu on select', async () => {
     const user = userEvent.setup();
     const onDesign = vi.fn();
@@ -780,5 +792,62 @@ describe('BreadcrumbItem menu', () => {
       'ol > li > span[aria-hidden="true"]',
     );
     expect(separators).toHaveLength(3);
+  });
+
+  it('renders the separator and props types through the BreadcrumbMenuDivider aliases', async () => {
+    const user = userEvent.setup();
+    const dividerProps: BreadcrumbMenuDividerProps = {
+      'data-testid': 'breadcrumb-menu-divider',
+    };
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <>
+              <BreadcrumbMenuItem label="Overview" />
+              <BreadcrumbMenuDivider {...dividerProps} />
+              <BreadcrumbMenuItem label="Settings" />
+            </>
+          }>
+          Project
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Project'}));
+
+    expect(screen.getByTestId('breadcrumb-menu-divider')).toHaveAttribute(
+      'role',
+      'separator',
+    );
+  });
+
+  it('carries the group semantics through the BreadcrumbMenuGroup alias', async () => {
+    // The alias must bring the semantics, not just the component: a group
+    // that renders but is not named leaves a screen reader with a run of
+    // loose rows where a sighted user sees a cluster.
+    const user = userEvent.setup();
+    render(
+      <Breadcrumbs>
+        <BreadcrumbItem
+          menu={
+            <BreadcrumbMenuGroup title="Recent">
+              <BreadcrumbMenuItem label="Overview" onClick={() => {}} />
+              <BreadcrumbMenuItem label="Settings" onClick={() => {}} />
+            </BreadcrumbMenuGroup>
+          }>
+          Project
+        </BreadcrumbItem>
+        <BreadcrumbItem isCurrent>Current</BreadcrumbItem>
+      </Breadcrumbs>,
+    );
+    await user.click(screen.getByRole('button', {name: 'Project'}));
+
+    const group = screen.getByRole('group', {name: 'Recent', hidden: true});
+    const heading = screen.getByText('Recent');
+    expect(group).toHaveAttribute('aria-labelledby', heading.id);
+    expect(group).toContainElement(
+      screen.getByRole('menuitem', {name: 'Overview', hidden: true}),
+    );
   });
 });

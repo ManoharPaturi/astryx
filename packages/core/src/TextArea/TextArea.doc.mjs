@@ -151,14 +151,14 @@ export const docs = {
       name: 'isReadOnly',
       type: 'boolean',
       description:
-        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and stays in the tab order. isDisabled takes precedence when both are set.',
+        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and keeps its form value. isDisabled takes precedence when both are set.',
       default: 'false',
     },
     {
       name: 'disabledMessage',
       type: 'string',
       description:
-        'Explains why the textarea is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the textarea focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextArea in Tooltip. Disabled controls swallow the hover events an external Tooltip needs.',
+        'Explains why the textarea is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the textarea focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextArea in Tooltip, so the reason is attached to the field itself.',
     },
     {
       name: 'isLoading',
@@ -262,10 +262,36 @@ export const docs = {
         'The native autocomplete attribute, forwarded to the textarea unchanged. Does not affect the controlled value.',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds icons and end controls. Never the native input.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
     },
   ],
   theming: {
@@ -277,14 +303,6 @@ export const docs = {
       },
       {className: 'astryx-text-area-control'},
       {className: 'astryx-text-area-counter'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-textarea',
-        visualProps: ['size', 'status'],
-        states: ['disabled', 'readonly'],
-        deprecatedFor: 'text-area',
-      },
     ],
     vars: [
       {
@@ -346,7 +364,7 @@ export const docs = {
       {
         guidance: false,
         description:
-          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.",
+          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself.",
       },
     ],
   },
@@ -419,7 +437,7 @@ export const docsZh = {
       name: 'isReadOnly',
       type: 'boolean',
       description:
-        '将文本域设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读文本域不会变暗，并保留在 Tab 顺序中。同时设置时 isDisabled 优先。',
+        '将文本域设为只读：值以完整不透明度显示并仍随表单提交，但无法编辑。与 isDisabled 不同，只读文本域不会变暗，并保留其表单值。同时设置时 isDisabled 优先。',
       default: 'false',
     },
     {
@@ -518,10 +536,36 @@ export const docsZh = {
       description: '原生 autocomplete 属性，原样转发给文本域。不影响受控的值。',
     },
     {
-      name: 'xstyle',
+      name: 'containerXstyle',
       type: 'StyleXStyles',
       description:
-        'StyleX 样式，用于布局自定义（边距、定位、尺寸）。必须是 stylex.create() 的值，而非内联样式对象。',
+        '字段容器（标签、控件和状态整体）的 StyleX 样式。在 InputGroup 内（请改为设置 InputGroup 的样式）或 `horizontal-labels` FormLayout 中无效。不接受根级 `xstyle`、`className` 和 `style`。',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: '字段容器的类名，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: '字段容器的内联样式，作用目标同 `containerXstyle`。',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        '可视控件框的 StyleX 样式：绘制边框和背景并包含图标与尾部控件的元素，而非原生输入元素。',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: '可视控件框的类名。',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: '可视控件框的内联样式。',
     },
   ],
   theming: {
@@ -533,14 +577,6 @@ export const docsZh = {
       },
       {className: 'astryx-text-area-control'},
       {className: 'astryx-text-area-counter'},
-      // Retained beside the canonical names for backwards compatibility.
-      // New themes use the canonical targets above.
-      {
-        className: 'astryx-textarea',
-        visualProps: ['size', 'status'],
-        states: ['disabled', 'readonly'],
-        deprecatedFor: 'text-area',
-      },
     ],
     vars: [
       {
@@ -601,7 +637,7 @@ export const docsZh = {
       {
         guidance: false,
         description:
-          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled; disabled controls swallow the hover events the wrapper needs. Use the disabledMessage prop instead.",
+          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself.",
       },
     ],
   },
@@ -655,6 +691,12 @@ export const docsDense = {
     ],
   },
   propDescriptions: {
+    containerXstyle: 'StyleX styles for the field container; no effect in InputGroup or horizontal-labels FormLayout. No root xstyle/className/style.',
+    containerClassName: 'Class name for the field container.',
+    containerStyle: 'Inline styles for the field container.',
+    controlXstyle: 'StyleX styles for the visual control box (border, background, icons); not the native input.',
+    controlClassName: 'Class name for the visual control box.',
+    controlStyle: 'Inline styles for the visual control box.',
     ref: 'ref forwarded to underlying <textarea>.',
     label: 'Label text for textarea; always rendered for a11y.',
     value: 'Current textarea value.',
@@ -668,7 +710,7 @@ export const docsDense = {
       'Shows "Required" indicator+sets aria-required. Mutually exclusive w/ isOptional.',
     isDisabled: 'Disables textarea, prevents interaction.',
     isReadOnly:
-      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed, stays in tab order.',
+      'Read-only: value visible + still submits, but not editable. Unlike isDisabled: not dimmed.',
     disabledMessage:
       'Explains why textarea is disabled. With isDisabled, shows tooltip on hover/focus + keeps textarea focusable via aria-disabled (field becomes read-only). Use instead of wrapping a disabled TextArea in Tooltip.',
     isLoading: 'Loading state w/ spinner inside input.',
@@ -689,8 +731,7 @@ export const docsDense = {
     htmlName: 'HTML name attr for form submissions.',
     onFocus: 'Callback on focus.',
     onBlur: 'Callback on blur.',
-    autoComplete: 'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
-    xstyle:
-      'StyleX styles for layout customization. Must be stylex.create() value, not inline style.',
+    autoComplete:
+      'Native autocomplete attr, forwarded unchanged. Does not affect the controlled value.',
   },
 };

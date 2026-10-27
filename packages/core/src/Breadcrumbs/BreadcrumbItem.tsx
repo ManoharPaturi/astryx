@@ -56,6 +56,7 @@ import {layerAnimations} from '../Layer/layerAnimations.stylex';
 import {renderDropdownItems} from '../DropdownMenu/renderDropdownItems';
 import {
   DropdownMenuContext,
+  DropdownMenuRootOpenContext,
   type DropdownMenuContextValue,
   type DropdownMenuSize,
 } from '../DropdownMenu/DropdownMenuContext';
@@ -67,6 +68,7 @@ import {
 import type {DropdownMenuOption} from '../DropdownMenu/DropdownMenu';
 
 import {useMergedRefs} from '../hooks/useMergedRefs';
+import {useInteractionModalityTracking} from '../utils/interactionModality';
 // =============================================================================
 // Props
 // =============================================================================
@@ -177,8 +179,9 @@ const itemStyles = stylex.create({
   // paddingBlock `link` sets above, which shrank the button crumbs to 20px
   // against their sibling links' 28px.
   buttonReset: {
-    background: 'none',
-    border: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    borderStyle: 'none',
     paddingInline: 0,
     margin: 0,
     font: 'inherit',
@@ -517,6 +520,10 @@ function BreadcrumbMenuTrigger({
   const triggerId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isSupporting = variant === 'supporting';
+  // The menu's rows move focus with the last input
+  // (`architecture:interaction-modality` INV1); this menu has no press model
+  // to activate the tracking they read, so it activates it itself.
+  useInteractionModalityTracking();
 
   const popover = usePopover({
     hasLightDismiss: true,
@@ -672,7 +679,9 @@ function BreadcrumbMenuTrigger({
             stylex.props(menuStyles.menu),
           )}>
           <DropdownMenuContext value={contextValue}>
-            {menuContent}
+            <DropdownMenuRootOpenContext value={popover.isOpen}>
+              {menuContent}
+            </DropdownMenuRootOpenContext>
           </DropdownMenuContext>
         </div>,
         {

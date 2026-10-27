@@ -4,7 +4,8 @@
 
 /**
  * @file ChatMessageList.tsx
- * @input Uses React, StyleX, ChatListContext, theme tokens, spacing step utilities
+ * @input Uses React, StyleX, ChatListContext, theme tokens, spacing step utilities,
+ *   and isRenderable to preserve accepted empty-state content
  * @output Exports ChatMessageList component and ChatMessageListProps
  * @position Presentational message container — holds ChatMessage children
  *
@@ -31,11 +32,13 @@ import {
   type ChatDensity,
   useChatLayoutContext,
 } from './ChatContext';
-import {mergeProps} from '../utils';
+import {isRenderable, mergeProps} from '../utils';
 import {Spinner} from '../Spinner';
 import type {BaseProps} from '../BaseProps';
 import type {SpacingStep} from '../utils/types';
 import {themeProps} from '../utils/themeProps';
+import {useTranslator} from '../i18n';
+import {useBusyAnnouncement} from '../hooks/useBusyAnnouncement';
 
 export interface ChatMessageListProps extends BaseProps<HTMLDivElement> {
   /** Ref forwarded to the root element */
@@ -237,6 +240,10 @@ export function ChatMessageList({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [isLoadingTop, startTransition] = useTransition();
+  const t = useTranslator();
+  // The top loading Spinner sits inside the log and is silent; the list
+  // announces its loading through the channel (spec:AST-086 FR4, FR8).
+  useBusyAnnouncement(isLoadingTop, t('@astryx.spinner.loading'), innerRef);
 
   // Register inner content element with the layout for height observation
   useEffect(() => {
@@ -308,7 +315,7 @@ export function ChatMessageList({
           {/* Loading spinner at top */}
           {isLoadingTop && (
             <div {...stylex.props(styles.loadingTop)}>
-              <Spinner size="md" />
+              <Spinner size="md" aria-hidden="true" />
             </div>
           )}
 
@@ -321,7 +328,7 @@ export function ChatMessageList({
           {/* Messages or empty state */}
           {hasChildren ? (
             children
-          ) : emptyState ? (
+          ) : isRenderable(emptyState) ? (
             <div {...stylex.props(styles.emptyState)}>{emptyState}</div>
           ) : null}
         </div>

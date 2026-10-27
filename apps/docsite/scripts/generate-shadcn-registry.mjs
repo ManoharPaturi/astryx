@@ -36,6 +36,7 @@ import {
   blockRegistryIdentity,
   componentRegistryIdentity,
   pageRegistryIdentity,
+  registryNameForPath,
 } from '../src/lib/shadcnRegistry.mjs';
 
 const REGISTRY_SCHEMA = 'https://ui.shadcn.com/schema/registry.json';
@@ -517,10 +518,30 @@ function assertUniqueItemNames(items) {
   }
 }
 
+/**
+ * Every file an item is written to, without `.json`: its organized path and
+ * aliases, plus the root name route standard clients derive from an index
+ * name (`shadcn search`, `@namespace/<name>`). An alias path also keeps the
+ * name it stood for, so a renamed item still answers at its old name.
+ */
+export function itemRoutes(item) {
+  if (registryNameForPath(item.astryx.path) !== item.name) {
+    throw new Error(
+      `${item.name} does not match the name of its path ${item.astryx.path}`,
+    );
+  }
+  const organized = [item.astryx.path, ...item.astryx.aliases];
+  return [...organized, ...organized.map(registryNameForPath)];
+}
+
 function assertUniqueItemPaths(items) {
+  // Names are kind-prefixed slugs with no slash and every organized path
+  // starts with a kind folder, so a name route can meet neither a path route
+  // nor the `registry.json` index; checking every route in one set still
+  // fails generation if any two items would write the same file.
   const paths = new Map();
   for (const item of items) {
-    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+    for (const itemPath of itemRoutes(item)) {
       const existing = paths.get(itemPath);
       if (existing) {
         throw new Error(
@@ -549,6 +570,7 @@ export function buildShadcnRegistry({
   cliRoot = process.cwd(),
   dependencyTag = null,
   externalDependencySpecs = {},
+  skipBlocksWithUnavailableComponents = false,
 }) {
   const cliPackage = packages.find(pkg => pkg.name === '@astryxdesign/cli');
   const sourceVersion = dependencyTag ?? cliPackage?.version;
@@ -587,10 +609,27 @@ export function buildShadcnRegistry({
       ),
     )
     .sort((a, b) => a.name.localeCompare(b.name));
+  const availableComponentNames = new Set(
+    componentEntries
+      .filter(([packageName]) => packageDependencies.has(packageName))
+      .flatMap(([, components]) => components.map(component => component.name)),
+  );
   const packageCatalog = new Map(packages.map(pkg => [pkg.name, pkg]));
   const blockItems = [];
   let skippedUnpublishedBlocks = 0;
   for (const block of blocks) {
+    // A released subpath can still lack a named component added after the last
+    // package release. Production blocks must satisfy both contracts: the
+    // imported subpath below and the published component snapshot here.
+    if (
+      skipBlocksWithUnavailableComponents &&
+      block.componentsUsed?.some(
+        componentName => !availableComponentNames.has(componentName),
+      )
+    ) {
+      skippedUnpublishedBlocks++;
+      continue;
+    }
     const unpublishedComponentImport = readImportSpecifiers(
       block.source,
       `${block.dirName}.tsx`,
@@ -698,7 +737,11 @@ export function generateShadcnRegistryForTarget({target, outDir, ...options}) {
     fs.rmSync(outDir, {recursive: true, force: true});
     throw new Error(`Unsupported ShadCN registry target: ${String(target)}`);
   }
-  return generateShadcnRegistry({outDir, ...options});
+  return generateShadcnRegistry({
+    outDir,
+    ...options,
+    skipBlocksWithUnavailableComponents: target === 'latest',
+  });
 }
 
 export function generateShadcnRegistry({
@@ -710,6 +753,7 @@ export function generateShadcnRegistry({
   cliRoot,
   dependencyTag,
   externalDependencySpecs,
+  skipBlocksWithUnavailableComponents,
 }) {
   const result = buildShadcnRegistry({
     packages,
@@ -719,12 +763,13 @@ export function generateShadcnRegistry({
     cliRoot,
     dependencyTag,
     externalDependencySpecs,
+    skipBlocksWithUnavailableComponents,
   });
   fs.rmSync(outDir, {recursive: true, force: true});
   fs.mkdirSync(outDir, {recursive: true});
   writeJson(path.join(outDir, 'registry.json'), result.registry);
   for (const item of result.items) {
-    for (const itemPath of [item.astryx.path, ...item.astryx.aliases]) {
+    for (const itemPath of itemRoutes(item)) {
       writeJson(path.join(outDir, `${itemPath}.json`), item);
     }
   }

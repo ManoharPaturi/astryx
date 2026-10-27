@@ -10,12 +10,30 @@
  * SYNC: When Popover.tsx changes, update tests to match new behavior
  */
 
-import {describe, it, expect, vi, beforeAll, afterAll} from 'vitest';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeAll,
+  afterAll,
+  beforeEach,
+  afterEach,
+} from 'vitest';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+  within,
+  cleanup,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import * as stylex from '@stylexjs/stylex';
 import {readFileSync} from 'node:fs';
 import React, {useRef} from 'react';
+import {createPortal} from 'react-dom';
 import {Popover} from './Popover';
 import {usePopover} from './usePopover';
 import type {UsePopoverReturn} from './usePopover';
@@ -85,7 +103,7 @@ describe('usePopover public return type', () => {
     expect(hasInternalFocusTarget).toBe(false);
   });
 
-  it('emits canonical and deprecated surface targets for direct hook consumers', () => {
+  it('emits only the canonical surface target for direct hook consumers', () => {
     function HeadlessPopover() {
       const popover = usePopover({dialogLabel: 'Headless popover'});
       return (
@@ -110,7 +128,7 @@ describe('usePopover public return type', () => {
       hidden: true,
     });
     expect(surface).toHaveClass('astryx-popover');
-    expect(surface).toHaveClass('astryx-popover-surface');
+    expect(surface).not.toHaveClass('astryx-popover-surface');
   });
 });
 
@@ -122,6 +140,21 @@ describe('Popover', () => {
       </Popover>,
     );
     expect(screen.getByRole('button', {name: 'Open'})).toBeInTheDocument();
+  });
+
+  it('does not open from an aria-disabled trigger', () => {
+    render(
+      <Popover content={<span>Content</span>} label="Test">
+        <button type="button" aria-disabled="true">
+          Trigger
+        </button>
+      </Popover>,
+    );
+    const trigger = screen.getByRole('button', {name: 'Trigger'});
+    // A click dispatched straight on the trigger, as element.click() or an
+    // assistive-technology activate command does (spec:AST-085 FR2).
+    act(() => trigger.click());
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('sets aria-haspopup on trigger', () => {
@@ -265,9 +298,14 @@ describe('Popover', () => {
 
     const layer = document.querySelector('[popover]');
     expect(layer).toHaveStyle({boxSizing: 'border-box'});
-    expect(layer?.className).toContain('Popover__styles.viewportFit');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    // The viewport fit is the layer runtime's (spec:AST-059 FR1, FR3); the
+    // explicit width is clamped to the viewport, never to the span beside
+    // the trigger (FR2).
+    expect(layer?.className).toContain('useLayer__styles.viewportFit');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    expect(layer?.className).toContain('Popover__styles.customWidth');
+    expect(layer?.getAttribute('style')).toContain('min(640px, calc(100vw');
+    expect(layer?.getAttribute('style')).not.toContain('100%');
     const surface = screen.getByTestId('popover-content').parentElement;
     expect(surface?.className).toContain('Popover__styles.surfaceViewportFit');
     const popoverSource = readFileSync(
@@ -275,11 +313,12 @@ describe('Popover', () => {
       'utf8',
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_INLINE_SIZE/,
+      /surfaceViewportFit:[\s\S]*?maxInlineSize: stylex\.firstThatWorks\(\s*`calc\(\$\{layerViewportInset\.maxInlineSize\}\)`/,
     );
     expect(popoverSource).toMatch(
-      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*POPOVER_MAX_BLOCK_SIZE/,
+      /surfaceViewportFit:[\s\S]*?maxBlockSize: stylex\.firstThatWorks\(\s*`calc\(\$\{layerViewportInset\.maxBlockSize\}\)`/,
     );
+    expect(popoverSource).not.toMatch(/safe-area-inset|calc\(100%/);
     expect(surface?.className).not.toContain(
       'Popover__styles.surfaceScrollable',
     );
@@ -435,7 +474,7 @@ describe('Popover', () => {
     }
   });
 
-  it('keeps aligned popovers anchored while applying viewport gutters', () => {
+  it('inherits the far-edge gutter from the layer runtime for aligned popovers', () => {
     render(
       <Popover content={<span>Content</span>} label="Test">
         <button type="button">Open</button>
@@ -445,10 +484,13 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    expect(layer?.className).not.toContain(
+      'useLayer__styles.gutterInlineStart',
+    );
+    expect(layer?.className).toContain('Popover__styles.matchTrigger');
     expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100% - max(var(--spacing-4),env(safe-area-inset-left,0px),env(safe-area-inset-right,0px))))',
+      'min-width: min(anchor-size(width),calc(100vi - calc(max(var(--spacing-4), env(safe-area-inset-left, 0px)) + var(--astryx-layer-inset-inline-start, 0px)) - calc(max(var(--spacing-4), env(safe-area-inset-right, 0px)) + var(--astryx-layer-inset-inline-end, 0px))))',
     );
   });
 
@@ -462,12 +504,11 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportAligned');
-    expect(layer?.className).toContain('Popover__styles.viewportEnd');
-    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineStart');
+    expect(layer?.className).not.toContain('useLayer__styles.gutterInlineEnd');
   });
 
-  it('reserves both inline gutters only for centered popovers', () => {
+  it('reserves both inline gutters for centered popovers', () => {
     render(
       <Popover content={<span>Content</span>} label="Test" alignment="center">
         <button type="button">Open</button>
@@ -477,11 +518,10 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportCentered');
-    expect(layer?.className).not.toContain('Popover__styles.viewportAligned');
-    expect(layer).toHaveStyle(
-      'min-width: min(anchor-size(width),calc(100vi - max(var(--spacing-4),env(safe-area-inset-left,0px)) - max(var(--spacing-4),env(safe-area-inset-right,0px))))',
-    );
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterInlineEnd');
+    // One match-trigger minimum for every alignment: the cap is the viewport.
+    expect(layer?.className).toContain('Popover__styles.matchTrigger');
   });
 
   it('uses block-axis gutters for side placement', () => {
@@ -498,8 +538,8 @@ describe('Popover', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Open'}));
 
     const layer = document.querySelector('[popover]');
-    expect(layer?.className).toContain('Popover__styles.viewportBlockStart');
-    expect(layer?.className).not.toContain('Popover__styles.viewportStart');
+    expect(layer?.className).toContain('useLayer__styles.gutterBlockEnd');
+    expect(layer?.className).not.toContain('useLayer__styles.gutterInlineEnd');
   });
 
   it('preserves the dialog aria-haspopup contract for render-prop triggers', () => {
@@ -923,6 +963,54 @@ describe('Popover', () => {
       expect(trigger).toHaveFocus();
     });
 
+    it('does not move focus into a popover that closed before its first frame', () => {
+      // Auto-focus waits a frame for the content to mount. A popover dismissed
+      // within that frame must not pull focus into its hidden content.
+      const frames = new Map<number, FrameRequestCallback>();
+      let nextFrame = 0;
+      vi.stubGlobal(
+        'requestAnimationFrame',
+        (callback: FrameRequestCallback) => {
+          nextFrame += 1;
+          frames.set(nextFrame, callback);
+          return nextFrame;
+        },
+      );
+      vi.stubGlobal('cancelAnimationFrame', (frame: number) => {
+        frames.delete(frame);
+      });
+      try {
+        render(
+          <Popover
+            content={
+              <button type="button" data-testid="inside-content">
+                Inside
+              </button>
+            }
+            label="Test">
+            <button type="button">Open</button>
+          </Popover>,
+        );
+        const trigger = screen.getByRole('button', {name: 'Open'});
+        trigger.focus();
+
+        fireEvent.click(trigger);
+        expect(trigger).toHaveAttribute('aria-expanded', 'true');
+        fireEvent.keyDown(document, {key: 'Escape'});
+        expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+        // The open's frame runs late, as on a busy machine.
+        act(() => {
+          const due = [...frames.values()];
+          frames.clear();
+          due.forEach(callback => callback(0));
+        });
+        expect(trigger).toHaveFocus();
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+
     it('returns focus to the trigger on light dismiss', () => {
       render(
         <Popover
@@ -958,6 +1046,262 @@ describe('Popover', () => {
     });
   });
 
+  describe('in a second document', () => {
+    // An app can render a Popover into a same-origin iframe or a Document
+    // Picture-in-Picture window through a portal. Every press and focus change
+    // then happens in that document, and none of them reaches this one.
+    let frame: HTMLIFrameElement;
+    let secondDocument: Document;
+
+    beforeEach(() => {
+      frame = document.createElement('iframe');
+      document.body.appendChild(frame);
+      secondDocument = frame.contentDocument!;
+      // The Popover API stand-in above, on the second window's own prototype.
+      const {prototype} = secondDocument.defaultView!.HTMLElement;
+      prototype.showPopover = HTMLElement.prototype.showPopover;
+      prototype.hidePopover = HTMLElement.prototype.hidePopover;
+    });
+
+    afterEach(() => {
+      // Unmount before the frame goes, or React removes nodes from a
+      // document that no longer exists.
+      cleanup();
+      frame.remove();
+    });
+
+    function renderInSecondDocument(hasLightDismiss = true) {
+      render(
+        createPortal(
+          <>
+            <Popover
+              label="Settings"
+              hasLightDismiss={hasLightDismiss}
+              content={
+                <>
+                  <button type="button">First</button>
+                  <button type="button">Last</button>
+                </>
+              }>
+              <button type="button">Settings</button>
+            </Popover>
+            <p>Outside</p>
+          </>,
+          secondDocument.body,
+        ),
+      );
+      const view = within(secondDocument.body);
+      const trigger = view.getByRole('button', {name: 'Settings'});
+      const surface = view.getByRole('dialog', {
+        name: 'Settings',
+        hidden: true,
+      });
+      const first = view.getByRole('button', {name: 'First', hidden: true});
+      return {trigger, surface, first, view};
+    }
+
+    /** Open from the trigger, as a pointer would, and wait for focus to enter. */
+    async function open(trigger: HTMLElement, surface: HTMLElement) {
+      trigger.focus();
+      fireEvent.click(trigger, {detail: 1});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      await waitFor(() =>
+        expect(surface.contains(secondDocument.activeElement)).toBe(true),
+      );
+    }
+
+    it('focuses the first content control on open', async () => {
+      const {trigger, surface, first} = renderInSecondDocument();
+      await open(trigger, surface);
+
+      expect(first).toHaveFocus();
+    });
+
+    it('wraps Tab from the last control back to the first', async () => {
+      const {trigger, surface, first, view} = renderInSecondDocument();
+      await open(trigger, surface);
+      const last = view.getByRole('button', {
+        name: 'Close popover',
+        hidden: true,
+      });
+      last.focus();
+
+      expect(fireEvent.keyDown(last, {key: 'Tab'})).toBe(false);
+      expect(first).toHaveFocus();
+    });
+
+    it('closes on Escape through the layer stack and returns focus to the trigger', async () => {
+      const {trigger, surface} = renderInSecondDocument();
+      await open(trigger, surface);
+
+      // The stack claims the press, so the browser's own close watcher does
+      // not act on it a second time.
+      expect(
+        fireEvent.keyDown(secondDocument.activeElement!, {key: 'Escape'}),
+      ).toBe(false);
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
+
+    it('closes on Escape when light dismiss is off', async () => {
+      const {trigger, surface} = renderInSecondDocument(false);
+      await open(trigger, surface);
+
+      fireEvent.keyDown(secondDocument.activeElement!, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
+
+    it('returns focus to the trigger after an outside click', async () => {
+      const {trigger, surface} = renderInSecondDocument();
+      await open(trigger, surface);
+
+      // The press on non-focusable content blurs focus to the body, then the
+      // browser's light dismiss closes the popover with a `toggle` event.
+      (secondDocument.activeElement as HTMLElement).blur();
+      expect(secondDocument.activeElement).toBe(secondDocument.body);
+      const toggle = new secondDocument.defaultView!.Event('toggle');
+      Object.defineProperty(toggle, 'newState', {value: 'closed'});
+      fireEvent(secondDocument.querySelector('[popover]')!, toggle);
+
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
+
+    it('keeps a Dialog and the Popover opened inside it in one order', () => {
+      // jsdom has no modal <dialog>; stand in for it on the second window.
+      const {prototype: dialogPrototype} =
+        secondDocument.defaultView!.HTMLDialogElement;
+      dialogPrototype.showModal = function (this: HTMLDialogElement) {
+        this.setAttribute('open', '');
+      };
+      dialogPrototype.close = function (this: HTMLDialogElement) {
+        this.removeAttribute('open');
+      };
+      const onOpenChange = vi.fn();
+      render(
+        createPortal(
+          <Dialog
+            isOpen={true}
+            onOpenChange={onOpenChange}
+            purpose="info"
+            aria-label="Host">
+            <Popover
+              label="Tip"
+              content={<button type="button">Inside</button>}>
+              <button type="button">Open tip</button>
+            </Popover>
+          </Dialog>,
+          secondDocument.body,
+        ),
+      );
+      const trigger = within(secondDocument.body).getByRole('button', {
+        name: 'Open tip',
+        hidden: true,
+      });
+      fireEvent.click(trigger);
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+      // A press in this document reaches neither layer of the other one.
+      fireEvent.keyDown(document, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      // The Dialog declines a close request while the Popover is above it.
+      const closeRequest = new secondDocument.defaultView!.Event('cancel', {
+        cancelable: true,
+      });
+      fireEvent(secondDocument.querySelector('dialog')!, closeRequest);
+      expect(onOpenChange).not.toHaveBeenCalled();
+
+      // In its own document, Escape closes the Popover, then the Dialog.
+      fireEvent.keyDown(secondDocument, {key: 'Escape'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(onOpenChange).not.toHaveBeenCalled();
+      fireEvent.keyDown(secondDocument, {key: 'Escape'});
+      expect(onOpenChange).toHaveBeenCalledExactlyOnceWith(false);
+    });
+  });
+
+  describe('surface padding', () => {
+    // StyleX's dev runtime names the style object a class came from
+    // ("padding__paddingStyles.3"), which is the padding rung the surface
+    // was handed.
+    function paddingRungOf(surface: Element | null): string | null {
+      const match = surface?.className.match(
+        /padding__paddingStyles\.([\d.]+)/,
+      );
+      return match ? match[1] : null;
+    }
+
+    it('paints the spacing-3 rung by default, unchanged', () => {
+      render(
+        <Popover isOpen content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('3');
+      expect(surface?.className).not.toContain('contentPadding');
+    });
+
+    it('paints no padding on a flush surface (padding={0})', () => {
+      render(
+        <Popover
+          isOpen
+          padding={0}
+          content={<span data-testid="content">Content</span>}
+          label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      // The rung lands on the painted surface itself, not a wrapper inside
+      // it, so the content reaches the surface edge.
+      expect(surface).toContainElement(screen.getByTestId('content'));
+      expect(paddingRungOf(surface)).toBe('0');
+    });
+
+    it('paints the requested rung', () => {
+      render(
+        <Popover isOpen padding={4} content={<span>Content</span>} label="Test">
+          <button type="button">Open</button>
+        </Popover>,
+      );
+      const surface = document.querySelector('.astryx-popover');
+      expect(paddingRungOf(surface)).toBe('4');
+    });
+
+    it('lets a direct usePopover consumer opt into a rung, and paints none by default', () => {
+      function Direct({padding}: {padding?: 0 | 2}) {
+        const popover = usePopover({dialogLabel: 'Direct', padding});
+        return (
+          <>
+            <button
+              ref={popover.triggerRef}
+              type="button"
+              onClick={popover.toggle}
+              {...popover.triggerProps}>
+              Open
+            </button>
+            {popover.render(<span>Direct content</span>)}
+          </>
+        );
+      }
+      const {unmount} = render(<Direct />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        null,
+      );
+      unmount();
+      render(<Direct padding={2} />);
+      fireEvent.click(screen.getByRole('button', {name: 'Open'}));
+      expect(paddingRungOf(document.querySelector('.astryx-popover'))).toBe(
+        '2',
+      );
+    });
+  });
+
   it('puts the theme target and styling escape hatches on the popup surface', () => {
     render(
       <Popover
@@ -975,10 +1319,106 @@ describe('Popover', () => {
     expect(target).not.toBeNull();
     // The surface paints background, radius and elevation; a target on the
     // content box inside it would style a box that paints nothing.
-    expect(target).toHaveClass('astryx-popover-surface');
+    expect(target).toHaveClass('astryx-popover');
+    expect(target).not.toHaveClass('astryx-popover-surface');
     expect(target).toHaveClass('consumer-popover');
     expect(target).toHaveStyle({padding: '0'});
     expect(target).toContainElement(screen.getByTestId('content'));
     expect(screen.getByTestId('popover')).not.toHaveClass('consumer-popover');
+  });
+});
+
+describe('Popover focus region (DEC-9)', () => {
+  function Page({isModal}: {isModal: boolean}) {
+    return (
+      <div>
+        <Popover
+          isModal={isModal}
+          hasCloseButton={false}
+          label="Details"
+          content={
+            <>
+              <button type="button">First inside</button>
+              <button type="button">Last inside</button>
+            </>
+          }>
+          <button type="button">Open details</button>
+        </Popover>
+        <button type="button">Elsewhere 1</button>
+        <button type="button">Elsewhere 2</button>
+      </div>
+    );
+  }
+
+  async function openDetails() {
+    const trigger = screen.getByRole('button', {name: 'Open details'});
+    // A pointer press focuses the trigger before its click opens the popover.
+    trigger.focus();
+    fireEvent.click(trigger);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: 'First inside', hidden: true}),
+      ).toHaveFocus(),
+    );
+  }
+
+  describe.each([
+    ['non-modal', false],
+    ['modal', true],
+  ])('%s', (_name, isModal) => {
+    it('leaves a Tab pressed outside the open popover to the page', async () => {
+      const user = userEvent.setup();
+      render(<Page isModal={isModal} />);
+      await openDetails();
+
+      screen.getByRole('button', {name: 'Elsewhere 1'}).focus();
+      await user.tab();
+
+      expect(screen.getByRole('button', {name: 'Elsewhere 2'})).toHaveFocus();
+    });
+
+    it('leaves a Shift+Tab pressed outside the open popover to the page', async () => {
+      const user = userEvent.setup();
+      render(<Page isModal={isModal} />);
+      await openDetails();
+
+      screen.getByRole('button', {name: 'Elsewhere 2'}).focus();
+      await user.tab({shift: true});
+
+      expect(screen.getByRole('button', {name: 'Elsewhere 1'})).toHaveFocus();
+    });
+
+    it('cycles Tab and Shift+Tab inside the open popover', async () => {
+      const user = userEvent.setup();
+      render(<Page isModal={isModal} />);
+      await openDetails();
+      const first = screen.getByRole('button', {
+        name: 'First inside',
+        hidden: true,
+      });
+      const last = screen.getByRole('button', {
+        name: 'Last inside',
+        hidden: true,
+      });
+
+      await user.tab();
+      expect(last).toHaveFocus();
+      await user.tab();
+      expect(first).toHaveFocus();
+      await user.tab({shift: true});
+      expect(last).toHaveFocus();
+    });
+
+    it('closes on Escape from inside and returns focus to the trigger', async () => {
+      const user = userEvent.setup();
+      render(<Page isModal={isModal} />);
+      await openDetails();
+
+      await user.keyboard('{Escape}');
+
+      const trigger = screen.getByRole('button', {name: 'Open details'});
+      expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(trigger).toHaveFocus();
+    });
   });
 });
